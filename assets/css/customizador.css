@@ -1,0 +1,18 @@
+#customizador-adesivo {
+    text-align: center;
+    margin: 20px;
+}
+
+.controls {
+    margin-bottom: 15px;
+}
+
+canvas {
+    border: 1px solid #ccc;
+    margin-top: 10px;
+}
+
+#preview {
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
