@@ -28,7 +28,7 @@
     <label for="sticker-select">Escolha um modelo de adesivo:</label>
     <select id="sticker-select">
         <option value="modelo1.svg">Honda CG</option>
-        <option value="modelo2.svg">Honda CG 2</option>
+        <option value="Honda.svg">Honda CG 2</option>
         <option value="modelo3.svg">Modelo 3</option>
     </select>
     <button id="load-sticker">Carregar Adesivo</button>
