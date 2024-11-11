@@ -36,7 +36,7 @@
     <div class="col-md-4 mb-3">
     <label for="layer-select" class="form-label">Escolha a Camada:</label>
     <select id="layer-select" class="form-control">
-        <!-- As opções de camada serão adicionadas dinamicamente pelo JavaScript -->
+        <!-- As opções de camada serão adicionadas dinamicamente pelo JavaScript --> 
     </select>
 </div>
 
