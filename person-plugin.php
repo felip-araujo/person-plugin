@@ -14,6 +14,16 @@ function permitir_svg_upload($mimes) {
 }
 add_filter('upload_mimes', 'permitir_svg_upload');
 
+function carregar_bootstrap_no_admin() {
+    // Carregar Bootstrap CSS
+    wp_enqueue_style('bootstrap-css', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css');
+
+    // Carregar Bootstrap JS (opcional, caso precise de funcionalidades JS do Bootstrap)
+    wp_enqueue_script('bootstrap-js', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js', array('jquery'), null, true);
+}
+add_action('admin_enqueue_scripts', 'carregar_bootstrap_no_admin');
+
+
 
 
 function plugin_adicionar_menu() {
@@ -29,19 +39,22 @@ function plugin_adicionar_menu() {
 }
 add_action('admin_menu', 'plugin_adicionar_menu');
 
-
 function plugin_pagina_de_configuracao() {
+    $plugin_sticker_dir = plugin_dir_path(__FILE__) . 'assets/stickers/';
+    $url_diretorio = plugin_dir_url(__FILE__) . 'assets/stickers/';
     ?>
     <div class="wrap">
-        <h1>Configurações de Adesivos</h1> 
-        <p> Adicione a tag " [customizador_adesivo] " na página onde você deseja que o Personalizador apareça. </p>
-        <form method="post" enctype="multipart/form-data">
-            <?php
-            wp_nonce_field('upload_sticker_nonce', 'sticker_nonce'); // Segurança do nonce
-            ?>
-            <label for="sticker">Selecione um adesivo para upload:</label>
-            <input type="file" name="sticker" id="sticker" accept="image/*" />
-            <input type="submit" name="submit_sticker" value="Upload Adesivo" class="button button-primary" />
+        <h1>Configurações de Adesivos</h1>
+        <p>Adicione a tag "[customizador_adesivo]" na página onde você deseja que o Personalizador apareça.</p>
+
+        <!-- Formulário de Upload -->
+        <form method="post" enctype="multipart/form-data" class="mb-4">
+            <?php wp_nonce_field('upload_sticker_nonce', 'sticker_nonce'); ?>
+            <div class="form-group">
+                <label for="sticker">Selecione um adesivo para upload:</label>
+                <input type="file" name="sticker" id="sticker" accept="image/*" class="form-control-file" />
+            </div>
+            <input type="submit" name="submit_sticker" value="Upload Adesivo" class="btn btn-primary" />
         </form>
 
         <?php
@@ -49,10 +62,41 @@ function plugin_pagina_de_configuracao() {
         if (isset($_POST['submit_sticker'])) {
             plugin_processar_upload();
         }
+
+        // Listagem de adesivos
+        echo '<h2>Adesivos Existentes</h2>';
+        if (is_dir($plugin_sticker_dir)) {
+            $arquivos_svg = glob($plugin_sticker_dir . '*.svg');
+
+            if (!empty($arquivos_svg)) {
+                echo '<table class="table table-striped">';
+                echo '<thead><tr><th>Visualização</th><th>Nome do Adesivo</th><th>Ações</th></tr></thead>';
+                echo '<tbody>';
+                foreach ($arquivos_svg as $arquivo) {
+                    $url_svg = $url_diretorio . basename($arquivo);
+                    $nome_arquivo = basename($arquivo);
+                    echo '<tr>';
+                    echo '<td style="width: 100px;"><img src="' . esc_url($url_svg) . '" alt="' . esc_attr($nome_arquivo) . '" style="width: 80px; height: auto;"></td>';
+                    echo '<td>' . esc_html($nome_arquivo) . '</td>';
+                    echo '<td>';
+                    echo '<button class="apagar-adesivo btn btn-danger btn-sm" data-arquivo="' . esc_attr($nome_arquivo) . '">Apagar</button>';
+                    echo '</td>';
+                    echo '</tr>';
+                }
+                echo '</tbody>';
+                echo '</table>';
+            } else {
+                echo '<p>Nenhum adesivo encontrado.</p>';
+            }
+        } else {
+            echo '<p>Pasta de adesivos não encontrada.</p>';
+        }
         ?>
     </div>
     <?php
 }
+
+
 
 function plugin_processar_upload() {
     // Verifica o nonce de segurança
