@@ -42,5 +42,6 @@
         <h4>Pré-visualização:</h4>
         <div id="adesivo-canvas" style="border: 1px solid #ccc; width: 1150px; height: 400px;"></div>
     </div>
+    
 
 </div>

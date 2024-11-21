@@ -9,21 +9,24 @@ Author: Evolution Design
 */
 
 // Permitir upload de SVG
-function permitir_svg_upload($mimes) {
-    $mimes['svg'] = 'image/svg+xml'; 
+function permitir_svg_upload($mimes)
+{
+    $mimes['svg'] = 'image/svg+xml';
     return $mimes;
 }
 add_filter('upload_mimes', 'permitir_svg_upload');
 
 // Carregar Bootstrap no admin
-function carregar_bootstrap_no_admin() {
+function carregar_bootstrap_no_admin()
+{
     wp_enqueue_style('bootstrap-css', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css');
     wp_enqueue_script('bootstrap-js', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js', array('jquery'), null, true);
 }
 add_action('admin_enqueue_scripts', 'carregar_bootstrap_no_admin');
 
 // Adicionar menu ao admin
-function plugin_adicionar_menu() {
+function plugin_adicionar_menu()
+{
     add_menu_page(
         'Configurações de Adesivos',
         'Seus Adesivos',
@@ -36,12 +39,13 @@ function plugin_adicionar_menu() {
 }
 add_action('admin_menu', 'plugin_adicionar_menu');
 
-function plugin_pagina_de_configuracao() {
+function plugin_pagina_de_configuracao()
+{
     $plugin_sticker_dir = plugin_dir_path(__FILE__) . 'assets/stickers/';
     $url_diretorio = plugin_dir_url(__FILE__) . 'assets/stickers/';
-    ?>
+?>
     <div class="wrap">
-        <h1>Configurações de Adesivos</h1>
+        <h1 class="display-2">Configurações de Adesivos</h1>
         <p>Adicione a tag "[customizador_adesivo]" na página onde você deseja que o Personalizador apareça.</p>
 
         <!-- Formulário de Upload -->
@@ -66,8 +70,8 @@ function plugin_pagina_de_configuracao() {
             $arquivos_svg = glob($plugin_sticker_dir . '*.svg');
 
             if (!empty($arquivos_svg)) {
-                echo '<table class="table table-striped">';
-                echo '<thead><tr><th>Visualização</th><th>Nome do Adesivo</th></tr></thead>';
+                echo '<table style="border-radius: .7rem" class="table table-dark">';
+                echo '<thead><tr><th>Visualização</th><th>Nome do Adesivo</th><th>Associar</th><th>Gerenciar</th></tr></thead>';
                 echo '<tbody>';
                 foreach ($arquivos_svg as $arquivo) {
                     $url_svg = $url_diretorio . basename($arquivo);
@@ -75,6 +79,8 @@ function plugin_pagina_de_configuracao() {
                     echo '<tr>';
                     echo '<td style="width: 100px;"><img src="' . esc_url($url_svg) . '" alt="' . esc_attr($nome_arquivo) . '" style="width: 80px; height: auto;"></td>';
                     echo '<td>' . esc_html($nome_arquivo) . '</td>';
+                    echo '<td> <select name="" id=""></select> </td>';
+                    echo '<td> <button class="btn btn-danger"> Apagar </button> </td>';
                     echo '</tr>';
                 }
                 echo '</tbody>';
@@ -87,10 +93,11 @@ function plugin_pagina_de_configuracao() {
         }
         ?>
     </div>
-    <?php
+<?php
 }
 
-function plugin_processar_upload() {
+function plugin_processar_upload()
+{
     if (!isset($_POST['sticker_nonce']) || !wp_verify_nonce($_POST['sticker_nonce'], 'upload_sticker_nonce')) {
         echo 'Nonce inválido!';
         return;
@@ -98,7 +105,7 @@ function plugin_processar_upload() {
 
     if (isset($_FILES['sticker']) && !empty($_FILES['sticker']['name'])) {
         $file = $_FILES['sticker'];
-        
+
         if ($file['error'] !== UPLOAD_ERR_OK) {
             echo 'Erro ao fazer upload do arquivo. Código de erro: ' . $file['error'];
             return;
@@ -109,7 +116,7 @@ function plugin_processar_upload() {
 
         if (in_array($file_type['ext'], $allowed_types)) {
             $upload = wp_upload_bits($file['name'], null, file_get_contents($file['tmp_name']));
-            
+
             if ($upload['error']) {
                 echo 'Erro ao enviar o arquivo: ' . $upload['error'];
             } else {
@@ -132,7 +139,8 @@ function plugin_processar_upload() {
 }
 
 // Enfileirar CSS e JS
-function person_plugin_enqueue_scripts() {
+function person_plugin_enqueue_scripts()
+{
     // CSS Principal do Plugin
     wp_enqueue_style('person-plugin-css', plugin_dir_url(__FILE__) . 'assets/css/customizador.css');
 
@@ -184,7 +192,8 @@ function person_plugin_enqueue_scripts() {
 add_action('wp_enqueue_scripts', 'person_plugin_enqueue_scripts');
 
 // Shortcode para exibir o customizador
-function person_plugin_display_customizer() {
+function person_plugin_display_customizer()
+{
     if (!is_product()) {
         return ''; // Retorna vazio se não for uma página de produto
     }
