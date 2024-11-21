@@ -44,9 +44,9 @@ function plugin_pagina_de_configuracao()
     $plugin_sticker_dir = plugin_dir_path(__FILE__) . 'assets/stickers/';
     $url_diretorio = plugin_dir_url(__FILE__) . 'assets/stickers/';
 ?>
-    <div class="wrap">
-        <h1 class="display-2">Configurações de Adesivos</h1>
-        <p>Adicione a tag "[customizador_adesivo]" na página onde você deseja que o Personalizador apareça.</p>
+    <div class="container">
+        <h1 class="">Configurações de Adesivos</h1>
+        <p class="alert alert-warning">Adicione a tag <strong>"[customizador_adesivo]"</strong> na página onde você deseja que o Personalizador apareça.</p>
 
         <!-- Formulário de Upload -->
         <form method="post" enctype="multipart/form-data" class="mb-4">
@@ -64,79 +64,54 @@ function plugin_pagina_de_configuracao()
             plugin_processar_upload();
         }
 
-        // Listagem de adesivos
-        echo '<h2>Adesivos Existentes</h2>';
-        if (is_dir($plugin_sticker_dir)) {
-            $arquivos_svg = glob($plugin_sticker_dir . '*.svg');
-
-            if (!empty($arquivos_svg)) {
-                echo '<table style="border-radius: .7rem" class="table table-dark">';
-                echo '<thead><tr><th>Visualização</th><th>Nome do Adesivo</th><th>Associar</th><th>Gerenciar</th></tr></thead>';
-                echo '<tbody>';
-                foreach ($arquivos_svg as $arquivo) {
-                    $url_svg = $url_diretorio . basename($arquivo);
-                    $nome_arquivo = basename($arquivo);
-                    echo '<tr>';
-                    echo '<td style="width: 100px;"><img src="' . esc_url($url_svg) . '" alt="' . esc_attr($nome_arquivo) . '" style="width: 80px; height: auto;"></td>';
-                    echo '<td>' . esc_html($nome_arquivo) . '</td>';
-                    echo '<td> <select name="" id=""></select> </td>';
-                    echo '<td> <button class="btn btn-danger"> Apagar </button> </td>';
-                    echo '</tr>';
-                }
-                echo '</tbody>';
-                echo '</table>';
-            } else {
-                echo '<p>Nenhum adesivo encontrado.</p>';
+        function plugin_processar_upload()
+        {
+            if (!isset($_POST['sticker_nonce']) || !wp_verify_nonce($_POST['sticker_nonce'], 'upload_sticker_nonce')) {
+                echo 'Nonce inválido!';
+                return;
             }
-        } else {
-            echo '<p>Pasta de adesivos não encontrada.</p>';
+
+            if (isset($_FILES['sticker']) && !empty($_FILES['sticker']['name'])) {
+                $file = $_FILES['sticker'];
+
+                if ($file['error'] !== UPLOAD_ERR_OK) {
+                    echo 'Erro ao fazer upload do arquivo. Código de erro: ' . $file['error'];
+                    return;
+                }
+
+                $file_type = wp_check_filetype($file['name']);
+                $allowed_types = array('svg'); // Apenas permite SVG
+
+                if (in_array($file_type['ext'], $allowed_types)) {
+                    $upload = wp_upload_bits($file['name'], null, file_get_contents($file['tmp_name']));
+
+                    if ($upload['error']) {
+                        echo 'Erro ao enviar o arquivo: ' . $upload['error'];
+                    } else {
+                        $plugin_sticker_dir = plugin_dir_path(__FILE__) . 'assets/stickers/';
+                        if (!file_exists($plugin_sticker_dir)) {
+                            mkdir($plugin_sticker_dir, 0755, true);
+                        }
+
+                        $new_file_path = $plugin_sticker_dir . basename($upload['file']);
+                        rename($upload['file'], $new_file_path);
+
+                        echo 'Adesivo carregado com sucesso!';
+                    }
+                } else {
+                    echo 'Por favor, envie um arquivo SVG válido.';
+                }
+            } else {
+                echo 'Nenhum arquivo foi enviado.';
+            }
         }
+        // Listagem de adesivos
+        include 'templates/admin-form.php'
         ?>
     </div>
 <?php
 }
 
-function plugin_processar_upload()
-{
-    if (!isset($_POST['sticker_nonce']) || !wp_verify_nonce($_POST['sticker_nonce'], 'upload_sticker_nonce')) {
-        echo 'Nonce inválido!';
-        return;
-    }
-
-    if (isset($_FILES['sticker']) && !empty($_FILES['sticker']['name'])) {
-        $file = $_FILES['sticker'];
-
-        if ($file['error'] !== UPLOAD_ERR_OK) {
-            echo 'Erro ao fazer upload do arquivo. Código de erro: ' . $file['error'];
-            return;
-        }
-
-        $file_type = wp_check_filetype($file['name']);
-        $allowed_types = array('svg'); // Apenas permite SVG
-
-        if (in_array($file_type['ext'], $allowed_types)) {
-            $upload = wp_upload_bits($file['name'], null, file_get_contents($file['tmp_name']));
-
-            if ($upload['error']) {
-                echo 'Erro ao enviar o arquivo: ' . $upload['error'];
-            } else {
-                $plugin_sticker_dir = plugin_dir_path(__FILE__) . 'assets/stickers/';
-                if (!file_exists($plugin_sticker_dir)) {
-                    mkdir($plugin_sticker_dir, 0755, true);
-                }
-
-                $new_file_path = $plugin_sticker_dir . basename($upload['file']);
-                rename($upload['file'], $new_file_path);
-
-                echo 'Adesivo carregado com sucesso!';
-            }
-        } else {
-            echo 'Por favor, envie um arquivo SVG válido.';
-        }
-    } else {
-        echo 'Nenhum arquivo foi enviado.';
-    }
-}
 
 // Enfileirar CSS e JS
 function person_plugin_enqueue_scripts()
