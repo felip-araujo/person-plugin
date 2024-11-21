@@ -1,4 +1,6 @@
 <?php
+// /var/www/html/wp-content/plugins/person-plugin/person-plugin.php
+
 /*
 Plugin Name: Person Plugin - Customizador de Adesivos
 Description: Plugin para customização de adesivos com controle de cores, fontes, etc.
@@ -6,35 +8,30 @@ Version: 1.0
 Author: Evolution Design
 */
 
-// Função para permitir upload de SVG de forma segura
+// Permitir upload de SVG
 function permitir_svg_upload($mimes) {
-    // Permite SVG no WordPress
     $mimes['svg'] = 'image/svg+xml'; 
     return $mimes;
 }
 add_filter('upload_mimes', 'permitir_svg_upload');
 
+// Carregar Bootstrap no admin
 function carregar_bootstrap_no_admin() {
-    // Carregar Bootstrap CSS
     wp_enqueue_style('bootstrap-css', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css');
-
-    // Carregar Bootstrap JS (opcional, caso precise de funcionalidades JS do Bootstrap)
     wp_enqueue_script('bootstrap-js', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js', array('jquery'), null, true);
 }
 add_action('admin_enqueue_scripts', 'carregar_bootstrap_no_admin');
 
-
-
-
+// Adicionar menu ao admin
 function plugin_adicionar_menu() {
     add_menu_page(
-        'Configurações de Adesivos',           // Título da página
-        'Seus Adesivos',                            // Nome do menu
-        'manage_options',                      // Capacidade necessária
-        'plugin-adesivos',                     // Slug
-        'plugin_pagina_de_configuracao',       // Função de callback
-        'dashicons-format-image',              // Ícone do menu
-        6                                      // Posição no menu
+        'Configurações de Adesivos',
+        'Seus Adesivos',
+        'manage_options',
+        'plugin-adesivos',
+        'plugin_pagina_de_configuracao',
+        'dashicons-format-image',
+        6
     );
 }
 add_action('admin_menu', 'plugin_adicionar_menu');
@@ -52,7 +49,7 @@ function plugin_pagina_de_configuracao() {
             <?php wp_nonce_field('upload_sticker_nonce', 'sticker_nonce'); ?>
             <div class="form-group">
                 <label for="sticker">Selecione um adesivo para upload:</label>
-                <input type="file" name="sticker" id="sticker" accept="image/*" class="form-control-file" />
+                <input type="file" name="sticker" id="sticker" accept="image/svg+xml" class="form-control-file" />
             </div>
             <input type="submit" name="submit_sticker" value="Upload Adesivo" class="btn btn-primary" />
         </form>
@@ -70,7 +67,7 @@ function plugin_pagina_de_configuracao() {
 
             if (!empty($arquivos_svg)) {
                 echo '<table class="table table-striped">';
-                echo '<thead><tr><th>Visualização</th><th>Nome do Adesivo</th><th>Ações</th></tr></thead>';
+                echo '<thead><tr><th>Visualização</th><th>Nome do Adesivo</th></tr></thead>';
                 echo '<tbody>';
                 foreach ($arquivos_svg as $arquivo) {
                     $url_svg = $url_diretorio . basename($arquivo);
@@ -78,9 +75,6 @@ function plugin_pagina_de_configuracao() {
                     echo '<tr>';
                     echo '<td style="width: 100px;"><img src="' . esc_url($url_svg) . '" alt="' . esc_attr($nome_arquivo) . '" style="width: 80px; height: auto;"></td>';
                     echo '<td>' . esc_html($nome_arquivo) . '</td>';
-                    echo '<td>';
-                    echo '<button class="apagar-adesivo btn btn-danger btn-sm" data-arquivo="' . esc_attr($nome_arquivo) . '">Apagar</button>';
-                    echo '</td>';
                     echo '</tr>';
                 }
                 echo '</tbody>';
@@ -96,76 +90,49 @@ function plugin_pagina_de_configuracao() {
     <?php
 }
 
-
-
 function plugin_processar_upload() {
-    // Verifica o nonce de segurança
     if (!isset($_POST['sticker_nonce']) || !wp_verify_nonce($_POST['sticker_nonce'], 'upload_sticker_nonce')) {
         echo 'Nonce inválido!';
         return;
     }
 
-    // Verifica se o arquivo foi enviado
     if (isset($_FILES['sticker']) && !empty($_FILES['sticker']['name'])) {
         $file = $_FILES['sticker'];
         
-        // Verifica os erros de upload
         if ($file['error'] !== UPLOAD_ERR_OK) {
             echo 'Erro ao fazer upload do arquivo. Código de erro: ' . $file['error'];
             return;
         }
 
-        // Verifica o tipo de arquivo (incluindo SVG)
         $file_type = wp_check_filetype($file['name']);
-        // Agora aceitamos JPG, PNG, GIF, e SVG
-        $allowed_types = array('jpg', 'jpeg', 'png', 'gif', 'svg');
+        $allowed_types = array('svg'); // Apenas permite SVG
 
         if (in_array($file_type['ext'], $allowed_types)) {
-            // Faz o upload usando a função do WordPress
             $upload = wp_upload_bits($file['name'], null, file_get_contents($file['tmp_name']));
             
             if ($upload['error']) {
                 echo 'Erro ao enviar o arquivo: ' . $upload['error'];
             } else {
-                // Mover o arquivo para a pasta de adesivos do plugin
                 $plugin_sticker_dir = plugin_dir_path(__FILE__) . 'assets/stickers/';
                 if (!file_exists($plugin_sticker_dir)) {
                     mkdir($plugin_sticker_dir, 0755, true);
                 }
 
-                // Move o arquivo para a pasta do plugin
                 $new_file_path = $plugin_sticker_dir . basename($upload['file']);
                 rename($upload['file'], $new_file_path);
 
                 echo 'Adesivo carregado com sucesso!';
             }
         } else {
-            echo 'Por favor, envie um arquivo de imagem válido (JPG, PNG, GIF, SVG).';
+            echo 'Por favor, envie um arquivo SVG válido.';
         }
     } else {
         echo 'Nenhum arquivo foi enviado.';
     }
 }
 
-
-
-function meu_plugin_enqueue_scripts() {
-    // Carregar o Fabric.js da CDN
-    wp_enqueue_script(
-        'fabric-js', // Handle do script
-        'https://cdn.jsdelivr.net/npm/fabric@4.6.0/dist/fabric.min.js', // Novo URL do CDN
-        array(), // Dependências
-        null, // Versão
-        true // Colocar o script no final do body (melhor performance)
-    );
-}
-
-// Hook para adicionar o script na página
-add_action('wp_enqueue_scripts', 'meu_plugin_enqueue_scripts');
-
 // Enfileirar CSS e JS
-function person_plugin_enqueue_scripts()
-{
+function person_plugin_enqueue_scripts() {
     // CSS Principal do Plugin
     wp_enqueue_style('person-plugin-css', plugin_dir_url(__FILE__) . 'assets/css/customizador.css');
 
@@ -175,24 +142,77 @@ function person_plugin_enqueue_scripts()
     // Bootstrap CSS
     wp_enqueue_style('bootstrap-css', 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css', false, null);
 
-    // Fabric.js
-    wp_enqueue_script('fabric-js', plugin_dir_url(__FILE__) . 'assets/vendor/fabric.min.js', array(), null, true);
+    // Registrar e enfileirar o Konva.js
+    wp_register_script('konva-js', 'https://cdn.jsdelivr.net/npm/konva@8.4.2/konva.min.js', array(), null, false);
+    wp_enqueue_script('konva-js');
 
-    // JavaScript do Plugin com Dependência do jQuery e Fabric.js
-    wp_enqueue_script('person-plugin-js', plugin_dir_url(__FILE__) . 'assets/js/customizador.js', array('jquery', 'fabric-js'), null, true);
+    // Registrar e enfileirar o script principal do plugin, garantindo que ele dependa do 'konva-js'
+    wp_register_script('person-plugin-js', plugin_dir_url(__FILE__) . 'assets/js/customizador.js', array('jquery', 'konva-js'), null, true);
+    wp_enqueue_script('person-plugin-js');
 
     // Bootstrap JS
     wp_enqueue_script('bootstrap-js', 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js', array('jquery'), null, true);
+
+    // Passa a URL do adesivo para o script
+    if (is_product()) {
+        global $product;
+
+        if (!$product) {
+            $product = wc_get_product(get_the_ID());
+        }
+
+        if ($product) {
+            // Obtém o nome do produto
+            $product_name = $product->get_name();
+
+            // Prepara o nome do arquivo do adesivo, assumindo que os adesivos são nomeados de acordo com o slug do produto
+            $sticker_filename = sanitize_title($product_name) . '.svg';
+
+            $sticker_url = plugin_dir_url(__FILE__) . 'assets/stickers/' . $sticker_filename;
+
+            // Verifica se o arquivo do adesivo existe
+            $sticker_path = plugin_dir_path(__FILE__) . 'assets/stickers/' . $sticker_filename;
+
+            if (file_exists($sticker_path)) {
+                wp_localize_script('person-plugin-js', 'pluginData', array(
+                    'stickerUrl' => $sticker_url,
+                ));
+            }
+        }
+    }
 }
 add_action('wp_enqueue_scripts', 'person_plugin_enqueue_scripts');
 
 // Shortcode para exibir o customizador
-function person_plugin_display_customizer()
-{
+function person_plugin_display_customizer() {
+    if (!is_product()) {
+        return ''; // Retorna vazio se não for uma página de produto
+    }
+
+    global $product;
+
+    if (!$product) {
+        $product = wc_get_product(get_the_ID());
+    }
+
+    if (!$product) {
+        return ''; // Retorna vazio se o produto não for encontrado
+    }
+
+    // Verifica se o arquivo do adesivo existe
+    $product_name = $product->get_name();
+    $sticker_filename = sanitize_title($product_name) . '.svg';
+    $sticker_path = plugin_dir_path(__FILE__) . 'assets/stickers/' . $sticker_filename;
+
+    if (!file_exists($sticker_path)) {
+        return '<p>Adesivo não encontrado para este produto.</p>';
+    }
+
+    // Enfileira os scripts necessários (isso já é feito no person_plugin_enqueue_scripts)
+
+    // Renderiza o template
     ob_start();
     include plugin_dir_path(__FILE__) . 'templates/editor-template.php';
     return ob_get_clean();
 }
 add_shortcode('customizador_adesivo', 'person_plugin_display_customizer');
-
-
