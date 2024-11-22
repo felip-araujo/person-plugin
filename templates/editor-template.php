@@ -21,7 +21,7 @@
             <label for="tamanho-fonte" class="form-label">Tamanho da Fonte:</label>
             <input type="range" id="tamanho-fonte" class="form-range" min="10" max="100" value="16">
         </div>
-        <div class="col-md-6 mb-3">
+        <div class="col-md-3 mb-3">
             <label for="fontPicker" class="form-label">Fonte:</label>
             <select id="fontPicker" class="form-control">
                 <option value="Arial">Arial</option>
@@ -32,16 +32,24 @@
                 <!-- Adicione mais fontes se necessário -->
             </select>
         </div>
-        <div class="col-md-6 mb-3">
+        <div class="col-md-3 mb-3">
             <label for="texto" class="form-label">Texto do Adesivo:</label>
             <input type="text" id="texto" class="form-control" placeholder="Digite o texto do adesivo">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="rotacao-texto" class="form-label">Rotação do Texto:</label>
+            <input type="range" id="rotacao-texto" class="form-range" min="0" max="360" value="0">
+        </div>
+        <div class="col-md-3 mb-3 d-flex align-items-end">
+            <button id="adicionar-texto-botao" class="btn btn-primary w-100">Adicionar Texto ao Adesivo</button>
+        </div>
+        <div class="col-md-12 mb-3">
+            <button id="salvar-adesivo-botao" class="btn btn-success w-100">Salvar Adesivo</button>
         </div>
     </div>
 
     <div class="text-center mt-4">
         <h4>Pré-visualização:</h4>
-        <div id="adesivo-canvas" style="border: 1px solid #ccc; width: 1150px; height: 400px;"></div>
+        <div id="adesivo-canvas" style="border: 1px solid #ccc; width: 1150px; height: 620px; margin: 0 auto;"></div>
     </div>
-    
-
 </div>

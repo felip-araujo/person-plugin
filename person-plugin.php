@@ -9,24 +9,21 @@ Author: Evolution Design
 */
 
 // Permitir upload de SVG
-function permitir_svg_upload($mimes)
-{
+function permitir_svg_upload($mimes) {
     $mimes['svg'] = 'image/svg+xml';
     return $mimes;
 }
 add_filter('upload_mimes', 'permitir_svg_upload');
 
 // Carregar Bootstrap no admin
-function carregar_bootstrap_no_admin()
-{
+function carregar_bootstrap_no_admin() {
     wp_enqueue_style('bootstrap-css', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css');
     wp_enqueue_script('bootstrap-js', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js', array('jquery'), null, true);
 }
 add_action('admin_enqueue_scripts', 'carregar_bootstrap_no_admin');
 
 // Adicionar menu ao admin
-function plugin_adicionar_menu()
-{
+function plugin_adicionar_menu() {
     add_menu_page(
         'Configurações de Adesivos',
         'Seus Adesivos',
@@ -39,8 +36,7 @@ function plugin_adicionar_menu()
 }
 add_action('admin_menu', 'plugin_adicionar_menu');
 
-function plugin_pagina_de_configuracao()
-{
+function plugin_pagina_de_configuracao() {
     $plugin_sticker_dir = plugin_dir_path(__FILE__) . 'assets/stickers/';
     $url_diretorio = plugin_dir_url(__FILE__) . 'assets/stickers/';
 ?>
@@ -64,8 +60,7 @@ function plugin_pagina_de_configuracao()
             plugin_processar_upload();
         }
 
-        function plugin_processar_upload()
-        {
+        function plugin_processar_upload() {
             if (!isset($_POST['sticker_nonce']) || !wp_verify_nonce($_POST['sticker_nonce'], 'upload_sticker_nonce')) {
                 echo 'Nonce inválido!';
                 return;
@@ -106,16 +101,14 @@ function plugin_pagina_de_configuracao()
             }
         }
         // Listagem de adesivos
-        include 'templates/admin-form.php'
+        include 'templates/admin-form.php';
         ?>
     </div>
 <?php
 }
 
-
 // Enfileirar CSS e JS
-function person_plugin_enqueue_scripts()
-{
+function person_plugin_enqueue_scripts() {
     // CSS Principal do Plugin
     wp_enqueue_style('person-plugin-css', plugin_dir_url(__FILE__) . 'assets/css/customizador.css');
 
@@ -126,17 +119,17 @@ function person_plugin_enqueue_scripts()
     wp_enqueue_style('bootstrap-css', 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css', false, null);
 
     // Registrar e enfileirar o Konva.js
-    wp_register_script('konva-js', 'https://cdn.jsdelivr.net/npm/konva@8.4.2/konva.min.js', array(), null, false);
+    wp_register_script('konva-js', 'https://cdn.jsdelivr.net/npm/konva@8.4.2/konva.min.js', array(), null, true); // Carrega no footer
     wp_enqueue_script('konva-js');
 
     // Registrar e enfileirar o script principal do plugin, garantindo que ele dependa do 'konva-js'
-    wp_register_script('person-plugin-js', plugin_dir_url(__FILE__) . 'assets/js/customizador.js', array('jquery', 'konva-js'), null, true);
+    wp_register_script('person-plugin-js', plugin_dir_url(__FILE__) . 'assets/js/customizador.js', array('konva-js'), null, true);
     wp_enqueue_script('person-plugin-js');
 
     // Bootstrap JS
     wp_enqueue_script('bootstrap-js', 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js', array('jquery'), null, true);
 
-    // Passa a URL do adesivo para o script
+    // Passa a URL do adesivo e o ajaxUrl para o script
     if (is_product()) {
         global $product;
 
@@ -159,6 +152,7 @@ function person_plugin_enqueue_scripts()
             if (file_exists($sticker_path)) {
                 wp_localize_script('person-plugin-js', 'pluginData', array(
                     'stickerUrl' => $sticker_url,
+                    'ajaxUrl' => admin_url('admin-ajax.php')
                 ));
             }
         }
@@ -167,8 +161,7 @@ function person_plugin_enqueue_scripts()
 add_action('wp_enqueue_scripts', 'person_plugin_enqueue_scripts');
 
 // Shortcode para exibir o customizador
-function person_plugin_display_customizer()
-{
+function person_plugin_display_customizer() {
     if (!is_product()) {
         return ''; // Retorna vazio se não for uma página de produto
     }
@@ -192,11 +185,51 @@ function person_plugin_display_customizer()
         return '<p>Adesivo não encontrado para este produto.</p>';
     }
 
-    // Enfileira os scripts necessários (isso já é feito no person_plugin_enqueue_scripts)
-
     // Renderiza o template
     ob_start();
     include plugin_dir_path(__FILE__) . 'templates/editor-template.php';
     return ob_get_clean();
 }
 add_shortcode('customizador_adesivo', 'person_plugin_display_customizer');
+
+
+// Função para salvar o adesivo
+add_action('wp_ajax_salvar_adesivo', 'salvar_adesivo');
+add_action('wp_ajax_nopriv_salvar_adesivo', 'salvar_adesivo');
+
+function salvar_adesivo() {
+    if (!isset($_POST['svg'])) {
+        wp_send_json_error('Dados SVG estão faltando');
+        wp_die();
+    }
+
+    $svg_data = wp_unslash($_POST['svg']);
+
+    // Sanitiza os dados SVG se necessário
+    $svg_data = preg_replace('/<script.*?<\/script>/s', '', $svg_data);
+
+    // Gera um nome de arquivo único
+    $filename = 'adesivo_' . time() . '.svg';
+
+    // Define o caminho do diretório
+    $sticker_dir = plugin_dir_path(__FILE__) . 'wp-content/plugins/person-plugin/assets/stickers-prontos';
+
+    // Cria o diretório se não existir
+    if (!file_exists($sticker_dir)) {
+        wp_mkdir_p($sticker_dir);
+    }
+
+    // Caminho completo para o arquivo
+    $file_path = $sticker_dir . $filename;
+
+    // Salva os dados SVG no arquivo
+    $result = file_put_contents($file_path, $svg_data);
+
+    if ($result === false) {
+        wp_send_json_error('Falha ao salvar o arquivo SVG');
+    } else {
+        wp_send_json_success('Arquivo SVG salvo com sucesso');
+    }
+
+    wp_die();
+}

@@ -1,218 +1,318 @@
 // /var/www/html/wp-content/plugins/person-plugin/assets/js/customizador.js
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
+    var stage = new Konva.Stage({
+        container: 'adesivo-canvas',
+        width: 1150,
+        height: 620,
+        draggable: true, // Permite arrastar o stage para visualizar áreas fora da tela durante o zoom
+    });
+
+    var layer = new Konva.Layer();
+    stage.add(layer);
+
+    var stickerGroup = null;
+    var tempTextObject = null;
+
+    var scaleBy = 1.05; // Fator de zoom
+
     if (typeof pluginData !== 'undefined' && pluginData.stickerUrl) {
-        loadSticker();
+        carregarAdesivo();
     } else {
         console.error('pluginData ou stickerUrl não está definido.');
     }
-});
 
-// Inicialização do stage e layer com o Konva.js
-var stage = new Konva.Stage({
-    container: 'adesivo-canvas',
-    width: 1150,
-    height: 400
-});
+    function carregarAdesivo() {
+        var stickerUrl = pluginData.stickerUrl;
 
-var layer = new Konva.Layer();
-stage.add(layer);
+        fetch(stickerUrl)
+            .then((response) => response.text())
+            .then((svgText) => {
+                var parser = new DOMParser();
+                var svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
 
-var stickerLayers = []; // Armazena as camadas individuais do SVG
-var textObject; // Variável para armazenar o objeto de texto
-var stickerGroup; // Variável para o grupo do adesivo
+                layer.destroyChildren();
 
-// Função para carregar o adesivo SVG e identificar as camadas
-function loadSticker() {
-    var stickerUrl = pluginData.stickerUrl;
+                stickerGroup = new Konva.Group({
+                    draggable: false, // O grupo em si não é arrastável; o stage é
+                });
 
-    // Verifica se o URL do adesivo está definido
-    if (!stickerUrl) {
-        console.error('URL do adesivo não está definido.');
-        return;
+                Array.from(svgDoc.querySelectorAll('path, rect, circle, ellipse, polygon, polyline, line')).forEach(
+                    (elem) => {
+                        var pathData = elem.getAttribute('d') || '';
+                        var fillColor = elem.getAttribute('fill') || '#000';
+
+                        if (!pathData) {
+                            // Converte outros elementos para Path
+                            pathData = obterPathDataDeForma(elem);
+                        }
+
+                        if (pathData) {
+                            var path = new Konva.Path({
+                                data: pathData,
+                                fill: fillColor,
+                                draggable: false,
+                            });
+
+                            stickerGroup.add(path);
+                        }
+                    }
+                );
+
+                layer.add(stickerGroup);
+                ajustarTamanhoDoAdesivo();
+
+                layer.draw();
+
+                preencherSeletorDeCamadas();
+            })
+            .catch((error) => console.error('Erro ao carregar o adesivo:', error));
     }
 
-    // Log para depuração
-    console.log('Carregando adesivo do URL:', stickerUrl);
+    function obterPathDataDeForma(shapeNode) {
+        var tagName = shapeNode.tagName.toLowerCase();
+        var pathData = '';
+        switch (tagName) {
+            case 'rect':
+                var x = parseFloat(shapeNode.getAttribute('x')) || 0;
+                var y = parseFloat(shapeNode.getAttribute('y')) || 0;
+                var width = parseFloat(shapeNode.getAttribute('width'));
+                var height = parseFloat(shapeNode.getAttribute('height'));
+                pathData = `M${x},${y} h${width} v${height} h${-width} Z`;
+                break;
+            case 'circle':
+                var cx = parseFloat(shapeNode.getAttribute('cx'));
+                var cy = parseFloat(shapeNode.getAttribute('cy'));
+                var r = parseFloat(shapeNode.getAttribute('r'));
+                pathData = `M${cx - r},${cy} a${r},${r} 0 1,0 ${2 * r},0 a${r},${r} 0 1,0 ${-2 * r},0`;
+                break;
+            // Adicione casos para outras formas se necessário
+            default:
+                console.warn('Elemento SVG não suportado:', tagName);
+                break;
+        }
+        return pathData;
+    }
 
-    // Carrega o adesivo SVG usando fetch
-    fetch(stickerUrl)
-        .then(function(response) {
-            console.log('Resposta do fetch:', response);
-            return response.text();
-        })
-        .then(function(svgText) {
-            console.log('SVG carregado:', svgText);
-            var parser = new DOMParser();
-            var svgDoc = parser.parseFromString(svgText, "image/svg+xml");
+    function ajustarTamanhoDoAdesivo() {
+        if (!stickerGroup) return;
 
-            // Limpa o layer e o array de camadas
-            layer.destroyChildren();
-            stickerLayers = [];
+        // Obtém o tamanho do adesivo
+        var stickerRect = stickerGroup.getClientRect({ relativeTo: stickerGroup });
 
-            // Cria um grupo para o adesivo
-            stickerGroup = new Konva.Group({
-                draggable: true // Torna o grupo do adesivo arrastável
-            });
+        // Calcula a escala necessária para caber no canvas com margem
+        var margin = 10; // margem de 10 pixels
+        var availableWidth = stage.width() - margin * 2;
+        var availableHeight = stage.height() - margin * 2;
 
-            // Seleciona todos os elementos SVG relevantes
-            var svgElements = svgDoc.querySelectorAll('path, rect, circle, ellipse, polygon, polyline, line');
+        var scaleX = availableWidth / stickerRect.width;
+        var scaleY = availableHeight / stickerRect.height;
+        var scale = Math.min(scaleX, scaleY);
 
-            for (var i = 0; i < svgElements.length; i++) {
-                var elem = svgElements[i];
-                var pathData = elem.getAttribute('d');
-                var fillColor = elem.getAttribute('fill') || elem.style.fill || '#000';
-                var id = elem.getAttribute('id') || 'Camada ' + (i + 1);
+        // Aplica a escala ao grupo do adesivo
+        stickerGroup.scale({ x: scale, y: scale });
 
-                // Verifica se pathData está definido (alguns elementos como <rect> podem não ter 'd')
-                if (!pathData) {
-                    // Converte outros elementos para Path
-                    pathData = getPathDataFromShape(elem);
-                }
+        // Recalcula o tamanho após a escala
+        var newStickerRect = stickerGroup.getClientRect({ relativeTo: stickerGroup });
 
-                if (pathData) {
-                    var path = new Konva.Path({
-                        data: pathData,
-                        fill: fillColor,
-                        id: id,
-                        draggable: false // Individualmente, as camadas não são arrastáveis
-                    });
-
-                    stickerLayers.push(path);
-                    stickerGroup.add(path); // Adiciona o path ao grupo do adesivo
-                }
-            }
-
-            layer.add(stickerGroup); // Adiciona o grupo ao layer
-            layer.draw();
-
-            // Popula a lista de seleção de camadas para o usuário
-            populateLayerSelector();
-        })
-        .catch(function(error) {
-            console.error('Erro ao carregar o SVG:', error);
+        // Centraliza o adesivo no canvas
+        stickerGroup.position({
+            x: (stage.width() - newStickerRect.width) / 2 - newStickerRect.x,
+            y: (stage.height() - newStickerRect.height) / 2 - newStickerRect.y,
         });
-}
 
-// Função para converter formas básicas em pathData
-function getPathDataFromShape(shapeNode) {
-    var tagName = shapeNode.tagName.toLowerCase();
-    var pathData = '';
-    switch (tagName) {
-        case 'rect':
-            var x = parseFloat(shapeNode.getAttribute('x')) || 0;
-            var y = parseFloat(shapeNode.getAttribute('y')) || 0;
-            var width = parseFloat(shapeNode.getAttribute('width'));
-            var height = parseFloat(shapeNode.getAttribute('height'));
-            pathData = `M${x},${y} h${width} v${height} h${-width} Z`;
-            break;
-        case 'circle':
-            var cx = parseFloat(shapeNode.getAttribute('cx'));
-            var cy = parseFloat(shapeNode.getAttribute('cy'));
-            var r = parseFloat(shapeNode.getAttribute('r'));
-            pathData = `M${cx - r},${cy} a${r},${r} 0 1,0 ${2 * r},0 a${r},${r} 0 1,0 ${-2 * r},0`;
-            break;
-        // Adicione casos para outras formas se necessário
-        default:
-            console.warn('Elemento SVG não suportado:', tagName);
-            break;
+        layer.draw();
     }
-    return pathData;
-}
 
-// Função para preencher a lista de seleção com as camadas do adesivo
-function populateLayerSelector() {
-    var layerSelect = document.getElementById('layer-select');
-    layerSelect.innerHTML = ''; // Limpa o seletor
+    function preencherSeletorDeCamadas() {
+        var layerSelect = document.getElementById('layer-select');
+        layerSelect.innerHTML = '';
 
-    stickerLayers.forEach((layerItem, index) => {
-        var option = document.createElement('option');
-        option.value = index;
-        // Usa IDs ou nomes das camadas se disponíveis
-        var layerName = layerItem.id() || `Camada ${index + 1}`;
-        option.text = layerName;
-        layerSelect.appendChild(option);
+        stickerGroup.getChildren().forEach((child, index) => {
+            var option = document.createElement('option');
+            option.value = index;
+            var layerName = child.id() || `Camada ${index + 1}`;
+            option.text = layerName;
+            layerSelect.appendChild(option);
+        });
+    }
+
+    document.getElementById('cor').addEventListener('input', function (event) {
+        var color = event.target.value;
+        atualizarCorDaCamadaSelecionada(color);
     });
-}
 
-// Atualizar a cor da camada selecionada
-document.getElementById('cor').addEventListener('input', function(event) {
-    var color = event.target.value;
-    updateSelectedLayerColor(color);
-});
+    document.getElementById('layer-select').addEventListener('change', function (event) {
+        var layerIndex = event.target.value;
+        var selectedLayer = stickerGroup.getChildren()[layerIndex];
 
-// Função para atualizar a cor da camada selecionada
-function updateSelectedLayerColor(color) {
-    var layerIndex = document.getElementById('layer-select').value;
-    var selectedLayer = stickerLayers[layerIndex];
+        if (selectedLayer) {
+            var currentColor = selectedLayer.fill();
+            document.getElementById('cor').value = currentColor;
+        }
+    });
 
-    if (selectedLayer) {
-        selectedLayer.fill(color); // Define a cor da camada selecionada
-        layer.draw(); // Atualiza o layer após alterar a cor
+    function atualizarCorDaCamadaSelecionada(color) {
+        var layerIndex = document.getElementById('layer-select').value;
+        var selectedLayer = stickerGroup.getChildren()[layerIndex];
+
+        if (selectedLayer) {
+            selectedLayer.fill(color);
+            layer.draw();
+        }
     }
-}
 
-// Adicionar texto ao canvas
-document.getElementById('texto').addEventListener('input', function(event) {
-    var textContent = event.target.value;
-    updateCanvasText(textContent);
-});
+    // Eventos para manipulação do texto
+    document.getElementById('texto').addEventListener('input', atualizarTextoNoCanvas);
+    document.getElementById('tamanho-fonte').addEventListener('input', atualizarTextoNoCanvas);
+    document.getElementById('fontPicker').addEventListener('change', atualizarTextoNoCanvas);
+    document.getElementById('cor-texto').addEventListener('input', atualizarTextoNoCanvas);
+    document.getElementById('rotacao-texto').addEventListener('input', atualizarTextoNoCanvas);
 
-// Atualizar tamanho da fonte
-document.getElementById('tamanho-fonte').addEventListener('input', function(event) {
-    var fontSize = event.target.value;
-    updateTextFontSize(fontSize);
-});
+    function atualizarTextoNoCanvas() {
+        var textContent = document.getElementById('texto').value;
 
-// Atualizar família da fonte
-document.getElementById('fontPicker').addEventListener('change', function(event) {
-    var fontFamily = event.target.value;
-    updateTextFontFamily(fontFamily);
-});
-
-// Atualizar cor do texto
-document.getElementById('cor-texto').addEventListener('input', function(event) {
-    var fontColor = event.target.value;
-    updateTextFontColor(fontColor);
-});
-
-function updateCanvasText(textContent) {
-    if (textObject) {
-        textObject.text(textContent);
-    } else {
-        if (textContent.trim() !== '') {
-            textObject = new Konva.Text({
-                x: 100,
-                y: 100,
+        if (!tempTextObject) {
+            if (textContent.trim() === '') {
+                return;
+            }
+            tempTextObject = new Konva.Text({
+                x: stage.width() / 2,
+                y: stage.height() / 2,
                 text: textContent,
                 fontSize: parseInt(document.getElementById('tamanho-fonte').value),
                 fontFamily: document.getElementById('fontPicker').value,
                 fill: document.getElementById('cor-texto').value,
-                draggable: true
+                draggable: true,
+                rotation: parseFloat(document.getElementById('rotacao-texto').value)
             });
-            layer.add(textObject);
+            layer.add(tempTextObject);
+        } else {
+            tempTextObject.text(textContent);
+            tempTextObject.fontSize(parseInt(document.getElementById('tamanho-fonte').value));
+            tempTextObject.fontFamily(document.getElementById('fontPicker').value);
+            tempTextObject.fill(document.getElementById('cor-texto').value);
+            tempTextObject.rotation(parseFloat(document.getElementById('rotacao-texto').value));
+        }
+        layer.draw();
+    }
+
+    document.getElementById('adicionar-texto-botao').addEventListener('click', function () {
+        adicionarTextoAoAdesivo();
+    });
+
+    function adicionarTextoAoAdesivo() {
+        if (tempTextObject) {
+            // Obter a posição absoluta do texto temporário
+            var absPos = tempTextObject.getAbsolutePosition();
+    
+            // Transformar a posição absoluta para o sistema de coordenadas do stickerGroup
+            var relativePos = stickerGroup.getAbsoluteTransform().copy().invert().point(absPos);
+    
+            // Obter o scale total aplicado ao texto
+            var totalScale = tempTextObject.getAbsoluteScale();
+    
+            // Calcular a escala relativa ao stickerGroup
+            var stickerScale = stickerGroup.getAbsoluteScale();
+    
+            // Ajustar o tamanho da fonte
+            var adjustedFontSize = tempTextObject.fontSize() * (totalScale.x / stickerScale.x);
+    
+            // Calcular a rotação relativa ao stickerGroup
+            var adjustedRotation = tempTextObject.getAbsoluteRotation() - stickerGroup.getAbsoluteRotation();
+    
+            // Clonar o texto com as propriedades corretas
+            var textoFinal = new Konva.Text({
+                x: relativePos.x,
+                y: relativePos.y,
+                text: tempTextObject.text(),
+                fontSize: adjustedFontSize,
+                fontFamily: tempTextObject.fontFamily(),
+                fill: tempTextObject.fill(),
+                rotation: adjustedRotation,
+                draggable: false
+            });
+    
+            // Adicionar o texto ao grupo do adesivo
+            stickerGroup.add(textoFinal);
+    
+            // Remover o texto temporário
+            tempTextObject.destroy();
+            tempTextObject = null;
+    
+            layer.draw();
+    
+            // Limpar os campos de entrada de texto
+            document.getElementById('texto').value = '';
+            document.getElementById('tamanho-fonte').value = 16;
+            document.getElementById('fontPicker').value = 'Arial';
+            document.getElementById('cor-texto').value = '#000000';
+            document.getElementById('rotacao-texto').value = 0;
         }
     }
-    layer.draw();
-}
+    
 
-function updateTextFontSize(fontSize) {
-    if (textObject) {
-        textObject.fontSize(parseInt(fontSize));
-        layer.draw();
-    }
-}
+    document.getElementById('salvar-adesivo-botao').addEventListener('click', function () {
+        salvarAdesivo();
+    });
 
-function updateTextFontFamily(fontFamily) {
-    if (textObject) {
-        textObject.fontFamily(fontFamily);
-        layer.draw();
-    }
-}
+    function salvarAdesivo() {
+        if (!stickerGroup) {
+            alert('Nenhum adesivo para salvar.');
+            return;
+        }
 
-function updateTextFontColor(fontColor) {
-    if (textObject) {
-        textObject.fill(fontColor);
-        layer.draw();
+        // Exporta o stickerGroup como SVG
+        var svg = stickerGroup.toSVG();
+
+        // Envia os dados SVG para o servidor via AJAX
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', pluginData.ajaxUrl);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                var response = JSON.parse(xhr.responseText);
+                if (response.success) {
+                    alert('Adesivo salvo com sucesso!');
+                } else {
+                    alert('Erro ao salvar o adesivo: ' + response.data);
+                }
+            } else {
+                alert('Erro ao salvar o adesivo.');
+            }
+        };
+
+        var params = 'action=salvar_adesivo&svg=' + encodeURIComponent(svg);
+        xhr.send(params);
     }
-}
+
+    // Evento de scroll para zoom in e zoom out
+    stage.on('wheel', (e) => {
+        e.evt.preventDefault();
+
+        var oldScale = stage.scaleX();
+
+        var pointer = stage.getPointerPosition();
+
+        var mousePointTo = {
+            x: (pointer.x - stage.x()) / oldScale,
+            y: (pointer.y - stage.y()) / oldScale,
+        };
+
+        var direction = e.evt.deltaY > 0 ? 1 : -1;
+
+        var newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
+        newScale = Math.max(0.5, Math.min(newScale, 10)); // Limita o zoom entre 0.5x e 10x
+
+        stage.scale({ x: newScale, y: newScale });
+
+        var newPos = {
+            x: pointer.x - mousePointTo.x * newScale,
+            y: pointer.y - mousePointTo.y * newScale,
+        };
+
+        stage.position(newPos);
+        stage.batchDraw();
+    });
+});
