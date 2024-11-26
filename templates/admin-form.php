@@ -1,4 +1,23 @@
 <?php
+
+echo '<div class="upload-container">';
+echo '<button id="upload-button" class="button button-primary">Upload de Adesivo</button>';
+echo '<input type="hidden" id="attachment-id" name="attachment_id" value="">';
+echo '<p id="upload-preview"></p>';
+echo '</div>';
+
+
+
+function person_plugin_page() {
+    global $hook_suffix;
+    echo '<div>' . esc_html($hook_suffix) . '</div>';
+    
+    // O restante do conteúdo da sua página
+    echo '<h1>Bem-vindo ao Person Plugin</h1>';
+}
+
+
+
 echo '<h2>Adesivos Existentes</h2>';
 if (is_dir($plugin_sticker_dir)) {
     $arquivos_svg = glob($plugin_sticker_dir . '*.svg');
@@ -10,7 +29,7 @@ if (is_dir($plugin_sticker_dir)) {
         echo '<tbody>';
         foreach ($arquivos_svg as $arquivo) {
             $url_svg = $url_diretorio . basename($arquivo);
-            $nome_arquivo = basename($arquivo); 
+            $nome_arquivo = basename($arquivo);
 
             // Lista de produtos
             $produtos = get_posts(array(
@@ -21,7 +40,7 @@ if (is_dir($plugin_sticker_dir)) {
             echo '<tr>';
             echo '<td style="width: 50px;"><img src="' . esc_url($url_svg) . '" alt="' . esc_attr($nome_arquivo) . '" style="width: 80px; border-radius:.7rem; background-color:#eee; height: auto;"></td>';
             echo '<td>' . esc_html($nome_arquivo) . '</td>';
-            
+
             // Dropdown para selecionar produto
             echo '<td>';
             echo '<select name="produto_associado[' . esc_attr($nome_arquivo) . ']">';
@@ -31,7 +50,7 @@ if (is_dir($plugin_sticker_dir)) {
             }
             echo '</select>';
             echo '</td>';
-            
+
             // Botão de exclusão
             echo '<td>';
             echo '<button type="submit" name="excluir_adesivo" value="' . esc_attr($nome_arquivo) . '" class="btn btn-danger">Apagar</button>';
