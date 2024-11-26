@@ -127,6 +127,13 @@ function person_plugin_enqueue_scripts($hook_suffix)
         null,
         true
     );
+    wp_enqueue_script(
+        'person-plugin-customizer-js',
+        plugin_dir_url(__FILE__) . 'assets/js/customizador.js',
+        array('jquery'), // Dependência do jQuery
+        null,
+        true
+    );
 
     wp_enqueue_media();
 }
