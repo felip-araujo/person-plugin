@@ -140,3 +140,57 @@ function person_plugin_display_customizer()
     return ob_get_clean();
 }
 add_shortcode('customizador_adesivo', 'person_plugin_display_customizer');
+
+
+// Função para carregar adesivo com base no produto atual
+function person_plugin_load_sticker() {
+    if (!function_exists('is_product') || !is_product()) {
+        return '<p>Este não é um produto.</p>';
+    }
+
+    // Tenta carregar o produto global
+    global $product;
+
+    // Se o objeto $product não estiver disponível, tenta carregar pelo ID
+    if (!$product || !is_a($product, 'WC_Product')) {
+        $product_id = get_the_ID();
+        $product = wc_get_product($product_id);
+    }
+
+    // Se ainda não encontrar o produto, retorna erro
+    if (!$product || !is_a($product, 'WC_Product')) {
+        return '<p>Produto não encontrado.</p>';
+    }
+
+    // Obtém o nome do produto e cria o nome do adesivo correspondente
+    $product_name = $product->get_name();
+    $sticker_filename = sanitize_title($product_name) . '.svg';
+
+    // Consulta na biblioteca de mídia
+    $args = array(
+        'post_type'      => 'attachment',
+        'post_mime_type' => 'image/svg+xml',
+        'post_status'    => 'inherit',
+        'meta_query'     => array(
+            array(
+                'key'     => '_wp_attachment_metadata',
+                'value'   => $sticker_filename,
+                'compare' => 'LIKE'
+            )
+        ),
+    );
+
+    $attachments = get_posts($args);
+
+    // Retorna o adesivo encontrado ou mensagem de erro
+    if (!empty($attachments)) {
+        $sticker_url = wp_get_attachment_url($attachments[0]->ID);
+
+        return '<div class="custom-sticker">' .
+            '<img src="' . esc_url($sticker_url) . '" alt="Adesivo do Produto" />' .
+            '</div>';
+    } else {
+        return '<p>Adesivo não encontrado para este produto.</p>';
+    }
+}
+add_shortcode('customizador_adesivo', 'person_plugin_load_sticker');
