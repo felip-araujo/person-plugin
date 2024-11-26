@@ -7,14 +7,16 @@ Author: Evolution Design
 */
 
 // Permitir upload de SVG
-function permitir_svg_upload($mimes) {
+function permitir_svg_upload($mimes)
+{
     $mimes['svg'] = 'image/svg+xml';
     return $mimes;
 }
 add_filter('upload_mimes', 'permitir_svg_upload');
 
 // Carregar estilos e scripts no admin
-function carregar_bootstrap_no_admin($hook_suffix) {
+function carregar_bootstrap_no_admin($hook_suffix)
+{
     if ($hook_suffix === 'toplevel_page_plugin-adesivos') {
         wp_enqueue_style('bootstrap-css', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css');
         wp_enqueue_script('bootstrap-js', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js', array('jquery'), null, true);
@@ -23,7 +25,8 @@ function carregar_bootstrap_no_admin($hook_suffix) {
 add_action('admin_enqueue_scripts', 'carregar_bootstrap_no_admin');
 
 // Adicionar menu ao admin
-function plugin_adicionar_menu() {
+function plugin_adicionar_menu()
+{
     add_menu_page(
         'Configurações de Adesivos',
         'Seus Adesivos',
@@ -37,7 +40,8 @@ function plugin_adicionar_menu() {
 add_action('admin_menu', 'plugin_adicionar_menu');
 
 // Renderizar a página do plugin no admin
-function plugin_pagina_de_configuracao() {
+function plugin_pagina_de_configuracao()
+{
     $plugin_sticker_dir = plugin_dir_path(__FILE__) . 'assets/stickers/';
     echo '<div class="container">';
     echo '<h1>Configurações de Adesivos</h1>';
@@ -52,7 +56,8 @@ function plugin_pagina_de_configuracao() {
 }
 
 // Processar upload de adesivos
-function plugin_processar_upload($plugin_sticker_dir) {
+function plugin_processar_upload($plugin_sticker_dir)
+{
     if (!isset($_POST['sticker_nonce']) || !wp_verify_nonce($_POST['sticker_nonce'], 'upload_sticker_nonce')) {
         echo '<p class="alert alert-danger">Nonce inválido!</p>';
         return;
@@ -97,7 +102,8 @@ function plugin_processar_upload($plugin_sticker_dir) {
 }
 
 // Enfileirar scripts e estilos no frontend
-function person_plugin_enqueue_frontend_scripts() {
+function person_plugin_enqueue_frontend_scripts()
+{
     if (!is_product()) {
         return; // Garante que os scripts sejam carregados apenas em páginas de produtos
     }
@@ -150,39 +156,57 @@ add_action('wp_enqueue_scripts', 'person_plugin_enqueue_frontend_scripts');
 // Shortcode para exibir o customizador
 function person_plugin_display_customizer() {
     if (!is_product()) {
-        return '';
+        return ''; // Retorna vazio se não for uma página de produto
     }
 
     global $product;
 
+    // Garante que o objeto $product está carregado
     if (!$product) {
         $product = wc_get_product(get_the_ID());
     }
 
     if (!$product) {
-        return '<p>Produto não encontrado.</p>';
+        return '<p>Produto não encontrado.</p>'; // Retorna mensagem se o produto não for encontrado
     }
 
+    // Obtém o nome do produto e cria o nome do adesivo correspondente
     $product_name = $product->get_name();
-    $sticker_filename = sanitize_title($product_name) . '.svg';
+    $sanitized_name = sanitize_title($product_name);
 
+    // Consulta na biblioteca de mídia
     $args = array(
         'post_type'      => 'attachment',
         'post_mime_type' => 'image/svg+xml',
         'post_status'    => 'inherit',
-        'title'          => $sticker_filename,
+        'meta_query'     => array(
+            array(
+                'key'     => '_wp_attached_file',
+                'value'   => $sanitized_name . '.svg',
+                'compare' => 'LIKE',
+            ),
+        ),
     );
 
     $attachments = get_posts($args);
 
-    if (empty($attachments)) {
+    if (!empty($attachments)) {
+        $sticker_url = wp_get_attachment_url($attachments[0]->ID);
+        error_log('Adesivo encontrado: ' . $sticker_url);
+        // Passa a URL para o template
+        ob_start();
+        include plugin_dir_path(__FILE__) . 'templates/editor-template.php';
+        return ob_get_clean();
+    } else {
+        error_log('Nenhum adesivo encontrado para o produto: ' . $sanitized_name);
         return '<p>Adesivo não encontrado para este produto.</p>';
     }
-
-    $sticker_url = wp_get_attachment_url($attachments[0]->ID);
-
-    ob_start();
-    include plugin_dir_path(__FILE__) . 'templates/editor-template.php';
-    return ob_get_clean();
 }
 add_shortcode('customizador_adesivo', 'person_plugin_display_customizer');
+
+
+if (empty($attachments)) {
+    error_log('Nenhum adesivo encontrado para o produto: ' . $product_name);
+} else {
+    error_log('Adesivo encontrado: ' . wp_get_attachment_url($attachments[0]->ID));
+}
