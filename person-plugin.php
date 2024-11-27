@@ -207,8 +207,4 @@ function person_plugin_display_customizer() {
     return ob_get_clean();
 }
 
-
 add_shortcode('customizador_adesivo', 'person_plugin_display_customizer');
-
-error_log("Teste de permissões para logs.");
-echo "Verificação concluída.";

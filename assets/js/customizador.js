@@ -1,3 +1,4 @@
+
 document.addEventListener('DOMContentLoaded', function () {
     var stage = new Konva.Stage({
         container: 'adesivo-canvas', // Certifique-se de que este ID existe no HTML
@@ -100,7 +101,14 @@ document.addEventListener('DOMContentLoaded', function () {
     function preencherSeletorDeCamadas() {
         var layerSelect = document.getElementById('layer-select');
         layerSelect.innerHTML = ''; // Limpa o seletor antes de preenchê-lo
-
+    
+        // Adiciona a opção "Todas as Camadas"
+        var allLayersOption = document.createElement('option');
+        allLayersOption.value = 'all';
+        allLayersOption.textContent = 'Todas as Camadas';
+        layerSelect.appendChild(allLayersOption);
+    
+        // Adiciona cada camada individualmente
         stickerGroup.getChildren().forEach((child, index) => {
             var option = document.createElement('option');
             option.value = child.id();
@@ -108,58 +116,28 @@ document.addEventListener('DOMContentLoaded', function () {
             layerSelect.appendChild(option);
         });
     }
-
-    // Evento para alterar a cor da camada selecionada
+    
+    // Evento para alterar a cor das camadas
     document.getElementById('cor').addEventListener('input', function (event) {
         var selectedColor = event.target.value;
         var layerSelect = document.getElementById('layer-select');
         var selectedLayerId = layerSelect.value;
-
-        var selectedLayer = stickerGroup.findOne(`#${selectedLayerId}`);
-        if (selectedLayer) {
-            selectedLayer.fill(selectedColor);
-            layer.draw(); // Redesenha o canvas
-        }
-    });
-
-    // Eventos para adicionar e personalizar o texto
-    document.getElementById('adicionar-texto-botao').addEventListener('click', function () {
-        adicionarTexto();
-    });
-
-    function adicionarTexto() {
-        var texto = document.getElementById('texto').value;
-        var tamanhoFonte = document.getElementById('tamanho-fonte').value;
-        var corTexto = document.getElementById('cor-texto').value;
-        var rotacaoTexto = document.getElementById('rotacao-texto').value;
-        var fonte = document.getElementById('fontPicker').value;
-
-        if (!texto.trim()) {
-            alert('Digite algum texto para adicionar!');
-            return;
-        }
-
-        if (!tempTextObject) {
-            tempTextObject = new Konva.Text({
-                x: stage.width() / 2,
-                y: stage.height() / 2,
-                text: texto,
-                fontSize: parseInt(tamanhoFonte, 10),
-                fill: corTexto,
-                rotation: parseFloat(rotacaoTexto),
-                fontFamily: fonte,
-                draggable: true,
+    
+        if (selectedLayerId === 'all') {
+            // Aplica a cor a todas as camadas
+            stickerGroup.getChildren().forEach((layer) => {
+                layer.fill(selectedColor);
             });
-            layer.add(tempTextObject);
         } else {
-            tempTextObject.text(texto);
-            tempTextObject.fontSize(parseInt(tamanhoFonte, 10));
-            tempTextObject.fill(corTexto);
-            tempTextObject.rotation(parseFloat(rotacaoTexto));
-            tempTextObject.fontFamily(fonte);
+            // Aplica a cor apenas à camada selecionada
+            var selectedLayer = stickerGroup.findOne(`#${selectedLayerId}`);
+            if (selectedLayer) {
+                selectedLayer.fill(selectedColor);
+            }
         }
-        layer.draw();
-    }
+    
+        layer.draw(); // Redesenha o canvas
+    });
 
     // Função para ajustar o tamanho do adesivo
     function ajustarTamanhoDoAdesivo() {
@@ -185,4 +163,85 @@ document.addEventListener('DOMContentLoaded', function () {
 
         layer.draw();
     }
+
+    // Eventos para manipulação do texto
+document.getElementById('texto').addEventListener('input', atualizarTextoNoCanvas);
+document.getElementById('tamanho-fonte').addEventListener('input', atualizarTextoNoCanvas);
+document.getElementById('fontPicker').addEventListener('change', atualizarTextoNoCanvas);
+document.getElementById('cor-texto').addEventListener('input', atualizarTextoNoCanvas);
+document.getElementById('rotacao-texto').addEventListener('input', atualizarTextoNoCanvas);
+
+// Objeto temporário para manipulação do texto
+var tempTextObject = null;
+
+function atualizarTextoNoCanvas() {
+    var textContent = document.getElementById('texto').value;
+
+    if (!tempTextObject) {
+        if (textContent.trim() === '') {
+            return; // Não faz nada se o texto estiver vazio
+        }
+
+        // Cria um novo texto temporário
+        tempTextObject = new Konva.Text({
+            x: stage.width() / 2,
+            y: stage.height() / 2,
+            text: textContent,
+            fontSize: parseInt(document.getElementById('tamanho-fonte').value),
+            fontFamily: document.getElementById('fontPicker').value,
+            fill: document.getElementById('cor-texto').value,
+            draggable: true,
+            rotation: parseFloat(document.getElementById('rotacao-texto').value),
+        });
+        layer.add(tempTextObject);
+    } else {
+        // Atualiza as propriedades do texto existente
+        tempTextObject.text(textContent);
+        tempTextObject.fontSize(parseInt(document.getElementById('tamanho-fonte').value));
+        tempTextObject.fontFamily(document.getElementById('fontPicker').value);
+        tempTextObject.fill(document.getElementById('cor-texto').value);
+        tempTextObject.rotation(parseFloat(document.getElementById('rotacao-texto').value));
+    }
+
+    layer.draw(); // Redesenha o canvas
+}
+
+// Evento para adicionar o texto ao adesivo
+document.getElementById('adicionar-texto-botao').addEventListener('click', function () {
+    adicionarTextoAoAdesivo();
+});
+
+function adicionarTextoAoAdesivo() {
+    if (tempTextObject) {
+        // Clona o texto temporário para o grupo do adesivo
+        var textoFinal = new Konva.Text({
+            x: tempTextObject.x(),
+            y: tempTextObject.y(),
+            text: tempTextObject.text(),
+            fontSize: tempTextObject.fontSize(),
+            fontFamily: tempTextObject.fontFamily(),
+            fill: tempTextObject.fill(),
+            rotation: tempTextObject.rotation(),
+            draggable: true,
+        });
+
+        stickerGroup.add(textoFinal);
+        tempTextObject.destroy(); // Remove o texto temporário
+        tempTextObject = null;
+
+        layer.draw();
+
+        // Limpa os campos de entrada de texto
+        document.getElementById('texto').value = '';
+        document.getElementById('tamanho-fonte').value = 16;
+        document.getElementById('fontPicker').value = 'Arial';
+        document.getElementById('cor-texto').value = '#000000';
+        document.getElementById('rotacao-texto').value = 0;
+    } else {
+        alert('Por favor, insira um texto antes de adicioná-lo.');
+    }
+}
+
+
+
 });
