@@ -1,17 +1,16 @@
 document.addEventListener('DOMContentLoaded', function () {
-    // Inicializa o canvas do Konva
     var stage = new Konva.Stage({
-        container: 'adesivo-canvas', // Certifique-se de que este ID existe no HTML
-        width: 1150,
-        height: 620,
-        draggable: true, // Permite arrastar o canvas
+        container: 'adesivo-canvas',
+        width: document.getElementById('adesivo-canvas').offsetWidth,
+        height: document.getElementById('adesivo-canvas').offsetHeight,
+        draggable: false, // Canvas fixo inicialmente
     });
 
     var layer = new Konva.Layer();
     stage.add(layer);
 
     var stickerGroup = null; // Grupo para os elementos do adesivo
-    var tempTextObject = null; // Texto temporário para manipulação
+    var tempTextObject = null; // Objeto temporário para manipulação de texto
     var scaleBy = 1.05; // Fator de zoom
 
     // Verifica se a URL do adesivo está disponível
@@ -39,7 +38,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     (elem, index) => {
                         var pathData = elem.getAttribute('d') || '';
                         var fillColor = elem.getAttribute('fill') || '#000';
-                        if (!pathData) pathData = obterPathDataDeForma(elem);
                         if (pathData) {
                             var path = new Konva.Path({
                                 data: pathData,
@@ -53,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 );
 
                 layer.add(stickerGroup);
-                ajustarTamanhoDoAdesivo();
+                ajustarTamanhoEPosicaoDoAdesivo();
                 preencherSeletorDeCamadas();
                 layer.draw();
             })
@@ -117,23 +115,24 @@ document.addEventListener('DOMContentLoaded', function () {
         layer.draw();
     });
 
-    // Função para ajustar o tamanho do adesivo
-    function ajustarTamanhoDoAdesivo() {
+    // Função para ajustar o tamanho e posicionar o adesivo
+    function ajustarTamanhoEPosicaoDoAdesivo() {
         if (!stickerGroup) return;
 
+        var canvasWidth = stage.width();
+        var canvasHeight = stage.height();
+
         var stickerRect = stickerGroup.getClientRect();
-        var margin = 10;
-        var availableWidth = stage.width() - margin * 2;
-        var availableHeight = stage.height() - margin * 2;
+        var scaleX = canvasWidth / stickerRect.width;
+        var scaleY = canvasHeight / stickerRect.height;
 
-        var scale = Math.min(availableWidth / stickerRect.width, availableHeight / stickerRect.height);
-
+        var scale = Math.min(scaleX, scaleY);
         stickerGroup.scale({ x: scale, y: scale });
 
         var newStickerRect = stickerGroup.getClientRect();
         stickerGroup.position({
-            x: (stage.width() - newStickerRect.width) / 2 - newStickerRect.x,
-            y: (stage.height() - newStickerRect.height) / 2 - newStickerRect.y,
+            x: (canvasWidth - newStickerRect.width) / 2 - newStickerRect.x,
+            y: (canvasHeight - newStickerRect.height) / 2 - newStickerRect.y,
         });
 
         layer.draw();
@@ -172,10 +171,10 @@ document.addEventListener('DOMContentLoaded', function () {
         layer.draw();
     }
 
-    // Adiciona zoom ao canvas
-    function applyZoom(direction) {
+    // Adiciona eventos de zoom
+    function aplicarZoom(direction) {
         var oldScale = stage.scaleX();
-        var pointer = stage.getPointerPosition() || { x: stage.width() / 2, y: stage.height() / 2 };
+        var pointer = { x: stage.width() / 2, y: stage.height() / 2 };
 
         var mousePointTo = {
             x: (pointer.x - stage.x()) / oldScale,
@@ -183,7 +182,7 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         var newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
-        newScale = Math.max(0.5, Math.min(newScale, 10));
+        newScale = Math.max(0.5, Math.min(newScale, 3));
 
         stage.scale({ x: newScale, y: newScale });
 
@@ -197,22 +196,20 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     document.getElementById('zoom-in').addEventListener('click', function () {
-        applyZoom('in');
+        aplicarZoom('in');
     });
 
     document.getElementById('zoom-out').addEventListener('click', function () {
-        applyZoom('out');
+        aplicarZoom('out');
     });
 
     document.getElementById('reset-zoom').addEventListener('click', function () {
-        stage.scale({ x: 1, y: 1 });
-        stage.position({ x: 0, y: 0 });
-        stage.batchDraw();
+        ajustarTamanhoEPosicaoDoAdesivo();
     });
 
     stage.on('wheel', function (e) {
         e.evt.preventDefault();
         var direction = e.evt.deltaY > 0 ? 'out' : 'in';
-        applyZoom(direction);
+        aplicarZoom(direction);
     });
 });

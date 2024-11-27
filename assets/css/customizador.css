@@ -1,19 +1,18 @@
-/* #customizador-adesivo {
-    text-align: center;
-    margin: 20px;
+#adesivo-canvas {
+    display: block;
+    margin: 0 auto;
+    border: 2px solid #ccc;
+    background-color: #fff;
+    width: 100%;
+    max-width: 800px; /* Tamanho máximo para telas maiores */
+    height: auto;
+    aspect-ratio: 16/9; /* Mantém a proporção */
+    overflow: hidden;
+    position: relative;
 }
 
-.controls {
-    margin-bottom: 15px;
+@media (max-width: 768px) {
+    #adesivo-canvas {
+        max-width: 100%; /* Ajusta o canvas para telas menores */
+    }
 }
-
-canvas {
-    border: 1px solid #ccc;
-    margin-top: 10px;
-}
-
-#preview {
-    font-weight: bold;
-    transition: all 0.3s ease;
-} */
-

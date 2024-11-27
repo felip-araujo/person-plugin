@@ -49,14 +49,18 @@
     </div>
 
     <div class="text-center mt-4">
-        <h4>Pré-visualização:</h4>
-        <div id="zoom-controls" class="mb-3">
-            <button id="zoom-in" class="btn btn-secondary">Zoom In</button>
-            <button id="zoom-out" class="btn btn-secondary">Zoom Out</button>
-            <button id="reset-zoom" class="btn btn-secondary">Resetar Zoom</button>
+        <h4 class="mb-3">Pré-visualização:</h4>
+        <div id="zoom-controls" class="d-flex justify-content-center gap-2 mb-4">
+            <button style="margin-right: .3rem;" id="zoom-in" class="btn btn-secondary btn-sm"> + </button>
+            <button style="margin-right: .3rem;" id="zoom-out" class="btn btn-secondary btn-sm"> - </button>
+            <button id="reset-zoom" class="btn btn-secondary btn-sm">Resetar Zoom</button>
         </div>
-        <div id="adesivo-canvas" style="border: 1px solid #ccc; width: 1150px; height: 620px; margin: 0 auto;"></div>
+        <div class="d-flex justify-content-center align-items-center">
+            <div id="adesivo-canvas" class="border bg-white" style="width: 100%; max-width: 800px; height: auto; aspect-ratio: 16/9; overflow: hidden; position: relative;"></div>
+        </div>
     </div>
+
+
     <script src="/assets/css/customizador.css"></script>
 
 </div>
