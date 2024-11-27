@@ -11,11 +11,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var stickerGroup = null;
     var tempTextObject = null;
-    var scaleBy = 1.05; // Fator de zoom
 
     // Verifica se a URL do adesivo está disponível
     if (typeof pluginData !== 'undefined' && pluginData.stickerUrl) {
-        console.log('Dados do plugin:', pluginData); // Log para verificar os dados do plugin
+        console.log('URL do adesivo:', pluginData.stickerUrl); // Log para verificar a URL
         carregarAdesivo(pluginData.stickerUrl);
     } else {
         console.error('pluginData ou stickerUrl não está definido.');
@@ -23,26 +22,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Função para carregar o adesivo
     function carregarAdesivo(stickerUrl) {
-        console.log('Tentando carregar o adesivo na URL:', stickerUrl);
-
         fetch(stickerUrl)
             .then((response) => {
                 if (!response.ok) {
-                    throw new Error(`Erro ao carregar o adesivo: HTTP ${response.status}`);
+                    throw new Error('Erro ao carregar o adesivo: ' + response.status);
                 }
-                console.log('Adesivo carregado com sucesso, processando SVG...');
                 return response.text();
             })
             .then((svgText) => {
                 var parser = new DOMParser();
                 var svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
-
-                // Verifica se houve erro no parsing do SVG
-                if (svgDoc.querySelector('parsererror')) {
-                    throw new Error('Erro ao analisar o SVG. Verifique a estrutura do arquivo.');
-                }
-
-                console.log('SVG analisado com sucesso:', svgDoc);
 
                 // Limpa os elementos anteriores
                 layer.destroyChildren();
@@ -51,10 +40,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     draggable: false, // O grupo em si não é arrastável
                 });
 
-                // Processa os elementos do SVG e os converte para Konva Paths
                 Array.from(svgDoc.querySelectorAll('path, rect, circle, ellipse, polygon, polyline, line')).forEach(
-                    (elem) => {
-                        console.log('Processando elemento SVG:', elem);
+                    (elem, index) => {
                         var pathData = elem.getAttribute('d') || '';
                         var fillColor = elem.getAttribute('fill') || '#000';
 
@@ -67,6 +54,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 data: pathData,
                                 fill: fillColor,
                                 draggable: false,
+                                id: `layer-${index}`, // Define um ID único para cada camada
                             });
                             stickerGroup.add(path);
                         }
@@ -75,9 +63,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 layer.add(stickerGroup);
                 ajustarTamanhoDoAdesivo();
+                preencherSeletorDeCamadas(); // Preenche o seletor com as camadas
                 layer.draw();
-
-                console.log('Adesivo renderizado com sucesso no canvas!');
             })
             .catch((error) => {
                 console.error('Erro ao carregar o adesivo:', error);
@@ -109,12 +96,74 @@ document.addEventListener('DOMContentLoaded', function () {
         return pathData;
     }
 
-    // Ajusta o tamanho do adesivo para caber no canvas
-    function ajustarTamanhoDoAdesivo() {
-        if (!stickerGroup) {
-            console.warn('Nenhum adesivo encontrado para ajustar o tamanho.');
+    // Preenche o seletor de camadas dinamicamente
+    function preencherSeletorDeCamadas() {
+        var layerSelect = document.getElementById('layer-select');
+        layerSelect.innerHTML = ''; // Limpa o seletor antes de preenchê-lo
+
+        stickerGroup.getChildren().forEach((child, index) => {
+            var option = document.createElement('option');
+            option.value = child.id();
+            option.textContent = `Camada ${index + 1}`;
+            layerSelect.appendChild(option);
+        });
+    }
+
+    // Evento para alterar a cor da camada selecionada
+    document.getElementById('cor').addEventListener('input', function (event) {
+        var selectedColor = event.target.value;
+        var layerSelect = document.getElementById('layer-select');
+        var selectedLayerId = layerSelect.value;
+
+        var selectedLayer = stickerGroup.findOne(`#${selectedLayerId}`);
+        if (selectedLayer) {
+            selectedLayer.fill(selectedColor);
+            layer.draw(); // Redesenha o canvas
+        }
+    });
+
+    // Eventos para adicionar e personalizar o texto
+    document.getElementById('adicionar-texto-botao').addEventListener('click', function () {
+        adicionarTexto();
+    });
+
+    function adicionarTexto() {
+        var texto = document.getElementById('texto').value;
+        var tamanhoFonte = document.getElementById('tamanho-fonte').value;
+        var corTexto = document.getElementById('cor-texto').value;
+        var rotacaoTexto = document.getElementById('rotacao-texto').value;
+        var fonte = document.getElementById('fontPicker').value;
+
+        if (!texto.trim()) {
+            alert('Digite algum texto para adicionar!');
             return;
         }
+
+        if (!tempTextObject) {
+            tempTextObject = new Konva.Text({
+                x: stage.width() / 2,
+                y: stage.height() / 2,
+                text: texto,
+                fontSize: parseInt(tamanhoFonte, 10),
+                fill: corTexto,
+                rotation: parseFloat(rotacaoTexto),
+                fontFamily: fonte,
+                draggable: true,
+            });
+            layer.add(tempTextObject);
+        } else {
+            tempTextObject.text(texto);
+            tempTextObject.fontSize(parseInt(tamanhoFonte, 10));
+            tempTextObject.fill(corTexto);
+            tempTextObject.rotation(parseFloat(rotacaoTexto));
+            tempTextObject.fontFamily(fonte);
+        }
+        layer.draw();
+    }
+
+    // Função para ajustar o tamanho do adesivo
+    function ajustarTamanhoDoAdesivo() {
+        if (!stickerGroup) return;
 
         var stickerRect = stickerGroup.getClientRect();
         var margin = 10; // Margem de 10px
@@ -135,13 +184,5 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         layer.draw();
-    }
-
-    // Confirma se o container do canvas existe
-    var canvasContainer = document.getElementById('adesivo-canvas');
-    if (!canvasContainer) {
-        console.error('O elemento #adesivo-canvas não foi encontrado no DOM.');
-    } else {
-        console.log('Elemento #adesivo-canvas encontrado:', canvasContainer);
     }
 });
