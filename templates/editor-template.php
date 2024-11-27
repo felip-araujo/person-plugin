@@ -10,7 +10,7 @@
         <div class="col-md-3 mb-3">
             <label for="layer-select" class="form-label">Escolha a Camada:</label>
             <select id="layer-select" class="form-control">
-                <!-- As opções de camada serão adicionadas dinamicamente pelo JavaScript --> 
+                <!-- As opções de camada serão adicionadas dinamicamente pelo JavaScript -->
             </select>
         </div>
         <div class="col-md-3 mb-3">
@@ -50,6 +50,13 @@
 
     <div class="text-center mt-4">
         <h4>Pré-visualização:</h4>
+        <div id="zoom-controls" class="mb-3">
+            <button id="zoom-in" class="btn btn-secondary">Zoom In</button>
+            <button id="zoom-out" class="btn btn-secondary">Zoom Out</button>
+            <button id="reset-zoom" class="btn btn-secondary">Resetar Zoom</button>
+        </div>
         <div id="adesivo-canvas" style="border: 1px solid #ccc; width: 1150px; height: 620px; margin: 0 auto;"></div>
     </div>
+    <script src="/assets/css/customizador.css"></script>
+
 </div>
