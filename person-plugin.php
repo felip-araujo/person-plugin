@@ -20,7 +20,7 @@ function carregar_bootstrap_no_admin($hook_suffix) {
         wp_enqueue_script('bootstrap-js', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js', array('jquery'), null, true);
     }
 }
-add_action('admin_enqueue_scripts', 'carregar_bootstrap_no_admin');
+add_action('admin_enqueue_scripts', 'carregar_bootstrap_no_admin'); 
 
 // Adicionar menu ao admin
 function plugin_adicionar_menu() {
@@ -38,11 +38,11 @@ add_action('admin_menu', 'plugin_adicionar_menu');
 
 // Renderizar a página do plugin no admin
 function plugin_pagina_de_configuracao() {
-    $plugin_sticker_dir = plugin_dir_path(__FILE__) . 'assets/stickers/';
+    // $plugin_sticker_dir = plugin_dir_path(__FILE__) . 'assets/stickers/';
     echo '<div class="container">';
-    echo '<h1>Configurações de Adesivos</h1>';
-    echo '<p class="alert alert-warning">Adicione a tag <strong>"[customizador_adesivo]"</strong> na página onde você deseja que o Personalizador apareça.</p>';
-
+    echo '<h1></h1>';
+    echo '<p style="font-size: 1.2rem; margin-top: 2rem;" class="alert alert-primary">Adicione a tag <strong>[customizador_adesivo]</strong> na página onde você deseja exibir o editor de adesivos</p>';
+ 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_sticker'])) {
         plugin_processar_upload($plugin_sticker_dir);
     }
@@ -208,3 +208,14 @@ function person_plugin_display_customizer() {
 }
 
 add_shortcode('customizador_adesivo', 'person_plugin_display_customizer');
+
+function carregar_font_awesome() {
+    wp_enqueue_style(
+        'font-awesome',
+        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css',
+        array(),
+        '5.15.4'
+    );
+}
+add_action('admin_enqueue_scripts', 'carregar_font_awesome'); // Para páginas do admin
+add_action('wp_enqueue_scripts', 'carregar_font_awesome'); // Para páginas do frontend
