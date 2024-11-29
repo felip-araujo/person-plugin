@@ -1,7 +1,14 @@
 <!-- /var/www/html/wp-content/plugins/person-plugin/templates/editor-template.php -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
 
 <div class="container mt-5">
-    <h2 class="text-center">Personalize seu Adesivo</h2>
+    <div class="d-flex justify-content-between align-items-center">
+        <h2 class="text-left" id="titulo">Personalize seu Adesivo</h2>
+        <button id="close-editor" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center" style="border: none; background: transparent;">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
     <div class="row">
         <div class="col-md-3 mb-3">
             <label for="cor" class="form-label">Cor da Camada:</label>
@@ -43,25 +50,21 @@
         </div>
 
         <div class="col-md-3 mb-3 d-flex align-items-end">
-            <button id="adicionar-texto-botao" class="btn btn-primary w-100">Adicionar Texto ao Adesivo</button>
-        </div>
-        <div class="col-md-12 mb-3">
-            <button id="salvar-adesivo-botao" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#infoModal">Salvar Adesivo</button>
+            <button id="adicionar-texto-botao" class="btn btn-primary w-100">Adicionar Texto</button>
         </div>
     </div>
 
     <div class="text-center mt-4">
-        <h4 class="mb-3">Pré-visualização:</h4>
-        <div id="zoom-controls" class="d-flex justify-content-center gap-2 mb-4">
-            <button style="margin-right: .3rem;" id="zoom-in" class="btn btn-secondary btn-sm"> + </button>
-            <button style="margin-right: .3rem;" id="zoom-out" class="btn btn-secondary btn-sm"> - </button>
-            <button id="reset-zoom" class="btn btn-secondary btn-sm">Resetar Zoom</button>
+        <div class="d-flex justify-content-center gap-2 mb-4">
+            <button id="salvar-adesivo-botao" class="btn btn-success">Salvar Adesivo</button>
+            <button id="zoom-in" class="btn btn-secondary">+</button>
+            <button id="zoom-out" class="btn btn-secondary">-</button>
+            <button id="reset-zoom" class="btn btn-secondary">Resetar Zoom</button>
         </div>
         <div class="d-flex justify-content-center align-items-center">
             <div id="adesivo-canvas" class="border bg-white" style="width: 100%; max-width: 800px; height: auto; aspect-ratio: 16/9; overflow: hidden; position: relative;"></div>
         </div>
     </div>
-
 
     <script src="/assets/css/customizador.css"></script>
     <!-- Modal para coletar Nome e Email -->
@@ -88,5 +91,10 @@
         </div>
     </div>
     </div>
-
 </div>
+
+<script>
+    document.getElementById('close-editor').addEventListener('click', function() {
+        document.querySelector('.container').style.display = 'none';
+    });
+</script>

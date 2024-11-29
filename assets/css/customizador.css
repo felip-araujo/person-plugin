@@ -1,20 +1,191 @@
-
-
-#adesivo-canvas {
-    display: block;
-    margin: 0 auto;
-    border: 2px solid #ccc;
-    background-color: #fff;
-    width: 100%;
-    max-width: 800px; /* Tamanho máximo para telas maiores */
-    height: auto;
-    aspect-ratio: 16/9; /* Mantém a proporção */
-    overflow: hidden;
-    position: relative;
+/* Estilo geral da página, mantém o fundo claro */
+body {
+    background-color: #f8f9fa; /* Cor clara para o restante da página */
+    font-family: 'Inter', sans-serif;
+    color: #212529;
+    margin: 0;
+    padding: 0;
 }
 
-@media (max-width: 768px) {
-    #adesivo-canvas {
-        max-width: 100%; /* Ajusta o canvas para telas menores */
-    }
+/* Container do editor com tema escuro */
+.container {
+    background-color: #1c1c1e; /* Fundo escuro para o editor */
+    color: #f0f0f0; /* Texto claro */
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Títulos no editor */
+.container h2, .container h4 {
+    color: #ffffff; /* Títulos em branco */ 
+    font-size: 1.3rem;
+    font-weight: 600;
+    text-align: left;
+}
+
+#titulo{
+    margin-bottom: 1.5rem;
+}
+
+/* Campos do formulário */
+.container .form-label {
+    color: #d1d1d6; /* Cor leve para labels */
+    margin-bottom: 0.5rem;
+}
+
+.container .form-control,
+.container .form-select {
+    background-color: #2c2c2e;
+    color: #ffffff;
+    border: 1px solid #3a3a3c;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.container .form-control:focus,
+.container .form-select:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 4px #007bff;
+}
+
+/* Botões do editor */
+.container .btn {
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    margin-right: .2rem;
+    /* text-transform: uppercase; */
+}
+
+.container .btn-primary {
+    background-color: #007bff;
+    border: none;
+    color: #ffffff;
+}
+
+.container .btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.container .btn-success {
+    background-color: #28a745;
+    border: none;
+    color: #ffffff;
+}
+
+.container .btn-success:hover {
+    background-color: #218838;
+}
+
+.container .btn-secondary {
+    background-color: #6c757d;
+    border: none;
+    color: #ffffff;
+}
+
+.container .btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+/* Pré-visualização do adesivo */
+/* Estilo do canvas para ajustar à largura do container */
+#adesivo-canvas {
+    background-color: #000000;
+    border: 2px solid #3a3a3c;
+    margin: 0 auto;
+    width: 100%; /* Ajusta para ocupar 100% do container */
+    max-width: 800px; /* Limita o tamanho máximo */
+    height: auto; /* Ajusta a altura proporcionalmente */
+    aspect-ratio: 16/9; /* Mantém a proporção */
+    overflow: hidden;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+
+.container {
+    max-width: 900px; /* Limita o tamanho máximo do container */
+    margin: 0 auto; /* Centraliza na página */
+    padding: 1.5rem; /* Adiciona espaço interno */
+    background-color: #1c1c1e; /* Fundo escuro */
+    color: #ffffff; /* Texto claro */
+    border-radius: 8px; /* Bordas arredondadas */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+
+/* Controles de zoom */
+#zoom-controls button {
+    background-color: #2c2c2e;
+    color: #ffffff;
+    border: 1px solid #3a3a3c;
+    border-radius: 8px;
+    padding: 0.5rem;
+}
+
+#zoom-controls button:hover {
+    background-color: #3a3a3c;
+    border-color: #007bff;
+}
+
+/* Modal de informações do usuário */
+.modal-content {
+    background-color: #2c2c2e;
+    color: #f0f0f0;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.modal-header {
+    border-bottom: 1px solid #3a3a3c;
+}
+
+.modal-header .btn-close {
+    background-color: #6c757d;
+    border-radius: 50%;
+    padding: 0.5rem;
+}
+
+.modal-header .btn-close:hover {
+    background-color: #5a6268;
+}
+
+.modal-body .form-control {
+    background-color: #2c2c2e;
+    color: #ffffff;
+    border: 1px solid #3a3a3c;
+}
+
+.modal-body .form-control:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 4px #007bff;
+}
+
+.modal-footer .btn {
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+}
+
+.modal-footer .btn-primary {
+    background-color: #007bff;
+    border: none;
+    color: #ffffff;
+}
+
+.modal-footer .btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.modal-footer .btn-secondary {
+    background-color: #6c757d;
+    border: none;
+    color: #ffffff;
+}
+
+.modal-footer .btn-secondary:hover {
+    background-color: #5a6268;
 }
