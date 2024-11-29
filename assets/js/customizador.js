@@ -1,3 +1,9 @@
+//variáveis globais de posicao do adesivo na caixa de preview
+var initialStageScale = { x: 1, y: 1 };
+var initialStagePosition = { x: 0, y: 0 };
+var initialStickerScale = { x: 1, y: 1 };
+var initialStickerPosition = { x: 0, y: 0 };
+
 document.addEventListener('DOMContentLoaded', function () {
     var stage = new Konva.Stage({
         container: 'adesivo-canvas',
@@ -8,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var layer = new Konva.Layer();
     stage.add(layer);
-
+    
     var stickerGroup = null; // Grupo para os elementos do adesivo
     var tempTextObject = null; // Objeto temporário para manipulação de texto
     var scaleBy = 1.05; // Fator de zoom
@@ -19,7 +25,10 @@ document.addEventListener('DOMContentLoaded', function () {
     } else {
         console.error('pluginData ou stickerUrl não está definido.');
     }
-
+    function getRandomColor() {
+        return '#' + ('000000' + Math.floor(Math.random() * 16777215).toString(16)).slice(-6);
+    }
+    
     // Função para carregar o adesivo
     function carregarAdesivo(stickerUrl) {
         fetch(stickerUrl)
@@ -37,7 +46,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 Array.from(svgDoc.querySelectorAll('path, rect, circle, ellipse, polygon, polyline, line')).forEach(
                     (elem, index) => {
                         var pathData = elem.getAttribute('d') || '';
-                        var fillColor = elem.getAttribute('fill') || '#000';
+                        var fillColor = elem.getAttribute('fill');
+                
+                        if (!fillColor || fillColor === 'black' || fillColor === '#000' || fillColor === '#000000') {
+                            // Atribuir uma cor aleatória
+                            fillColor = getRandomColor();
+                        }
+                
                         if (pathData) {
                             var path = new Konva.Path({
                                 data: pathData,
@@ -115,40 +130,94 @@ document.addEventListener('DOMContentLoaded', function () {
         layer.draw();
     });
 
+    document.getElementById('adicionar-texto-botao').addEventListener('click', function () {
+        var textContent = document.getElementById('texto').value.trim();
+        if (!textContent) return;
+    
+        // Criar um novo objeto de texto
+        var newTextObject = new Konva.Text({
+            x: stage.width() / 2,
+            y: stage.height() / 2,
+            text: textContent,
+            fontSize: parseInt(document.getElementById('tamanho-fonte').value),
+            fontFamily: document.getElementById('fontPicker').value,
+            fill: document.getElementById('cor-texto').value,
+            draggable: true,
+            rotation: parseFloat(document.getElementById('rotacao-texto').value),
+        });
+    
+        layer.add(newTextObject);
+        layer.draw();
+    
+        // Limpar a caixa de texto e o objeto temporário
+        document.getElementById('texto').value = '';
+        if (tempTextObject) {
+            tempTextObject.destroy();
+            tempTextObject = null;
+        }
+    });
+    
+
     // Função para ajustar o tamanho e posicionar o adesivo
     function ajustarTamanhoEPosicaoDoAdesivo() {
         if (!stickerGroup) return;
-
+    
+        // Resetar escala e posição do stage
+        stage.scale({ x: 1, y: 1 });
+        stage.position({ x: 0, y: 0 });
+    
         var canvasWidth = stage.width();
         var canvasHeight = stage.height();
-
+    
         var stickerRect = stickerGroup.getClientRect();
         var scaleX = canvasWidth / stickerRect.width;
         var scaleY = canvasHeight / stickerRect.height;
-
+    
         var scale = Math.min(scaleX, scaleY);
         stickerGroup.scale({ x: scale, y: scale });
-
+    
         var newStickerRect = stickerGroup.getClientRect();
         stickerGroup.position({
             x: (canvasWidth - newStickerRect.width) / 2 - newStickerRect.x,
             y: (canvasHeight - newStickerRect.height) / 2 - newStickerRect.y,
         });
-
+    
         layer.draw();
+        // Armazenar os valores iniciais
+        initialStageScale = { x: stage.scaleX(), y: stage.scaleY() };
+        initialStagePosition = { x: stage.x(), y: stage.y() };
+        initialStickerScale = { x: stickerGroup.scaleX(), y: stickerGroup.scaleY() };
+        initialStickerPosition = { x: stickerGroup.x(), y: stickerGroup.y() };
+
     }
+    
 
     // Eventos para manipulação do texto
     document.getElementById('texto').addEventListener('input', atualizarTextoNoCanvas);
     document.getElementById('tamanho-fonte').addEventListener('input', atualizarTextoNoCanvas);
     document.getElementById('fontPicker').addEventListener('change', atualizarTextoNoCanvas);
     document.getElementById('cor-texto').addEventListener('input', atualizarTextoNoCanvas);
-    document.getElementById('rotacao-texto').addEventListener('input', atualizarTextoNoCanvas);
+    document.getElementById('rotacao-texto').addEventListener('input', function (event) {
+        document.getElementById('rotacao-texto-valor').value = event.target.value;
+        atualizarTextoNoCanvas();
+    });
+    document.getElementById('rotacao-texto-valor').addEventListener('input', function (event) {
+        document.getElementById('rotacao-texto').value = event.target.value;
+        atualizarTextoNoCanvas();
+    });
 
     function atualizarTextoNoCanvas() {
         var textContent = document.getElementById('texto').value;
+        if (!textContent.trim()) {
+            if (tempTextObject) {
+                tempTextObject.destroy();
+                tempTextObject = null;
+                layer.draw();
+            }
+            return;
+        }
+    
         if (!tempTextObject) {
-            if (!textContent.trim()) return;
             tempTextObject = new Konva.Text({
                 x: stage.width() / 2,
                 y: stage.height() / 2,
@@ -167,9 +236,10 @@ document.addEventListener('DOMContentLoaded', function () {
             tempTextObject.fill(document.getElementById('cor-texto').value);
             tempTextObject.rotation(parseFloat(document.getElementById('rotacao-texto').value));
         }
-
+    
         layer.draw();
     }
+    
 
     // Adiciona eventos de zoom
     function aplicarZoom(direction) {
@@ -204,7 +274,15 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.getElementById('reset-zoom').addEventListener('click', function () {
-        ajustarTamanhoEPosicaoDoAdesivo();
+        // Resetar escala e posição do stage
+        stage.scale(initialStageScale);
+        stage.position(initialStagePosition);
+    
+        // Resetar escala e posição do stickerGroup
+        stickerGroup.scale(initialStickerScale);
+        stickerGroup.position(initialStickerPosition);
+    
+        stage.batchDraw();
     });
 
     stage.on('wheel', function (e) {
@@ -212,4 +290,5 @@ document.addEventListener('DOMContentLoaded', function () {
         var direction = e.evt.deltaY > 0 ? 'out' : 'in';
         aplicarZoom(direction);
     });
+    
 });

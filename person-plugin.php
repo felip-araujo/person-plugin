@@ -160,36 +160,48 @@ function person_plugin_display_customizer() {
         return '<p>Produto não encontrado.</p>';
     }
 
-    // Obtém o nome do produto e cria o nome sanitizado do adesivo
-    $product_name = $product->get_name();
-    $sanitized_name = sanitize_title($product_name);
-
-    // Busca o adesivo na biblioteca de mídia
-    $args = array(
-        'post_type'      => 'attachment',
-        'post_mime_type' => 'image/svg+xml',
-        'post_status'    => 'inherit',
-        'meta_query'     => array(
-            array(
-                'key'     => '_wp_attached_file',
-                'value'   => $sanitized_name . '.svg',
-                'compare' => 'LIKE',
-            ),
-        ),
-    );
-
-    $attachments = get_posts($args);
-
+    // Verificar se o reconhecimento de adesivo pelo nome está ativado
+    $recognize_sticker_setting = get_option('person_plugin_recognize_sticker', 'yes');
     $sticker_url = '';
-    if (!empty($attachments)) {
-        $sticker_url = wp_get_attachment_url($attachments[0]->ID);
-        error_log('Adesivo encontrado: ' . $sticker_url);
-    } else {
-        error_log('Nenhum adesivo encontrado para o produto: ' . $sanitized_name);
-        return '<p>Adesivo não encontrado para este produto.</p>';
+
+    if ($recognize_sticker_setting === 'yes') {
+        // Tentar associar automaticamente pelo nome do produto
+        $product_name = $product->get_name();
+        $sanitized_name = sanitize_title($product_name);
+
+        // Busca o adesivo na biblioteca de mídia
+        $args = array(
+            'post_type'      => 'attachment',
+            'post_mime_type' => 'image/svg+xml',
+            'post_status'    => 'inherit',
+            'meta_query'     => array(
+                array(
+                    'key'     => '_wp_attached_file',
+                    'value'   => $sanitized_name . '.svg',
+                    'compare' => 'LIKE',
+                ),
+            ),
+        );
+
+        $attachments = get_posts($args);
+
+        if (!empty($attachments)) {
+            $sticker_url = wp_get_attachment_url($attachments[0]->ID);
+        }
     }
 
-    // Passa os dados para o JavaScript
+    // Se não encontrou ou se o reconhecimento automático está desativado, tentar a associação manual
+    if (empty($sticker_url)) {
+        $associated_sticker_id = get_post_meta($product->get_id(), '_associated_sticker', true);
+        if ($associated_sticker_id) {
+            $sticker_url = wp_get_attachment_url($associated_sticker_id);
+        } else {
+            // Se não houver adesivo associado, exibir mensagem ou lógica alternativa
+            return '<p>Adesivo não encontrado para este produto.</p>';
+        }
+    }
+
+    // Passar os dados para o JavaScript
     wp_enqueue_script('person-plugin-customizer-js', plugin_dir_url(__FILE__) . 'assets/js/customizador.js', array('jquery'), null, true);
     wp_localize_script(
         'person-plugin-customizer-js',
@@ -199,13 +211,15 @@ function person_plugin_display_customizer() {
             'ajaxUrl'    => admin_url('admin-ajax.php'),
         )
     );
-    error_log('Dados enviados para JavaScript: ' . json_encode(array('stickerUrl' => $sticker_url)));
 
-    // Renderiza o template do editor
+    // Renderizar o template do editor
     ob_start();
     include plugin_dir_path(__FILE__) . 'templates/editor-template.php';
     return ob_get_clean();
 }
+
+
+
 
 add_shortcode('customizador_adesivo', 'person_plugin_display_customizer');
 
@@ -219,3 +233,56 @@ function carregar_font_awesome() {
 }
 add_action('admin_enqueue_scripts', 'carregar_font_awesome'); // Para páginas do admin
 add_action('wp_enqueue_scripts', 'carregar_font_awesome'); // Para páginas do frontend
+
+// Handler AJAX para salvar o adesivo e enviar email
+function salvar_adesivo() {
+    if (!isset($_POST['dataURL']) || !isset($_POST['userName']) || !isset($_POST['userEmail'])) {
+        wp_send_json_error('Dados incompletos recebidos');
+        wp_die();
+    }
+
+    $dataURL = $_POST['dataURL'];
+    $userName = sanitize_text_field($_POST['userName']);
+    $userEmail = sanitize_email($_POST['userEmail']);
+
+    if (!is_email($userEmail)) {
+        wp_send_json_error('Email inválido');
+        wp_die();
+    }
+
+    // Processar o dataURL e salvar a imagem
+    $upload_dir = wp_upload_dir();
+    $img = str_replace('data:image/png;base64,', '', $dataURL);
+    $img = str_replace(' ', '+', $img);
+    $decoded = base64_decode($img);
+    $filename = 'adesivo_' . time() . '.png';
+    $file_path = $upload_dir['path'] . '/' . $filename;
+
+    file_put_contents($file_path, $decoded);
+
+    // Enviar o email
+    $to = 'contato@mstechbio.com.br'; // Substitua pelo email desejado
+    $subject = 'Novo adesivo salvo por ' . $userName;
+    $message = 'Um novo adesivo foi salvo por ' . $userName . ' (' . $userEmail . ').';
+    $headers = array('Content-Type: text/html; charset=UTF-8');
+
+    // Definir o remetente
+    $headers[] = 'From: ' . get_bloginfo('name') . ' <no-reply@' . $_SERVER['HTTP_HOST'] . '>';
+
+    // Anexar a imagem
+    $attachments = array($file_path);
+
+    // Enviar o email e verificar se foi enviado com sucesso
+    $sent = wp_mail($to, $subject, $message, $headers, $attachments);
+
+    if ($sent) {
+        wp_send_json_success('Adesivo salvo e email enviado com sucesso.');
+    } else {
+        wp_send_json_error('Erro ao enviar o email. Por favor, tente novamente mais tarde.');
+    }
+
+    wp_die();
+}
+add_action('wp_ajax_salvar_adesivo', 'salvar_adesivo');
+add_action('wp_ajax_nopriv_salvar_adesivo', 'salvar_adesivo');
+

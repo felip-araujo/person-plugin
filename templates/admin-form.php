@@ -52,26 +52,6 @@ if (!empty($_GET['search_sticker'])) {
 
 $query = new WP_Query($args_attachments);
 
-$current_page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
-$posts_per_page = 4;
-
-// Argumentos para consulta dos adesivos
-$args = array(
-    'post_type'      => 'attachment',
-    'post_mime_type' => 'image/svg+xml',
-    'post_status'    => 'inherit',
-    'posts_per_page' => $posts_per_page,
-    'paged'          => $current_page,
-);
-
-// Adiciona o filtro de busca, se aplicável
-if (!empty($_GET['search_sticker'])) {
-    $search_term = sanitize_text_field($_GET['search_sticker']);
-    $args['s'] = $search_term; // Adiciona a busca por título
-}
-
-$query = new WP_Query($args);
-
 // Renderiza a tabela de adesivos
 if ($query->have_posts()) {
     echo '<table style="border-radius: .7rem" class="table table-dark">';
@@ -87,6 +67,24 @@ if ($query->have_posts()) {
         echo '<td style="width: 50px;"><img src="' . esc_url($url_svg) . '" alt="' . esc_attr($nome_arquivo) . '" style="width: 80px; border-radius:.7rem; background-color:#eee; height: auto;"></td>';
         echo '<td>' . esc_html($nome_arquivo) . '</td>';
 
+        // Recuperar o produto associado a este adesivo
+        $associated_product_id = null;
+        $products_with_this_sticker = get_posts(array(
+            'post_type' => 'product',
+            'posts_per_page' => -1,
+            'post_status' => 'publish',
+            'meta_query' => array(
+                array(
+                    'key' => '_associated_sticker',
+                    'value' => $attachment_id,
+                    'compare' => '=',
+                ),
+            ),
+        ));
+        if (!empty($products_with_this_sticker)) {
+            $associated_product_id = $products_with_this_sticker[0]->ID;
+        }
+
         // Campo de seleção de produto e botão de salvar
         echo '<td>';
         echo '<form method="post">';
@@ -94,13 +92,10 @@ if ($query->have_posts()) {
         echo '<input type="hidden" name="sticker_id" value="' . esc_attr($attachment_id) . '">';
         echo '<div class="input-group">';
         echo '<select name="product_id" class="form-control">';
-        $products = get_posts(array(
-            'post_type'      => 'product',
-            'posts_per_page' => -1,
-            'post_status'    => 'publish',
-        ));
+        echo '<option value="">Selecione um produto</option>';
         foreach ($products as $product) {
-            echo '<option value="' . esc_attr($product->ID) . '">' . esc_html($product->post_title) . '</option>';
+            $selected = ($product->ID == $associated_product_id) ? 'selected' : '';
+            echo '<option value="' . esc_attr($product->ID) . '" ' . $selected . '>' . esc_html($product->post_title) . '</option>';
         }
         echo '</select>';
         echo '<button type="submit" name="save_association" class="btn btn-success" style="margin-left: 0.5rem;">Salvar</button>';
@@ -153,13 +148,18 @@ if (isset($_GET['editor_habilitado'])) {
 }
 
 // Processar habilitação do editor ao salvar
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_association'])) {
+    if (!isset($_POST['associate_nonce']) || !wp_verify_nonce($_POST['associate_nonce'], 'associate_sticker_nonce')) {
+        echo '<p class="alert alert-danger">Nonce inválido!</p>';
+        return;
+    }
+
     $produto_id = intval($_POST['product_id']);
     $adesivo_associado = intval($_POST['sticker_id']);
 
     if ($produto_id && $adesivo_associado) {
+        // Associar o adesivo ao produto
         update_post_meta($produto_id, '_associated_sticker', $adesivo_associado);
-        update_post_meta($produto_id, '_editor_enabled', 1);
         wp_redirect(admin_url('admin.php?page=plugin-adesivos&editor_habilitado=sucesso'));
         exit;
     } else {
@@ -168,5 +168,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id'])) {
     }
 }
 
+// Processar exclusão de adesivo
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_attachment'])) {
+    if (!isset($_POST['delete_attachment_nonce_field']) || !wp_verify_nonce($_POST['delete_attachment_nonce_field'], 'delete_attachment_nonce')) {
+        echo '<p class="alert alert-danger">Nonce inválido!</p>';
+        return;
+    }
 
+    $attachment_id_to_delete = intval($_POST['delete_attachment']);
+    if ($attachment_id_to_delete) {
+        // Excluir o adesivo
+        wp_delete_attachment($attachment_id_to_delete, true);
+        // Remover associações com produtos
+        $products = get_posts(array(
+            'post_type' => 'product',
+            'posts_per_page' => -1,
+            'post_status'    => 'publish',
+            'meta_query'     => array(
+                array(
+                    'key'     => '_associated_sticker',
+                    'value'   => $attachment_id_to_delete,
+                    'compare' => '=',
+                ),
+            ),
+        ));
+        foreach ($products as $product) {
+            delete_post_meta($product->ID, '_associated_sticker');
+        }
+        wp_redirect(admin_url('admin.php?page=plugin-adesivos'));
+        exit;
+    }
+}
+
+echo '<h2>Configurações</h2>';
+
+$recognize_sticker_setting = get_option('person_plugin_recognize_sticker', 'yes');
+
+echo '<form method="post">';
+wp_nonce_field('person_plugin_settings_nonce', 'person_plugin_nonce');
+echo '<div class="form-group">';
+echo '<label for="recognize_sticker">Ativar reconhecimento de adesivo pelo nome do produto:</label>';
+echo '<select name="recognize_sticker" id="recognize_sticker" class="form-control">';
+echo '<option value="yes"' . selected($recognize_sticker_setting, 'yes', false) . '>Sim</option>';
+echo '<option value="no"' . selected($recognize_sticker_setting, 'no', false) . '>Não</option>';
+echo '</select>';
+echo '</div>';
+echo '<button type="submit" name="save_plugin_settings" class="btn btn-primary">Salvar Configurações</button>';
+echo '</form>';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_plugin_settings'])) {
+    if (!isset($_POST['person_plugin_nonce']) || !wp_verify_nonce($_POST['person_plugin_nonce'], 'person_plugin_settings_nonce')) {
+        echo '<p class="alert alert-danger">Nonce inválido!</p>';
+    } else {
+        $recognize_sticker = sanitize_text_field($_POST['recognize_sticker']);
+        update_option('person_plugin_recognize_sticker', $recognize_sticker);
+        echo '<p class="alert alert-success">Configurações salvas com sucesso!</p>';
+    }
+}
 ?>
