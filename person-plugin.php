@@ -286,3 +286,69 @@ function salvar_adesivo() {
 add_action('wp_ajax_salvar_adesivo', 'salvar_adesivo');
 add_action('wp_ajax_nopriv_salvar_adesivo', 'salvar_adesivo');
 
+register_activation_hook(__FILE__, 'criar_tabela_adesivos');
+
+function criar_tabela_adesivos() {
+    global $wpdb;
+
+    // Prefixo do banco de dados do WordPress
+    $tabela = $wpdb->prefix . 'adesivos';
+    $charset_collate = $wpdb->get_charset_collate();
+
+    // SQL para criar a tabela
+    $sql = "CREATE TABLE $tabela (
+        id INT(11) NOT NULL AUTO_INCREMENT,
+        nome_cliente VARCHAR(255) NOT NULL,
+        email_cliente VARCHAR(255) NOT NULL,
+        telefone_cliente VARCHAR(20),
+        material VARCHAR(100),
+        quantidade INT(11),
+        texto_instrucoes TEXT,
+        data_pedido DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id)
+    ) $charset_collate;";
+
+    // Inclusão do arquivo necessário e execução do comando SQL
+    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+    dbDelta($sql);
+}
+
+add_action('wp_ajax_salvar_adesivo_cliente', 'salvar_adesivo_cliente');
+function salvar_adesivo_cliente() {
+    global $wpdb;
+
+    // Validação básica dos dados recebidos
+    if (empty($_POST['nome']) || empty($_POST['email'])) {
+        wp_send_json_error(['message' => 'Nome e e-mail são obrigatórios.']);
+    }
+
+    $nome = sanitize_text_field($_POST['nome']);
+    $email = sanitize_email($_POST['email']);
+    $telefone = sanitize_text_field($_POST['telefone']);
+    $material = sanitize_text_field($_POST['material']);
+    $quantidade = intval($_POST['quantidade']);
+    $texto_instrucoes = sanitize_textarea_field($_POST['texto_instrucoes']);
+
+    // Tabela personalizada
+    $tabela = $wpdb->prefix . 'adesivos';
+
+    // Inserção dos dados
+    $inserir = $wpdb->insert(
+        $tabela,
+        [
+            'nome_cliente' => $nome,
+            'email_cliente' => $email,
+            'telefone_cliente' => $telefone,
+            'material' => $material,
+            'quantidade' => $quantidade,
+            'texto_instrucoes' => $texto_instrucoes,
+        ],
+        ['%s', '%s', '%s', '%s', '%d', '%s']
+    );
+
+    if ($inserir) {
+        wp_send_json_success(['message' => 'Pedido salvo com sucesso!']);
+    } else {
+        wp_send_json_error(['message' => 'Erro ao salvar pedido.']);
+    }
+}

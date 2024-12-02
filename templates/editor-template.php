@@ -1,6 +1,9 @@
 <!-- /var/www/html/wp-content/plugins/person-plugin/templates/editor-template.php -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
 
 <div class="container mt-5">
     <div class="d-flex justify-content-between align-items-center">
@@ -56,7 +59,7 @@
 
     <div class="text-center mt-4">
         <div class="d-flex justify-content-center gap-2 mb-4">
-            <button id="salvar-adesivo-botao" class="btn btn-success">Salvar Adesivo</button>
+            <button id="salvar-adesivo-botao" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#salvarAdesivoModal">Salvar Adesivo</button>
             <button id="zoom-in" class="btn btn-secondary">+</button>
             <button id="zoom-out" class="btn btn-secondary">-</button>
             <button id="reset-zoom" class="btn btn-secondary">Resetar Zoom</button>
@@ -93,8 +96,88 @@
     </div>
 </div>
 
+<div class="modal fade" id="salvarAdesivoModal" tabindex="-1" aria-labelledby="salvarAdesivoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="salvarAdesivoModalLabel">Salvar Adesivo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <form id="salvarAdesivoForm">
+                    <div class="mb-3">
+                        <label for="nome" class="form-label">Nome Completo:</label>
+                        <input type="text" class="form-control" id="nome" placeholder="Digite seu nome" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">E-mail:</label>
+                        <input type="email" class="form-control" id="email" placeholder="Digite seu e-mail" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="telefone" class="form-label">Telefone (opcional):</label>
+                        <input type="text" class="form-control" id="telefone" placeholder="Digite seu telefone">
+                    </div>
+                    <div class="mb-3">
+                        <label for="material" class="form-label">Material:</label>
+                        <select class="form-select" id="material">
+                            <option value="Vinil Brilhante">Vinil Brilhante</option>
+                            <option value="Vinil Fosco">Vinil Fosco</option>
+                            <option value="Transparente">Transparente</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="quantidade" class="form-label">Quantidade:</label>
+                        <input type="number" class="form-control" id="quantidade" min="1" value="1">
+                    </div>
+                    <div class="mb-3">
+                        <label for="texto_instrucoes" class="form-label">Texto Adicional ou Instruções:</label>
+                        <textarea class="form-control" id="texto_instrucoes" placeholder="Adicione instruções ou informações adicionais"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Confirmar e Salvar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     document.getElementById('close-editor').addEventListener('click', function() {
         document.querySelector('.container').style.display = 'none';
     });
+
+    document.getElementById("salvarAdesivoForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    const nome = document.getElementById("nome").value;
+    const email = document.getElementById("email").value;
+    const telefone = document.getElementById("telefone").value;
+    const material = document.getElementById("material").value;
+    const quantidade = document.getElementById("quantidade").value;
+    const texto_instrucoes = document.getElementById("texto_instrucoes").value;
+
+    fetch(ajaxurl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            action: "salvar_adesivo_cliente",
+            nome,
+            email,
+            telefone,
+            material,
+            quantidade,
+            texto_instrucoes,
+        }),
+    })
+        .then((response) => response.json())
+        .then((data) => {
+            if (data.success) {
+                alert(data.message);
+                bootstrap.Modal.getInstance(document.getElementById("salvarAdesivoModal")).hide();
+            } else {
+                alert("Erro: " + data.message);
+            }
+        })
+        .catch((error) => console.error("Erro:", error));
+});
+
 </script>
