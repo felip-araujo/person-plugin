@@ -234,55 +234,6 @@ function carregar_font_awesome() {
 add_action('admin_enqueue_scripts', 'carregar_font_awesome'); // Para páginas do admin
 add_action('wp_enqueue_scripts', 'carregar_font_awesome'); // Para páginas do frontend
 
-// Handler AJAX para salvar o adesivo e enviar email
-function salvar_adesivo() {
-    if (!isset($_POST['dataURL']) || !isset($_POST['userName']) || !isset($_POST['userEmail'])) {
-        wp_send_json_error('Dados incompletos recebidos');
-        wp_die();
-    }
-
-    $dataURL = $_POST['dataURL'];
-    $userName = sanitize_text_field($_POST['userName']);
-    $userEmail = sanitize_email($_POST['userEmail']);
-
-    if (!is_email($userEmail)) {
-        wp_send_json_error('Email inválido');
-        wp_die();
-    }
-
-    // Processar o dataURL e salvar a imagem
-    $upload_dir = wp_upload_dir();
-    $img = str_replace('data:image/png;base64,', '', $dataURL);
-    $img = str_replace(' ', '+', $img);
-    $decoded = base64_decode($img);
-    $filename = 'adesivo_' . time() . '.png';
-    $file_path = $upload_dir['path'] . '/' . $filename;
-
-    file_put_contents($file_path, $decoded);
-
-    // Enviar o email
-    $to = 'contato@mstechbio.com.br'; // Substitua pelo email desejado
-    $subject = 'Novo adesivo salvo por ' . $userName;
-    $message = 'Um novo adesivo foi salvo por ' . $userName . ' (' . $userEmail . ').';
-    $headers = array('Content-Type: text/html; charset=UTF-8');
-
-    // Definir o remetente
-    $headers[] = 'From: ' . get_bloginfo('name') . ' <no-reply@' . $_SERVER['HTTP_HOST'] . '>';
-
-    // Anexar a imagem
-    $attachments = array($file_path);
-
-    // Enviar o email e verificar se foi enviado com sucesso
-    $sent = wp_mail($to, $subject, $message, $headers, $attachments);
-
-    if ($sent) {
-        wp_send_json_success('Adesivo salvo e email enviado com sucesso.');
-    } else {
-        wp_send_json_error('Erro ao enviar o email. Por favor, tente novamente mais tarde.');
-    }
-
-    wp_die();
-}
 add_action('wp_ajax_salvar_adesivo', 'salvar_adesivo');
 add_action('wp_ajax_nopriv_salvar_adesivo', 'salvar_adesivo');
 
@@ -314,25 +265,33 @@ function criar_tabela_adesivos() {
 }
 
 add_action('wp_ajax_salvar_adesivo_cliente', 'salvar_adesivo_cliente');
+add_action('wp_ajax_nopriv_salvar_adesivo_cliente', 'salvar_adesivo_cliente');
+
 function salvar_adesivo_cliente() {
     global $wpdb;
 
-    // Validação básica dos dados recebidos
+    // Log para verificar se a função foi chamada
+    error_log('Função salvar_adesivo_cliente chamada');
+
+    // Validar campos obrigatórios
     if (empty($_POST['nome']) || empty($_POST['email'])) {
-        wp_send_json_error(['message' => 'Nome e e-mail são obrigatórios.']);
+        error_log('Erro: Nome ou email ausentes.');
+        wp_send_json_error(['message' => 'Nome e email são obrigatórios.']);
+        wp_die();
     }
 
     $nome = sanitize_text_field($_POST['nome']);
     $email = sanitize_email($_POST['email']);
-    $telefone = sanitize_text_field($_POST['telefone']);
-    $material = sanitize_text_field($_POST['material']);
-    $quantidade = intval($_POST['quantidade']);
-    $texto_instrucoes = sanitize_textarea_field($_POST['texto_instrucoes']);
+    $telefone = sanitize_text_field($_POST['telefone'] ?? '');
+    $material = sanitize_text_field($_POST['material'] ?? '');
+    $quantidade = intval($_POST['quantidade'] ?? 1);
+    $texto_instrucoes = sanitize_textarea_field($_POST['texto_instrucoes'] ?? '');
 
-    // Tabela personalizada
+    // Log dos dados recebidos
+    error_log('Dados recebidos: ' . print_r($_POST, true));
+
+    // Inserir no banco de dados
     $tabela = $wpdb->prefix . 'adesivos';
-
-    // Inserção dos dados
     $inserir = $wpdb->insert(
         $tabela,
         [
@@ -349,6 +308,7 @@ function salvar_adesivo_cliente() {
     if ($inserir) {
         wp_send_json_success(['message' => 'Pedido salvo com sucesso!']);
     } else {
-        wp_send_json_error(['message' => 'Erro ao salvar pedido.']);
+        error_log('Erro ao salvar no banco de dados: ' . $wpdb->last_error);
+        wp_send_json_error(['message' => 'Erro ao salvar pedido no banco de dados.']);
     }
 }

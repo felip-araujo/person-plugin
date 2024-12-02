@@ -293,3 +293,63 @@ document.addEventListener('DOMContentLoaded', function () {
     
 });
 
+document.getElementById("salvarAdesivoForm").addEventListener("submit", function (e) {
+    e.preventDefault(); // Previne o comportamento padrão do formulário
+
+    // Captura os dados do formulário
+    const nome = document.getElementById("nome").value;
+    const email = document.getElementById("email").value;
+    const telefone = document.getElementById("telefone").value;
+    const material = document.getElementById("material").value;
+    const quantidade = document.getElementById("quantidade").value;
+    const texto_instrucoes = document.getElementById("texto_instrucoes").value;
+
+    // Div de mensagens
+    const mensagemDiv = document.getElementById("mensagem");
+
+    // Envia os dados reais do modal via fetch
+    fetch(pluginData.ajaxUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+            action: "salvar_adesivo_cliente",
+            nome,
+            email,
+            telefone,
+            material,
+            quantidade,
+            texto_instrucoes,
+        }).toString(),
+    })
+        .then(async (response) => {
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP status ${response.status}: ${errorText}`);
+            }
+            return response.json();
+        })
+        .then((data) => {
+            // Sucesso
+            mensagemDiv.classList.remove("d-none", "alert-danger");
+            mensagemDiv.classList.add("alert-success");
+            mensagemDiv.textContent = "Adesivo salvo com sucesso!";
+
+            // Limpa os campos do formulário após o sucesso
+            document.getElementById("salvarAdesivoForm").reset();
+
+            // Fechar o modal após 3 segundos
+            setTimeout(() => {
+                bootstrap.Modal.getInstance(document.getElementById("salvarAdesivoModal")).hide();
+                mensagemDiv.classList.add("d-none"); // Oculta a mensagem
+            }, 3000);
+        })
+        .catch((error) => {
+            // Erro
+            mensagemDiv.classList.remove("d-none", "alert-success");
+            mensagemDiv.classList.add("alert-danger");
+            mensagemDiv.textContent = "Erro ao salvar adesivo. Tente novamente.";
+            console.error("Erro no fetch:", error);
+        });
+});
+
+

@@ -149,7 +149,7 @@ body {
 }
 
 .form-label {
-    color: #000000; /* Labels com tom suave */
+    color: #000000e3; /* Labels com tom suave */
     font-size: 0.9rem;
     margin-bottom: 0.5rem;
 }
