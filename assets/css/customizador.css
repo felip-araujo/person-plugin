@@ -143,7 +143,7 @@ body {
 }
 
 .modal-title {
-    color: #ffffff; /* Título em branco */
+    color: #000000e3; /* Título em branco */
     font-weight: 700;
     font-size: 1.5rem;
 }

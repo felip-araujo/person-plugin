@@ -7,23 +7,26 @@ Author: Evolution Design
 */
 
 // Permitir upload de SVG
-function permitir_svg_upload($mimes) {
+function permitir_svg_upload($mimes)
+{
     $mimes['svg'] = 'image/svg+xml';
     return $mimes;
 }
 add_filter('upload_mimes', 'permitir_svg_upload');
 
 // Carregar estilos e scripts no admin
-function carregar_bootstrap_no_admin($hook_suffix) {
+function carregar_bootstrap_no_admin($hook_suffix)
+{
     if ($hook_suffix === 'toplevel_page_plugin-adesivos') {
         wp_enqueue_style('bootstrap-css', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css');
         wp_enqueue_script('bootstrap-js', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js', array('jquery'), null, true);
     }
 }
-add_action('admin_enqueue_scripts', 'carregar_bootstrap_no_admin'); 
+add_action('admin_enqueue_scripts', 'carregar_bootstrap_no_admin');
 
 // Adicionar menu ao admin
-function plugin_adicionar_menu() {
+function plugin_adicionar_menu()
+{
     add_menu_page(
         'Configurações de Adesivos',
         'Seus Adesivos',
@@ -37,12 +40,13 @@ function plugin_adicionar_menu() {
 add_action('admin_menu', 'plugin_adicionar_menu');
 
 // Renderizar a página do plugin no admin
-function plugin_pagina_de_configuracao() {
+function plugin_pagina_de_configuracao()
+{
     // $plugin_sticker_dir = plugin_dir_path(__FILE__) . 'assets/stickers/';
     echo '<div class="container">';
     echo '<h1></h1>';
     echo '<p style="font-size: 1.2rem; margin-top: 2rem;" class="alert alert-primary">Adicione a tag <strong>[customizador_adesivo]</strong> na página onde você deseja exibir o editor de adesivos</p>';
- 
+
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_sticker'])) {
         plugin_processar_upload($plugin_sticker_dir);
     }
@@ -52,7 +56,8 @@ function plugin_pagina_de_configuracao() {
 }
 
 // Processar upload de adesivos
-function plugin_processar_upload($plugin_sticker_dir) {
+function plugin_processar_upload($plugin_sticker_dir)
+{
     if (!isset($_POST['sticker_nonce']) || !wp_verify_nonce($_POST['sticker_nonce'], 'upload_sticker_nonce')) {
         echo '<p class="alert alert-danger">Nonce inválido!</p>';
         return;
@@ -97,7 +102,8 @@ function plugin_processar_upload($plugin_sticker_dir) {
 }
 
 // Enfileirar scripts e estilos no frontend
-function person_plugin_enqueue_frontend_scripts() {
+function person_plugin_enqueue_frontend_scripts()
+{
     if (!is_product()) {
         return; // Garante que os scripts sejam carregados apenas em páginas de produtos
     }
@@ -146,7 +152,8 @@ function person_plugin_enqueue_frontend_scripts() {
 add_action('wp_enqueue_scripts', 'person_plugin_enqueue_frontend_scripts');
 
 // Shortcode para exibir o customizador
-function person_plugin_display_customizer() {
+function person_plugin_display_customizer()
+{
     if (!is_product()) {
         return ''; // Retorna vazio se não for uma página de produto
     }
@@ -223,7 +230,8 @@ function person_plugin_display_customizer() {
 
 add_shortcode('customizador_adesivo', 'person_plugin_display_customizer');
 
-function carregar_font_awesome() {
+function carregar_font_awesome()
+{
     wp_enqueue_style(
         'font-awesome',
         'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css',
@@ -239,14 +247,13 @@ add_action('wp_ajax_nopriv_salvar_adesivo', 'salvar_adesivo');
 
 register_activation_hook(__FILE__, 'criar_tabela_adesivos');
 
-function criar_tabela_adesivos() {
+function criar_tabela_adesivos()
+{
     global $wpdb;
 
-    // Prefixo do banco de dados do WordPress
     $tabela = $wpdb->prefix . 'adesivos';
     $charset_collate = $wpdb->get_charset_collate();
 
-    // SQL para criar a tabela
     $sql = "CREATE TABLE $tabela (
         id INT(11) NOT NULL AUTO_INCREMENT,
         nome_cliente VARCHAR(255) NOT NULL,
@@ -259,7 +266,6 @@ function criar_tabela_adesivos() {
         PRIMARY KEY (id)
     ) $charset_collate;";
 
-    // Inclusão do arquivo necessário e execução do comando SQL
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
     dbDelta($sql);
 }
@@ -267,15 +273,12 @@ function criar_tabela_adesivos() {
 add_action('wp_ajax_salvar_adesivo_cliente', 'salvar_adesivo_cliente');
 add_action('wp_ajax_nopriv_salvar_adesivo_cliente', 'salvar_adesivo_cliente');
 
-function salvar_adesivo_cliente() {
+function salvar_adesivo_cliente()
+{
     global $wpdb;
 
-    // Log para verificar se a função foi chamada
-    error_log('Função salvar_adesivo_cliente chamada');
-
-    // Validar campos obrigatórios
+    // Validação básica dos dados recebidos
     if (empty($_POST['nome']) || empty($_POST['email'])) {
-        error_log('Erro: Nome ou email ausentes.');
         wp_send_json_error(['message' => 'Nome e email são obrigatórios.']);
         wp_die();
     }
@@ -286,9 +289,6 @@ function salvar_adesivo_cliente() {
     $material = sanitize_text_field($_POST['material'] ?? '');
     $quantidade = intval($_POST['quantidade'] ?? 1);
     $texto_instrucoes = sanitize_textarea_field($_POST['texto_instrucoes'] ?? '');
-
-    // Log dos dados recebidos
-    error_log('Dados recebidos: ' . print_r($_POST, true));
 
     // Inserir no banco de dados
     $tabela = $wpdb->prefix . 'adesivos';
@@ -306,9 +306,97 @@ function salvar_adesivo_cliente() {
     );
 
     if ($inserir) {
-        wp_send_json_success(['message' => 'Pedido salvo com sucesso!']);
+        // Dados para o envio do email
+        $admin_email = 'comercial@evoludesign.com.br'; // Substitua pelo email institucional
+        $admin_name = 'Equipe de Produção'; // Nome exibido no remetente
+        $senha_email = 'Fe159753#'; // Substitua pela senha do email institucional
+        $servidor_smtp = 'smtp.hostinger.com'; // Substitua pelo servidor SMTP
+        $porta_smtp = 465; // Normalmente é 587 para TLS ou 465 para SSL
+
+        // Configuração do destinatário
+        $para_usuario = $email;
+        $assunto_usuario = 'Confirmação do Pedido de Adesivo';
+        $mensagem_usuario = "
+            Olá, $nome!<br><br>
+            Recebemos o seu pedido de adesivo. Aqui estão os detalhes do seu pedido:<br>
+            - Material: $material<br>
+            - Quantidade: $quantidade<br>
+            - Instruções: $texto_instrucoes<br><br>
+            Em breve entraremos em contato para finalizar o processo.<br><br>
+            Atenciosamente,<br>
+            Equipe de Produção
+        ";
+
+        // Configuração do email para o time de produção
+        $para_producao = $admin_email;
+        $assunto_producao = 'Novo Pedido de Adesivo';
+        $mensagem_producao = "
+            Novo pedido de adesivo recebido:<br>
+            - Nome do Cliente: $nome<br>
+            - Email do Cliente: $email<br>
+            - Telefone do Cliente: $telefone<br>
+            - Material: $material<br>
+            - Quantidade: $quantidade<br>
+            - Instruções: $texto_instrucoes<br>
+        ";
+
+        // Enviar emails
+        $emails_enviados = enviar_emails($admin_email, $admin_name, $senha_email, $servidor_smtp, $porta_smtp, $para_usuario, $assunto_usuario, $mensagem_usuario, $para_producao, $assunto_producao, $mensagem_producao);
+
+        if ($emails_enviados) {
+            wp_send_json_success(['message' => 'Pedido salvo com sucesso e emails enviados!']);
+        } else {
+            wp_send_json_error(['message' => 'Pedido salvo, mas ocorreu um erro ao enviar os emails.']);
+        }
     } else {
-        error_log('Erro ao salvar no banco de dados: ' . $wpdb->last_error);
         wp_send_json_error(['message' => 'Erro ao salvar pedido no banco de dados.']);
+    }
+
+    wp_die();
+}
+
+function enviar_emails($admin_email, $admin_name, $senha_email, $servidor_smtp, $porta_smtp, $para_usuario, $assunto_usuario, $mensagem_usuario, $para_producao, $assunto_producao, $mensagem_producao)
+{
+    require_once ABSPATH . WPINC . '/PHPMailer/PHPMailer.php';
+    require_once ABSPATH . WPINC . '/PHPMailer/SMTP.php';
+    require_once ABSPATH . WPINC . '/PHPMailer/Exception.php';
+
+    $mail = new PHPMailer\PHPMailer\PHPMailer();
+
+    try {
+        // Configuração do servidor SMTP
+        $mail->isSMTP();
+        $mail->Host = $servidor_smtp;
+        $mail->SMTPAuth = true;
+        $mail->Username = $admin_email;
+        $mail->Password = $senha_email;
+        $mail->SMTPSecure = 'tls'; // Ou 'ssl' dependendo do servidor
+        $mail->Port = $porta_smtp;
+
+        // Enviar email para o cliente
+        $mail->setFrom($admin_email, $admin_name);
+        $mail->addAddress($para_usuario);
+        $mail->isHTML(true);
+        $mail->Subject = $assunto_usuario;
+        $mail->Body = $mensagem_usuario;
+
+        if (!$mail->send()) {
+            return false;
+        }
+
+        // Enviar email para a produção
+        $mail->clearAddresses();
+        $mail->addAddress($para_producao);
+        $mail->Subject = $assunto_producao;
+        $mail->Body = $mensagem_producao;
+
+        if (!$mail->send()) {
+            return false;
+        }
+
+        return true;
+    } catch (Exception $e) {
+        error_log('Erro ao enviar email: ' . $mail->ErrorInfo);
+        return false;
     }
 }

@@ -101,10 +101,10 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="salvarAdesivoModalLabel">Salvar Adesivo</h5>
+                <div id="mensagem" class="alert d-none" role="alert"></div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
             <div class="modal-body">
-            <div id="mensagem" class="alert d-none" role="alert"></div>
                 <form id="salvarAdesivoForm">
                     <div class="mb-3">
                         <label for="nome" class="form-label">Nome Completo:</label>
