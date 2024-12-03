@@ -273,8 +273,7 @@ function criar_tabela_adesivos()
 add_action('wp_ajax_salvar_adesivo_cliente', 'salvar_adesivo_cliente');
 add_action('wp_ajax_nopriv_salvar_adesivo_cliente', 'salvar_adesivo_cliente');
 
-function salvar_adesivo_cliente()
-{
+function salvar_adesivo_cliente() {
     global $wpdb;
 
     // Validação básica dos dados recebidos
@@ -307,45 +306,66 @@ function salvar_adesivo_cliente()
 
     if ($inserir) {
         // Dados para o envio do email
-        $admin_email = 'comercial@evoludesign.com.br'; // Substitua pelo email institucional
-        $admin_name = 'Equipe de Produção'; // Nome exibido no remetente
-        $senha_email = 'Fe159753#'; // Substitua pela senha do email institucional
-        $servidor_smtp = 'smtp.hostinger.com'; // Substitua pelo servidor SMTP
-        $porta_smtp = 465; // Normalmente é 587 para TLS ou 465 para SSL
+        $admin_email = get_option('person_plugin_admin_email'); // Email do administrador definido nas configurações
+        $sender_email = get_option('person_plugin_sender_email'); // Email de remetente definido nas configurações
+        $sender_password = get_option('person_plugin_sender_password'); // Senha do email de remetente
 
-        // Configuração do destinatário
-        $para_usuario = $email;
-        $assunto_usuario = 'Confirmação do Pedido de Adesivo';
-        $mensagem_usuario = "
-            Olá, $nome!<br><br>
-            Recebemos o seu pedido de adesivo. Aqui estão os detalhes do seu pedido:<br>
-            - Material: $material<br>
-            - Quantidade: $quantidade<br>
-            - Instruções: $texto_instrucoes<br><br>
-            Em breve entraremos em contato para finalizar o processo.<br><br>
-            Atenciosamente,<br>
-            Equipe de Produção
-        ";
+        if (!$sender_email || !$sender_password) {
+            wp_send_json_error(['message' => 'Email de remetente não configurado.']);
+            wp_die();
+        }
 
-        // Configuração do email para o time de produção
-        $para_producao = $admin_email;
-        $assunto_producao = 'Novo Pedido de Adesivo';
-        $mensagem_producao = "
-            Novo pedido de adesivo recebido:<br>
-            - Nome do Cliente: $nome<br>
-            - Email do Cliente: $email<br>
-            - Telefone do Cliente: $telefone<br>
-            - Material: $material<br>
-            - Quantidade: $quantidade<br>
-            - Instruções: $texto_instrucoes<br>
-        ";
+        // Configuração do PHPMailer
+        $mail = new PHPMailer\PHPMailer\PHPMailer();
 
-        // Enviar emails
-        $emails_enviados = enviar_emails($admin_email, $admin_name, $senha_email, $servidor_smtp, $porta_smtp, $para_usuario, $assunto_usuario, $mensagem_usuario, $para_producao, $assunto_producao, $mensagem_producao);
+        try {
+            // Configuração do servidor SMTP
+            $mail->isSMTP();
+            $mail->Host = 'smtp.gmail.com'; // Servidor SMTP do Gmail
+            $mail->SMTPAuth = true;
+            $mail->Username = $sender_email;
+            $mail->Password = $sender_password;
+            $mail->SMTPSecure = 'tls';
+            $mail->Port = 587;
 
-        if ($emails_enviados) {
+            // Enviar email para o cliente
+            $mail->setFrom($sender_email, 'Equipe de Produção');
+            $mail->addAddress($email);
+            $mail->isHTML(true);
+            $mail->Subject = 'Confirmação do Pedido de Adesivo';
+            $mail->Body = "
+                Olá, $nome!<br><br>
+                Recebemos o seu pedido de adesivo. Aqui estão os detalhes do seu pedido:<br>
+                - Material: $material<br>
+                - Quantidade: $quantidade<br>
+                - Instruções: $texto_instrucoes<br><br>
+                Em breve entraremos em contato para finalizar o processo.<br><br>
+                Atenciosamente,<br>
+                Equipe de Produção
+            ";
+
+            $mail->send();
+            $mail->clearAddresses();
+
+            // Se o email do administrador estiver configurado, enviar para o admin
+            if ($admin_email) {
+                $mail->addAddress($admin_email);
+                $mail->Subject = 'Novo Pedido de Adesivo';
+                $mail->Body = "
+                    Novo pedido de adesivo recebido:<br>
+                    - Nome do Cliente: $nome<br>
+                    - Email do Cliente: $email<br>
+                    - Telefone do Cliente: $telefone<br>
+                    - Material: $material<br>
+                    - Quantidade: $quantidade<br>
+                    - Instruções: $texto_instrucoes<br>
+                ";
+                $mail->send();
+            }
+
             wp_send_json_success(['message' => 'Pedido salvo com sucesso e emails enviados!']);
-        } else {
+        } catch (Exception $e) {
+            error_log('Erro ao enviar email: ' . $mail->ErrorInfo);
             wp_send_json_error(['message' => 'Pedido salvo, mas ocorreu um erro ao enviar os emails.']);
         }
     } else {
@@ -355,48 +375,4 @@ function salvar_adesivo_cliente()
     wp_die();
 }
 
-function enviar_emails($admin_email, $admin_name, $senha_email, $servidor_smtp, $porta_smtp, $para_usuario, $assunto_usuario, $mensagem_usuario, $para_producao, $assunto_producao, $mensagem_producao)
-{
-    require_once ABSPATH . WPINC . '/PHPMailer/PHPMailer.php';
-    require_once ABSPATH . WPINC . '/PHPMailer/SMTP.php';
-    require_once ABSPATH . WPINC . '/PHPMailer/Exception.php';
 
-    $mail = new PHPMailer\PHPMailer\PHPMailer();
-
-    try {
-        // Configuração do servidor SMTP
-        $mail->isSMTP();
-        $mail->Host = $servidor_smtp;
-        $mail->SMTPAuth = true;
-        $mail->Username = $admin_email;
-        $mail->Password = $senha_email;
-        $mail->SMTPSecure = 'tls'; // Ou 'ssl' dependendo do servidor
-        $mail->Port = $porta_smtp;
-
-        // Enviar email para o cliente
-        $mail->setFrom($admin_email, $admin_name);
-        $mail->addAddress($para_usuario);
-        $mail->isHTML(true);
-        $mail->Subject = $assunto_usuario;
-        $mail->Body = $mensagem_usuario;
-
-        if (!$mail->send()) {
-            return false;
-        }
-
-        // Enviar email para a produção
-        $mail->clearAddresses();
-        $mail->addAddress($para_producao);
-        $mail->Subject = $assunto_producao;
-        $mail->Body = $mensagem_producao;
-
-        if (!$mail->send()) {
-            return false;
-        }
-
-        return true;
-    } catch (Exception $e) {
-        error_log('Erro ao enviar email: ' . $mail->ErrorInfo);
-        return false;
-    }
-}

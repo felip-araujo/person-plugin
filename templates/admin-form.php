@@ -200,9 +200,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_attachment']))
     }
 }
 
+// Seção de Configurações
 echo '<h2>Configurações</h2>';
 
 $recognize_sticker_setting = get_option('person_plugin_recognize_sticker', 'yes');
+$admin_email = get_option('person_plugin_admin_email', '');
+$sender_email = get_option('person_plugin_sender_email', '');
+$sender_password = get_option('person_plugin_sender_password', '');
 
 echo '<form method="post">';
 wp_nonce_field('person_plugin_settings_nonce', 'person_plugin_nonce');
@@ -213,6 +217,22 @@ echo '<option value="yes"' . selected($recognize_sticker_setting, 'yes', false) 
 echo '<option value="no"' . selected($recognize_sticker_setting, 'no', false) . '>Não</option>';
 echo '</select>';
 echo '</div>';
+
+echo '<div class="form-group">';
+echo '<label for="admin_email">Email do Administrador:</label>';
+echo '<input type="email" name="admin_email" id="admin_email" class="form-control" value="' . esc_attr($admin_email) . '">';
+echo '</div>';
+
+echo '<div class="form-group">';
+echo '<label for="sender_email">Email de Remetente:</label>';
+echo '<input type="email" name="sender_email" id="sender_email" class="form-control" value="' . esc_attr($sender_email) . '">';
+echo '</div>';
+
+echo '<div class="form-group">';
+echo '<label for="sender_password">Senha do Email de Remetente:</label>';
+echo '<input type="password" name="sender_password" id="sender_password" class="form-control" value="' . esc_attr($sender_password) . '">';
+echo '</div>';
+
 echo '<button type="submit" name="save_plugin_settings" class="btn btn-primary">Salvar Configurações</button>';
 echo '</form>';
 
@@ -222,6 +242,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_plugin_settings'
     } else {
         $recognize_sticker = sanitize_text_field($_POST['recognize_sticker']);
         update_option('person_plugin_recognize_sticker', $recognize_sticker);
+
+        $admin_email = sanitize_email($_POST['admin_email']);
+        update_option('person_plugin_admin_email', $admin_email);
+
+        $sender_email = sanitize_email($_POST['sender_email']);
+        update_option('person_plugin_sender_email', $sender_email);
+
+        $sender_password = sanitize_text_field($_POST['sender_password']);
+        update_option('person_plugin_sender_password', $sender_password);
+
         echo '<p class="alert alert-success">Configurações salvas com sucesso!</p>';
     }
 }

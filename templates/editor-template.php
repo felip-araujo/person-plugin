@@ -60,6 +60,9 @@
     <div class="text-center mt-4">
         <div class="d-flex justify-content-center gap-2 mb-4">
             <button id="salvar-adesivo-botao" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#salvarAdesivoModal">Salvar Adesivo</button>
+            <button id="salvar-modelo-botao" class="btn btn-primary">Salvar Modelo</button>
+            <button id="undo-button" class="btn btn-secondary">Desfazer</button>
+            <button id="redo-button" class="btn btn-secondary">Refazer</button>
             <button id="zoom-in" class="btn btn-secondary">+</button>
             <button id="zoom-out" class="btn btn-secondary">-</button>
             <button id="reset-zoom" class="btn btn-secondary">Resetar Zoom</button>
@@ -145,40 +148,4 @@
     document.getElementById('close-editor').addEventListener('click', function() {
         document.querySelector('.container').style.display = 'none';
     });
-
-    document.getElementById("salvarAdesivoForm").addEventListener("submit", function (e) {
-    e.preventDefault();
-
-    const nome = document.getElementById("nome").value;
-    const email = document.getElementById("email").value;
-    const telefone = document.getElementById("telefone").value;
-    const material = document.getElementById("material").value;
-    const quantidade = document.getElementById("quantidade").value;
-    const texto_instrucoes = document.getElementById("texto_instrucoes").value;
-
-    fetch(ajaxurl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            action: "salvar_adesivo_cliente",
-            nome,
-            email,
-            telefone,
-            material,
-            quantidade,
-            texto_instrucoes,
-        }),
-    })
-        .then((response) => response.json())
-        .then((data) => {
-            if (data.success) {
-                alert(data.message);
-                bootstrap.Modal.getInstance(document.getElementById("salvarAdesivoModal")).hide();
-            } else {
-                alert("Erro: " + data.message);
-            }
-        })
-        .catch((error) => console.error("Erro:", error));
-});
-
 </script>
