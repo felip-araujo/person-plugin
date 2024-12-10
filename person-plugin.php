@@ -22,7 +22,57 @@ function carregar_bootstrap_no_admin($hook_suffix)
         wp_enqueue_script('bootstrap-js', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js', array('jquery'), null, true);
     }
 }
-add_action('admin_enqueue_scripts', 'carregar_bootstrap_no_admin');
+add_action('admin_enqueue_scripts', 'carregar_bootstrap_no_admin'); 
+
+// Enfileirar scripts e estilos no frontend
+function person_plugin_enqueue_frontend_scripts()
+{
+    if (!is_product()) {
+        return; // Garante que os scripts sejam carregados apenas em páginas de produtos
+    }
+
+    // Estilos do Bootstrap
+    wp_enqueue_style(
+        'bootstrap-css',
+        'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css'
+    );
+
+    // Estilos do Customizador
+    wp_enqueue_style(
+        'person-plugin-customizer-css',
+        plugin_dir_url(__FILE__) . 'assets/css/customizador.css'
+    );
+
+    // Script do Bootstrap
+    wp_enqueue_script(
+        'bootstrap-js',
+        'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js',
+        array('jquery'),
+        null,
+        true
+    );
+
+    // Script do Konva.js
+    wp_enqueue_script(
+        'konva-js',
+        'https://cdn.jsdelivr.net/npm/konva@8.4.2/konva.min.js',
+        array(),
+        null,
+        true
+    );
+
+    // Script do Customizador
+    wp_enqueue_script(
+        'person-plugin-customizer-js',
+        plugin_dir_url(__FILE__) . 'assets/js/customizador.js',
+        array('jquery', 'konva-js'),
+        null,
+        true
+    );
+
+    wp_enqueue_media();
+}
+add_action('wp_enqueue_scripts', 'person_plugin_enqueue_frontend_scripts');
 
 // Adicionar menu ao admin
 function plugin_adicionar_menu()
@@ -101,55 +151,7 @@ function plugin_processar_upload($plugin_sticker_dir)
     }
 }
 
-// Enfileirar scripts e estilos no frontend
-function person_plugin_enqueue_frontend_scripts()
-{
-    if (!is_product()) {
-        return; // Garante que os scripts sejam carregados apenas em páginas de produtos
-    }
 
-    // Estilos do Bootstrap
-    wp_enqueue_style(
-        'bootstrap-css',
-        'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css'
-    );
-
-    // Estilos do Customizador
-    wp_enqueue_style(
-        'person-plugin-customizer-css',
-        plugin_dir_url(__FILE__) . 'assets/css/customizador.css'
-    );
-
-    // Script do Bootstrap
-    wp_enqueue_script(
-        'bootstrap-js',
-        'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js',
-        array('jquery'),
-        null,
-        true
-    );
-
-    // Script do Konva.js
-    wp_enqueue_script(
-        'konva-js',
-        'https://cdn.jsdelivr.net/npm/konva@8.4.2/konva.min.js',
-        array(),
-        null,
-        true
-    );
-
-    // Script do Customizador
-    wp_enqueue_script(
-        'person-plugin-customizer-js',
-        plugin_dir_url(__FILE__) . 'assets/js/customizador.js',
-        array('jquery', 'konva-js'),
-        null,
-        true
-    );
-
-    wp_enqueue_media();
-}
-add_action('wp_enqueue_scripts', 'person_plugin_enqueue_frontend_scripts');
 
 // Shortcode para exibir o customizador
 function person_plugin_display_customizer()
