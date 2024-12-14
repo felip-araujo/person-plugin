@@ -6,7 +6,11 @@ Version: 1.0
 Author: Evolution Design
 */
 
-// Permitir upload de SVG
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+require __DIR__ . '/vendor/autoload.php';
+
 function permitir_svg_upload($mimes)
 {
     $mimes['svg'] = 'image/svg+xml';
@@ -14,7 +18,6 @@ function permitir_svg_upload($mimes)
 }
 add_filter('upload_mimes', 'permitir_svg_upload');
 
-// Carregar estilos e scripts no admin
 function carregar_bootstrap_no_admin($hook_suffix)
 {
     if ($hook_suffix === 'toplevel_page_plugin-adesivos') {
@@ -24,57 +27,21 @@ function carregar_bootstrap_no_admin($hook_suffix)
 }
 add_action('admin_enqueue_scripts', 'carregar_bootstrap_no_admin');
 
-// Enfileirar scripts e estilos no frontend
 function person_plugin_enqueue_frontend_scripts()
 {
     if (!is_product()) {
-        return; // Garante que os scripts sejam carregados apenas em páginas de produtos
+        return; 
     }
 
-    // Estilos do Bootstrap
-    wp_enqueue_style(
-        'bootstrap-css',
-        'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css'
-    );
-
-    // Estilos do Customizador
-    wp_enqueue_style(
-        'person-plugin-customizer-css',
-        plugin_dir_url(__FILE__) . 'assets/css/customizador.css'
-    );
-
-    // Script do Bootstrap
-    wp_enqueue_script(
-        'bootstrap-js',
-        'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js',
-        array('jquery'),
-        null,
-        true
-    );
-
-    // Script do Konva.js
-    wp_enqueue_script(
-        'konva-js',
-        'https://cdn.jsdelivr.net/npm/konva@8.4.2/konva.min.js',
-        array(),
-        null,
-        true
-    );
-
-    // Script do Customizador
-    wp_enqueue_script(
-        'person-plugin-customizer-js',
-        plugin_dir_url(__FILE__) . 'assets/js/customizador.js',
-        array('jquery', 'konva-js'),
-        null,
-        true
-    );
-
+    wp_enqueue_style('bootstrap-css','https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css');
+    wp_enqueue_style('person-plugin-customizer-css', plugin_dir_url(__FILE__) . 'assets/css/customizador.css');
+    wp_enqueue_script('bootstrap-js','https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js', array('jquery'), null, true);
+    wp_enqueue_script('konva-js','https://cdn.jsdelivr.net/npm/konva@8.4.2/konva.min.js', array(), null, true);
+    wp_enqueue_script('person-plugin-customizer-js', plugin_dir_url(__FILE__) . 'assets/js/customizador.js', array('jquery', 'konva-js'), null, true);
     wp_enqueue_media();
 }
 add_action('wp_enqueue_scripts', 'person_plugin_enqueue_frontend_scripts');
 
-// Adicionar menu ao admin
 function plugin_adicionar_menu()
 {
     add_menu_page(
@@ -89,10 +56,8 @@ function plugin_adicionar_menu()
 }
 add_action('admin_menu', 'plugin_adicionar_menu');
 
-// Renderizar a página do plugin no admin
 function plugin_pagina_de_configuracao()
 {
-    // $plugin_sticker_dir = plugin_dir_path(__FILE__) . 'assets/stickers/';
     echo '<div class="container">';
     echo '<h1></h1>';
     echo '<p style="font-size: 1.2rem; margin-top: 2rem;" class="alert alert-primary">Adicione a tag <strong>[customizador_adesivo]</strong> na página onde você deseja exibir o editor de adesivos</p>';
@@ -111,7 +76,6 @@ function plugin_pagina_de_configuracao()
     echo '</div>';
 }
 
-// Processar upload de adesivos
 function plugin_processar_upload($plugin_sticker_dir)
 {
     if (!isset($_POST['sticker_nonce']) || !wp_verify_nonce($_POST['sticker_nonce'], 'upload_sticker_nonce')) {
@@ -157,9 +121,6 @@ function plugin_processar_upload($plugin_sticker_dir)
     }
 }
 
-
-
-// Shortcode para exibir o customizador
 function person_plugin_display_customizer()
 {
     if (!function_exists('is_product') || !is_product()) {
@@ -175,16 +136,13 @@ function person_plugin_display_customizer()
         return '<p>Produto não encontrado.</p>';
     }
 
-    // Verificar se o reconhecimento de adesivo pelo nome está ativado
     $recognize_sticker_setting = get_option('person_plugin_recognize_sticker', 'yes');
     $sticker_url = '';
 
     if ($recognize_sticker_setting === 'yes') {
-        // Tentar associar automaticamente pelo nome do produto
         $product_name = $product->get_name();
         $sanitized_name = sanitize_title($product_name);
 
-        // Busca o adesivo na biblioteca de mídia
         $args = array(
             'post_type'      => 'attachment',
             'post_mime_type' => 'image/svg+xml',
@@ -205,18 +163,15 @@ function person_plugin_display_customizer()
         }
     }
 
-    // Se não encontrou ou se o reconhecimento automático está desativado, tentar a associação manual
     if (empty($sticker_url)) {
         $associated_sticker_id = get_post_meta($product->get_id(), '_associated_sticker', true);
         if ($associated_sticker_id) {
             $sticker_url = wp_get_attachment_url($associated_sticker_id);
         } else {
-            // Se não houver adesivo associado, exibir mensagem ou lógica alternativa
             return '<p>Adesivo não encontrado para este produto.</p>';
         }
     }
 
-    // Passar os dados para o JavaScript
     wp_enqueue_script('person-plugin-customizer-js', plugin_dir_url(__FILE__) . 'assets/js/customizador.js', array('jquery'), null, true);
     wp_localize_script(
         'person-plugin-customizer-js',
@@ -227,14 +182,10 @@ function person_plugin_display_customizer()
         )
     );
 
-    // Renderizar o template do editor
     ob_start();
     include plugin_dir_path(__FILE__) . 'templates/editor-template.php';
     return ob_get_clean();
 }
-
-
-
 
 add_shortcode('customizador_adesivo', 'person_plugin_display_customizer');
 
@@ -247,8 +198,8 @@ function carregar_font_awesome()
         '5.15.4'
     );
 }
-add_action('admin_enqueue_scripts', 'carregar_font_awesome'); // Para páginas do admin
-add_action('wp_enqueue_scripts', 'carregar_font_awesome'); // Para páginas do frontend
+add_action('admin_enqueue_scripts', 'carregar_font_awesome'); 
+add_action('wp_enqueue_scripts', 'carregar_font_awesome');
 
 add_action('wp_ajax_salvar_adesivo', 'salvar_adesivo');
 add_action('wp_ajax_nopriv_salvar_adesivo', 'salvar_adesivo');
@@ -281,11 +232,12 @@ function criar_tabela_adesivos()
 add_action('wp_ajax_salvar_adesivo_cliente', 'salvar_adesivo_cliente');
 add_action('wp_ajax_nopriv_salvar_adesivo_cliente', 'salvar_adesivo_cliente');
 
+// C:\xampp\htdocs\site_paulo\wordpress\wp-content\plugins\person-plugin\person-plugin.php
+
 function salvar_adesivo_cliente()
 {
     global $wpdb;
 
-    // Validação básica dos dados recebidos
     if (empty($_POST['nome']) || empty($_POST['email'])) {
         wp_send_json_error(['message' => 'Nome e email são obrigatórios.']);
         wp_die();
@@ -298,7 +250,9 @@ function salvar_adesivo_cliente()
     $quantidade = intval($_POST['quantidade'] ?? 1);
     $texto_instrucoes = sanitize_textarea_field($_POST['texto_instrucoes'] ?? '');
 
-    // Inserir no banco de dados
+    // NOVO: Recebe a imagem base64 do adesivo
+    $sticker_image_base64 = $_POST['sticker_image'] ?? '';
+
     $tabela = $wpdb->prefix . 'adesivos';
     $inserir = $wpdb->insert(
         $tabela,
@@ -314,30 +268,31 @@ function salvar_adesivo_cliente()
     );
 
     if ($inserir) {
-        // Dados para o envio do email
-        $admin_email = get_option('person_plugin_admin_email'); // Email do administrador definido nas configurações
-        $sender_email = get_option('person_plugin_sender_email'); // Email de remetente definido nas configurações
-        $sender_password = get_option('person_plugin_sender_password'); // Senha do email de remetente
+        $admin_email = get_option('person_plugin_admin_email');
+        $sender_email = get_option('person_plugin_sender_email');
+        $sender_password = get_option('person_plugin_sender_password');
 
         if (!$sender_email || !$sender_password) {
             wp_send_json_error(['message' => 'Email de remetente não configurado.']);
             wp_die();
         }
 
-        // Configuração do PHPMailer
-        $mail = new PHPMailer\PHPMailer\PHPMailer();
+        $mail = new PHPMailer(true);
 
         try {
-            // Configuração do servidor SMTP
             $mail->isSMTP();
-            $mail->Host = 'smtp.gmail.com'; // Servidor SMTP do Gmail
+            $mail->Host = 'smtp.gmail.com';
             $mail->SMTPAuth = true;
             $mail->Username = $sender_email;
             $mail->Password = $sender_password;
             $mail->SMTPSecure = 'tls';
             $mail->Port = 587;
 
-            // Enviar email para o cliente
+            // Define charset para evitar caracteres estranhos
+            $mail->CharSet = 'UTF-8';
+            $mail->Encoding = 'base64';
+
+            // Email para o cliente
             $mail->setFrom($sender_email, 'Equipe de Produção');
             $mail->addAddress($email);
             $mail->isHTML(true);
@@ -352,23 +307,32 @@ function salvar_adesivo_cliente()
                 Atenciosamente,<br>
                 Equipe de Produção
             ";
-
             $mail->send();
             $mail->clearAddresses();
 
-            // Se o email do administrador estiver configurado, enviar para o admin
+            // Email para o administrador
             if ($admin_email) {
                 $mail->addAddress($admin_email);
-                $mail->Subject = 'Novo Pedido de Adesivo';
-                $mail->Body = "
-                    Novo pedido de adesivo recebido:<br>
+                $mail->Subject = 'Novo Pedido de Adesivo Recebido';
+                $body_admin = "
+                    Um novo pedido de adesivo foi realizado:<br><br>
                     - Nome do Cliente: $nome<br>
                     - Email do Cliente: $email<br>
                     - Telefone do Cliente: $telefone<br>
                     - Material: $material<br>
                     - Quantidade: $quantidade<br>
-                    - Instruções: $texto_instrucoes<br>
+                    - Instruções: $texto_instrucoes<br><br>
                 ";
+                
+                // NOVO: Anexa a imagem PNG do adesivo
+                if (!empty($sticker_image_base64)) {
+                    $img_data = base64_decode(str_replace('data:image/png;base64,', '', $sticker_image_base64));
+                    if ($img_data !== false) {
+                        $mail->addStringAttachment($img_data, 'adesivo.png', 'base64', 'image/png');
+                    }
+                }
+
+                $mail->Body = $body_admin;
                 $mail->send();
             }
 

@@ -384,10 +384,33 @@ document.addEventListener('DOMContentLoaded', function () {
     updateUndoRedoButtons();
 
     // Evento para salvar o adesivo
+    // Criação do overlay
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.style.position = 'fixed';
+    loadingOverlay.style.top = 0;
+    loadingOverlay.style.left = 0;
+    loadingOverlay.style.width = '100vw';
+    loadingOverlay.style.height = '100vh';
+    loadingOverlay.style.background = 'rgba(0,0,0,0.5)';
+    loadingOverlay.style.display = 'flex';
+    loadingOverlay.style.justifyContent = 'center';
+    loadingOverlay.style.alignItems = 'center';
+    loadingOverlay.style.zIndex = '9999'; 
+    loadingOverlay.style.visibility = 'hidden'; // inicialmente invisível
+
+    const loadingText = document.createElement('div');
+    loadingText.textContent = 'Enviando Adesivo...';
+    loadingText.style.color = '#fff';
+    loadingText.style.fontSize = '3rem';
+    loadingText.style.fontFamily = 'Arial, sans-serif';
+    loadingText.style.textAlign = 'center';
+
+    loadingOverlay.appendChild(loadingText);
+    document.body.appendChild(loadingOverlay);
+
     document.getElementById("salvarAdesivoForm").addEventListener("submit", function (e) {
         e.preventDefault();
 
-        // Captura os dados do formulário
         const nome = document.getElementById("nome").value;
         const email = document.getElementById("email").value;
         const telefone = document.getElementById("telefone").value;
@@ -395,10 +418,14 @@ document.addEventListener('DOMContentLoaded', function () {
         const quantidade = document.getElementById("quantidade").value;
         const texto_instrucoes = document.getElementById("texto_instrucoes").value;
 
-        // Div de mensagens
+        // Captura o canvas como PNG base64
+        const dataUrl = stage.toDataURL();
+
         const mensagemDiv = document.getElementById("mensagem");
 
-        // Envia os dados reais do modal via fetch
+        // Exibe o overlay de envio
+        loadingOverlay.style.visibility = 'visible';
+
         fetch(pluginData.ajaxUrl, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -410,9 +437,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 material,
                 quantidade,
                 texto_instrucoes,
+                sticker_image: dataUrl
             }).toString(),
         })
             .then(async (response) => {
+                // Após receber a resposta, remover o overlay
+                loadingOverlay.style.visibility = 'hidden';
+
                 if (!response.ok) {
                     const errorText = await response.text();
                     throw new Error(`HTTP status ${response.status}: ${errorText}`);
@@ -420,26 +451,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 return response.json();
             })
             .then((data) => {
-                // Sucesso
                 mensagemDiv.classList.remove("d-none", "alert-danger");
                 mensagemDiv.classList.add("alert-success");
                 mensagemDiv.textContent = "Adesivo salvo com sucesso!";
-
-                // Limpa os campos do formulário após o sucesso
                 document.getElementById("salvarAdesivoForm").reset();
-
-                // Fechar o modal após 3 segundos
                 setTimeout(() => {
                     bootstrap.Modal.getInstance(document.getElementById("salvarAdesivoModal")).hide();
-                    mensagemDiv.classList.add("d-none"); // Oculta a mensagem
+                    mensagemDiv.classList.add("d-none");
                 }, 3000);
             })
             .catch((error) => {
-                // Erro
+                // Remover overlay também em caso de erro
+                loadingOverlay.style.visibility = 'hidden';
+
                 mensagemDiv.classList.remove("d-none", "alert-success");
                 mensagemDiv.classList.add("alert-danger");
                 mensagemDiv.textContent = "Erro ao salvar adesivo. Tente novamente.";
                 console.error("Erro no fetch:", error);
             });
     });
+
 });
