@@ -108,11 +108,8 @@
             </div>
             <div class="modal-body">
                 <form id="salvarAdesivoForm">
-                    <div class="mb-3" style="color:#333">
+                    <div class="mb-3">
                         <div id="mensagem" class="alert d-none" role="alert"></div>
-                        <div id="loadingText" style="display: none;">
-                            <i class="fas fa-spinner fa-spin"></i>
-                        </div>
                         <label for="nome" class="form-label">Nome Completo:</label>
                         <input type="text" class="form-control" id="nome" placeholder="Digite seu nome" required>
                     </div>
@@ -140,6 +137,11 @@
                         <label for="texto_instrucoes" class="form-label">Texto Adicional ou Instruções:</label>
                         <textarea class="form-control" id="texto_instrucoes" placeholder="Adicione instruções ou informações adicionais"></textarea>
                     </div>
+
+                    <div id="loadingText" style="display: none; color:#333;">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+
                     <button type="submit" class="btn btn-primary w-100">Confirmar e Salvar</button>
                 </form>
             </div>
