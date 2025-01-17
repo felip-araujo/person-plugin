@@ -18,6 +18,19 @@ function permitir_svg_upload($mimes)
 }
 add_filter('upload_mimes', 'permitir_svg_upload');
 
+add_filter('admin_footer_text', 'customizar_rodape_plugin');
+
+function customizar_rodape_plugin($footer_text) {
+    // Verifica se estamos na tela específica do plugin
+    $tela_atual = get_current_screen();
+    if ($tela_atual->id === 'toplevel_page_plugin-adesivos') {
+        return ''; // Remove a mensagem do rodapé
+    }
+
+    return $footer_text; // Retorna o rodapé padrão para outras páginas
+}
+
+
 function carregar_bootstrap_no_admin($hook_suffix)
 {
     if ($hook_suffix === 'toplevel_page_plugin-adesivos') {
@@ -74,9 +87,14 @@ add_action('admin_menu', 'plugin_adicionar_menu');
 
 function plugin_pagina_de_configuracao()
 {
-    echo '<div class="container">';
-    echo '<h1></h1>';
-    echo '<p  style="font-size: 1.2rem; margin-top: 2rem;" class="alert alert-primary">Adicione a tag <strong>[customizador_adesivo]</strong> na página onde você deseja exibir o editor de adesivos</p>';
+    echo '
+<div class="alert alert-warning" style="display: inline-flex; align-items: center; font-size: 1.2rem; margin-top: 1rem; padding: 10px;">
+    <i class="fa-solid fa-circle-exclamation" style="margin-right: 10px;"></i>
+    <p style="margin: 0;">
+        Adicione a tag <strong>[customizador_adesivo]</strong> na página onde você deseja exibir o editor de adesivos.
+    </p>
+</div>';
+
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_sticker'])) {
         plugin_processar_upload($plugin_sticker_dir);

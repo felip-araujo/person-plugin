@@ -26,14 +26,35 @@ echo '</div>'; // Fecha row
 
 // Associar adesivos a produtos WooCommerce
 echo '
-<div class=" d-flex align-items-center" role="alert">
-    <i class="fa-solid fa-file"></i>
-    <h4 style="margin-top: .4rem;margin-left: .5rem"; class="mb-6"> Gerenciar Adesivos </h4>
-    <i class="fa-solid fa-file"></i>
-    <h4 style="margin-top: .4rem;margin-left: .5rem"; class="mb-6"> 
-    <a href="#form-adesivos" style="text-decoration: none; color: inherit;">Configurações</a>
-    </h4>
-</div>';
+<table style="width: 100%; border-collapse: collapse; margin-bottom: .3rem">
+    <tr style="background-color: #eee; border-bottom: 2px solid #dee2e6;">
+        <!-- Item 1 -->
+        <td style="padding: 10px; text-align: center;">
+            <a href="#form-table" style="text-decoration: none; color: #343a40; display: flex; align-items: center; justify-content: center;">
+                <i class="fa-solid fa-file" style="margin-right: 8px;"></i>
+                <span>Gerenciar Adesivos</span>
+            </a>
+        </td>
+        <!-- Item 2 -->
+        <td style="padding: 10px; text-align: center;">
+            <a href="#form-adesivos" style="text-decoration: none; color: #343a40; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-gear" style="margin-right: 8px;"></i>
+                <span>Configurações</span>
+            </a>
+        </td>
+        <!-- Item 3 -->
+        <td style="padding: 10px; text-align: center;">
+            <a href="#" onclick="copiarTag(event)" style="text-decoration: none; color: #343a40; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-copy" style="margin-right: 8px;"></i>
+                <span>Copiar Tag</span>
+            </a>
+        </td>
+    </tr>
+</table>
+<!-- Input invisível para copiar a tag -->
+<input type="text" id="tagInput" value="[customizador_adesivo]" style="position: absolute; left: -9999px;">
+';
+
 $args_products = array(
     'post_type'      => 'product',
     'posts_per_page' => -1,
@@ -62,7 +83,7 @@ $query = new WP_Query($args_attachments);
 
 // Renderiza a tabela de adesivos
 if ($query->have_posts()) {
-    echo '<table style="" class="table table-dark">';
+    echo '<table id="form-table" style="" class="table table-dark">';
     echo '<thead><tr><th>Visualização</th><th>Nome do Adesivo</th><th>Associar Produto</th><th>Gerenciar</th></tr></thead>';
     echo '<tbody>';
     while ($query->have_posts()) {
@@ -213,7 +234,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_attachment']))
 echo '
 <div class=" d-flex align-items-center" role="alert">
     <i class="fas fa-gear me-2"></i>
-    <h4 style="margin-top: .4rem;margin-left: .5rem"; class="mb-6"> Configurações </h4>
+    <h4 style="margin-top: .4rem;margin-left: .5rem; font-size: 1.2rem"; class="mb-6"> Configurações </h4>
 </div>';
 
 
@@ -243,7 +264,7 @@ echo '<input type="email" name="sender_email" id="sender_email" class="form-cont
 echo '</div>';
 
 echo '<div class="form-group">';
-echo '<label for="sender_password">Senha do Email de Remetente:</label>';
+echo '<label for="sender_password">Senha de App do Email de Remetente:</label>';
 echo '<input type="password" name="sender_password" id="sender_password" class="form-control" value="' . esc_attr($sender_password) . '">';
 echo '</div>';
 
@@ -285,5 +306,26 @@ echo "
             }, 800); // 800ms de animação
         });
     });
+
+
+    
 </script>
 ";
+ 
+echo '
+<script>
+function copiarTag(event) {
+    event.preventDefault(); // Prevenir comportamento padrão do link
+    const tagInput = document.getElementById("tagInput");
+
+    // Seleciona o valor do input escondido
+    tagInput.select();
+    tagInput.setSelectionRange(0, 99999); // Para compatibilidade com dispositivos móveis
+
+    // Copia o texto para a área de transferência
+    document.execCommand("copy");
+
+    // Exibe uma mensagem de confirmação (opcional)
+    alert("Tag copiada para a área de transferência!");
+}
+</script>';
