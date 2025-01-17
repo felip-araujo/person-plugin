@@ -75,27 +75,27 @@
     <script src="/assets/css/customizador.css"></script>
     <!-- Modal para coletar Nome e Email -->
     <div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-        <div style="border-radius: .5rem;" class="modal-header">
-            <h5 class="modal-title" id="infoModalLabel">Informações do Usuário</h5>
-            <button style="border: none;" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-        </div>
-        <div class="modal-body">
-            <form id="userInfoForm">
-            <div class="form-group">
-                <label for="userName">Nome:</label>
-                <input type="text" class="form-control" id="userName" required>
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div style="border-radius: .5rem;" class="modal-header">
+                    <h5 class="modal-title" id="infoModalLabel">Informações do Usuário</h5>
+                    <button style="border: none;" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="userInfoForm">
+                        <div class="form-group">
+                            <label for="userName">Nome:</label>
+                            <input type="text" class="form-control" id="userName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="userEmail">Email:</label>
+                            <input type="email" class="form-control" id="userEmail" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Enviar Adesivo</button>
+                    </form>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="userEmail">Email:</label>
-                <input type="email" class="form-control" id="userEmail" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Enviar Adesivo</button>
-            </form>
         </div>
-        </div>
-    </div>
     </div>
 </div>
 
@@ -104,12 +104,15 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="salvarAdesivoModalLabel">Salvar Adesivo</h5>
-                <div id="mensagem" class="alert d-none" role="alert"></div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
             <div class="modal-body">
                 <form id="salvarAdesivoForm">
-                    <div class="mb-3">
+                    <div class="mb-3" style="color:#333">
+                        <div id="mensagem" class="alert d-none" role="alert"></div>
+                        <div id="loadingText" style="display: none;">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
                         <label for="nome" class="form-label">Nome Completo:</label>
                         <input type="text" class="form-control" id="nome" placeholder="Digite seu nome" required>
                     </div>

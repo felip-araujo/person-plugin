@@ -399,7 +399,7 @@ document.addEventListener('DOMContentLoaded', function () {
     loadingOverlay.style.visibility = 'hidden'; // inicialmente invisível
 
     const loadingText = document.createElement('div');
-    loadingText.textContent = 'Enviando Adesivo...';
+    loadingText.textContent = 'Enviando Email';
     loadingText.style.color = '#fff';
     loadingText.style.fontSize = '3rem';
     loadingText.style.fontFamily = 'Arial, sans-serif';
@@ -410,22 +410,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById("salvarAdesivoForm").addEventListener("submit", function (e) {
         e.preventDefault();
-
+    
         const nome = document.getElementById("nome").value;
         const email = document.getElementById("email").value;
         const telefone = document.getElementById("telefone").value;
         const material = document.getElementById("material").value;
         const quantidade = document.getElementById("quantidade").value;
         const texto_instrucoes = document.getElementById("texto_instrucoes").value;
-
+    
         // Captura o canvas como PNG base64
         const dataUrl = stage.toDataURL();
-
+    
         const mensagemDiv = document.getElementById("mensagem");
-
-        // Exibe o overlay de envio
-        loadingOverlay.style.visibility = 'visible';
-
+        const loadingText = document.getElementById("loadingText");  // Referência ao texto de loading
+    
+        // Exibe o ícone de carregamento e a mensagem de envio
+        loadingText.style.display = 'block';
+        mensagemDiv.classList.add("d-none");
+    
+        // Substitui o texto da variável 'loadingText' com o spinner
+        loadingText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando Adesivo...';
+    
         fetch(pluginData.ajaxUrl, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -441,9 +446,9 @@ document.addEventListener('DOMContentLoaded', function () {
             }).toString(),
         })
             .then(async (response) => {
-                // Após receber a resposta, remover o overlay
-                loadingOverlay.style.visibility = 'hidden';
-
+                // Após receber a resposta, remover o ícone de loading
+                loadingText.style.display = 'none';
+    
                 if (!response.ok) {
                     const errorText = await response.text();
                     throw new Error(`HTTP status ${response.status}: ${errorText}`);
@@ -461,9 +466,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 }, 3000);
             })
             .catch((error) => {
-                // Remover overlay também em caso de erro
-                loadingOverlay.style.visibility = 'hidden';
-
+                // Remover ícone de loading também em caso de erro
+                loadingText.style.display = 'none';
+    
                 mensagemDiv.classList.remove("d-none", "alert-success");
                 mensagemDiv.classList.add("alert-danger");
                 mensagemDiv.textContent = "Erro ao salvar adesivo. Tente novamente.";

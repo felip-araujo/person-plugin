@@ -68,6 +68,14 @@ function meu_plugin_carregar_fontawesome_kit()
         );
     }
 }
+
+function carregar_fontawesome_frontend() {
+    if (!is_admin()) {  // Só no front-end
+        wp_enqueue_style('font-awesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
+    }
+}
+add_action('wp_enqueue_scripts', 'carregar_fontawesome_frontend');
+
 add_action('admin_enqueue_scripts', 'meu_plugin_carregar_fontawesome_kit');
 
 
