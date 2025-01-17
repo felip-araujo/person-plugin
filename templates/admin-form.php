@@ -25,7 +25,15 @@ echo '</div>';
 echo '</div>'; // Fecha row
 
 // Associar adesivos a produtos WooCommerce
-echo '<h2>Gerenciar Adesivos</h2>';
+echo '
+<div class=" d-flex align-items-center" role="alert">
+    <i class="fa-solid fa-file"></i>
+    <h4 style="margin-top: .4rem;margin-left: .5rem"; class="mb-6"> Gerenciar Adesivos </h4>
+    <i class="fa-solid fa-file"></i>
+    <h4 style="margin-top: .4rem;margin-left: .5rem"; class="mb-6"> 
+    <a href="#form-adesivos" style="text-decoration: none; color: inherit;">Configurações</a>
+    </h4>
+</div>';
 $args_products = array(
     'post_type'      => 'product',
     'posts_per_page' => -1,
@@ -54,7 +62,7 @@ $query = new WP_Query($args_attachments);
 
 // Renderiza a tabela de adesivos
 if ($query->have_posts()) {
-    echo '<table style="border-radius: .7rem" class="table table-dark">';
+    echo '<table style="" class="table table-dark">';
     echo '<thead><tr><th>Visualização</th><th>Nome do Adesivo</th><th>Associar Produto</th><th>Gerenciar</th></tr></thead>';
     echo '<tbody>';
     while ($query->have_posts()) {
@@ -201,14 +209,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_attachment']))
 }
 
 // Seção de Configurações
-echo '<h2>Configurações</h2>';
+// echo '<h3 >Configurações</h3>';
+echo '
+<div class=" d-flex align-items-center" role="alert">
+    <i class="fas fa-gear me-2"></i>
+    <h4 style="margin-top: .4rem;margin-left: .5rem"; class="mb-6"> Configurações </h4>
+</div>';
+
 
 $recognize_sticker_setting = get_option('person_plugin_recognize_sticker', 'yes');
 $admin_email = get_option('person_plugin_admin_email', '');
 $sender_email = get_option('person_plugin_sender_email', '');
 $sender_password = get_option('person_plugin_sender_password', '');
 
-echo '<form method="post">';
+echo '<form id="form-adesivos" method="post">';
 wp_nonce_field('person_plugin_settings_nonce', 'person_plugin_nonce');
 echo '<div class="form-group">';
 echo '<label for="recognize_sticker">Ativar reconhecimento de adesivo pelo nome do produto:</label>';
@@ -219,7 +233,7 @@ echo '</select>';
 echo '</div>';
 
 echo '<div class="form-group">';
-echo '<label for="admin_email">Email do Administrador:</label>';
+echo '<label for="admin_email">Email da Equipe de Produção (Administrador):</label>';
 echo '<input type="email" name="admin_email" id="admin_email" class="form-control" value="' . esc_attr($admin_email) . '">';
 echo '</div>';
 
@@ -255,4 +269,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_plugin_settings'
         echo '<p class="alert alert-success">Configurações salvas com sucesso!</p>';
     }
 }
-?>
+
+
+
+// Scripts
+echo "
+<script>
+    jQuery(document).ready(function($) {
+        $('a[href^=\"#\"]').on('click', function(e) {
+            e.preventDefault();
+            var target = this.hash;
+            var $target = $(target);
+            $('html, body').animate({
+                scrollTop: $target.offset().top - 50 // Ajusta a posição para não cobrir o cabeçalho
+            }, 800); // 800ms de animação
+        });
+    });
+</script>
+";

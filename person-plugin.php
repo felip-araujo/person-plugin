@@ -30,17 +30,33 @@ add_action('admin_enqueue_scripts', 'carregar_bootstrap_no_admin');
 function person_plugin_enqueue_frontend_scripts()
 {
     if (!is_product()) {
-        return; 
+        return;
     }
 
-    wp_enqueue_style('bootstrap-css','https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css');
+    wp_enqueue_style('bootstrap-css', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css');
     wp_enqueue_style('person-plugin-customizer-css', plugin_dir_url(__FILE__) . 'assets/css/customizador.css');
-    wp_enqueue_script('bootstrap-js','https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js', array('jquery'), null, true);
-    wp_enqueue_script('konva-js','https://cdn.jsdelivr.net/npm/konva@8.4.2/konva.min.js', array(), null, true);
+    wp_enqueue_script('bootstrap-js', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js', array('jquery'), null, true);
+    wp_enqueue_script('konva-js', 'https://cdn.jsdelivr.net/npm/konva@8.4.2/konva.min.js', array(), null, true);
     wp_enqueue_script('person-plugin-customizer-js', plugin_dir_url(__FILE__) . 'assets/js/customizador.js', array('jquery', 'konva-js'), null, true);
     wp_enqueue_media();
 }
 add_action('wp_enqueue_scripts', 'person_plugin_enqueue_frontend_scripts');
+
+function meu_plugin_carregar_fontawesome_kit()
+{
+    // Verifica se está no painel de administração
+    if (is_admin()) {
+        wp_enqueue_script(
+            'font-awesome-kit', // Handle único para o script
+            'https://kit.fontawesome.com/d4755c66d3.js', // URL do Font Awesome Kit
+            array(), // Dependências
+            null, // Versão (deixe como null para usar a versão mais recente)
+            true // Carregar no footer (true)
+        );
+    }
+}
+add_action('admin_enqueue_scripts', 'meu_plugin_carregar_fontawesome_kit');
+
 
 function plugin_adicionar_menu()
 {
@@ -60,7 +76,7 @@ function plugin_pagina_de_configuracao()
 {
     echo '<div class="container">';
     echo '<h1></h1>';
-    echo '<p style="font-size: 1.2rem; margin-top: 2rem;" class="alert alert-primary">Adicione a tag <strong>[customizador_adesivo]</strong> na página onde você deseja exibir o editor de adesivos</p>';
+    echo '<p  style="font-size: 1.2rem; margin-top: 2rem;" class="alert alert-primary">Adicione a tag <strong>[customizador_adesivo]</strong> na página onde você deseja exibir o editor de adesivos</p>';
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_sticker'])) {
         plugin_processar_upload($plugin_sticker_dir);
@@ -198,7 +214,7 @@ function carregar_font_awesome()
         '5.15.4'
     );
 }
-add_action('admin_enqueue_scripts', 'carregar_font_awesome'); 
+add_action('admin_enqueue_scripts', 'carregar_font_awesome');
 add_action('wp_enqueue_scripts', 'carregar_font_awesome');
 
 add_action('wp_ajax_salvar_adesivo', 'salvar_adesivo');
@@ -323,7 +339,7 @@ function salvar_adesivo_cliente()
                     - Quantidade: $quantidade<br>
                     - Instruções: $texto_instrucoes<br><br>
                 ";
-                
+
                 // NOVO: Anexa a imagem PNG do adesivo
                 if (!empty($sticker_image_base64)) {
                     $img_data = base64_decode(str_replace('data:image/png;base64,', '', $sticker_image_base64));
