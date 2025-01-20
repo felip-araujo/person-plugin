@@ -11,7 +11,7 @@
         <!-- Titulo -->
         <div class="d-flex justify-content-between align-items-center">
             <h2 class="text-left" id="titulo">Personalize seu Adesivo</h2>
-            <button id="close-editor" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center" style="border: none; background: transparent;">
+            <button id="close-editor" class="btn btn-outline-secondary btn d-flex align-items-center justify-content-center" style="border: none; background: transparent;">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -53,6 +53,13 @@
                                     <option value="Verdana">Verdana</option>
                                     <option value="Roboto">Roboto</option>
                                     <option value="Smooch Sans">Smooch Sans</option>
+                                    <option value="Poppins">Poppins</option>
+                                    <option value="Montserrat">Montserrat</option>
+                                    <option value="Ubuntu">Ubuntu</option>
+                                    <option value="Gabriola">Gabriola</option>
+                                    <option value="Lato">Lato</option>
+                                    <option value="Oswald">Oswald</option>
+                                    <option value="Smooch">Smooch</option>
                                 </select>
                             </div>
                             <div class="">
@@ -109,32 +116,6 @@
         </div>
     </div>
 
-
-    <!-- Modal para coletar Nome e Email -->
-    <div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div style="border-radius: .5rem;" class="modal-header">
-                    <h5 class="modal-title" id="infoModalLabel">Informações do Usuário</h5>
-                    <button style="border: none;" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="userInfoForm">
-                        <div class="form-group">
-                            <label for="userName">Nome:</label>
-                            <input type="text" class="form-control" id="userName" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="userEmail">Email:</label>
-                            <input type="email" class="form-control" id="userEmail" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Enviar Adesivo</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 
 <!-- Modal para salvar o Adesivo -->
