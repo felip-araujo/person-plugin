@@ -1,78 +1,115 @@
-<!-- /var/www/html/wp-content/plugins/person-plugin/templates/editor-template.php -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://kit.fontawesome.com/d4755c66d3.js" crossorigin="anonymous"></script>
+<!-- Editor -->
 
 
-<div class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center">
-        <h2 class="text-left" id="titulo">Personalize seu Adesivo</h2>
-        <button id="close-editor" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center" style="border: none; background: transparent;">
-            <i class="fas fa-times"></i>
-        </button>
+<div class="container-fluid">
+    <div class="container mt-5">
+        <!-- Titulo -->
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="text-left" id="titulo">Personalize seu Adesivo</h2>
+            <button id="close-editor" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center" style="border: none; background: transparent;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <!-- Row para Divisao Lado a Lado -->
+        <div class="row">
+            <div class="col-md-3 border-end" style="height: 100vh; overflow-y:auto;">
+                <!-- Abas para alternar entre Texto e Camadas -->
+                <ul class="nav nav-tabs">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="tab-camadas" data-bs-toggle="tab" href="#camadas-tab-content">Camadas</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link " id="tab-texto" data-bs-toggle="tab" href="#texto-tab-content">Texto</a>
+                    </li>
+                </ul>
+
+                <!-- Conteúdo das Abas -->
+                <div class="tab-content mt-3">
+                    <!-- Aba de Texto -->
+                    <div class="tab-pane fade show" id="texto-tab-content">
+
+                        <div class="">
+
+                            <div class="">
+                                <label for="cor-texto" class="form-label">Cor do Texto:</label>
+                                <input type="color" id="cor-texto" class="form-control" value="#000000">
+                            </div>
+                            <div class="">
+                                <label for="tamanho-fonte" class="form-label">Tamanho da Fonte:</label>
+                                <input type="number" id="tamanho-fonte" class="form-range form-control" min="10" max="100" value="25">
+                            </div>
+                            <div class="">
+                                <label for="fontPicker" class="form-label">Fonte:</label>
+                                <select id="fontPicker" class="form-control">
+                                    <option value="Arial">Arial</option>
+                                    <option value="Times New Roman">Times New Roman</option>
+                                    <option value="Courier New">Courier New</option>
+                                    <option value="Georgia">Georgia</option>
+                                    <option value="Verdana">Verdana</option>
+                                    <option value="Roboto">Roboto</option>
+                                    <option value="Smooch Sans">Smooch Sans</option>
+                                </select>
+                            </div>
+                            <div class="">
+                                <label for="texto" class="form-label">Texto do Adesivo:</label>
+                                <input type="text" id="texto" class="form-control" placeholder="Digite o texto do adesivo">
+                            </div>
+                            <div class="">
+                                <label for="rotacao-texto" class="form-label">Rotação do Texto:</label>
+                                <input type="range" id="rotacao-texto" class="form-range" min="-180" max="180" step="0.1" value="0" style="width: 100%;">
+                                <input type="number" id="rotacao-texto-valor" class="form-control mt-1" min="-180" max="180" step="0.4" value="0">
+                            </div>
+                            <div class="" style="margin-top: .5rem;">
+                                <button id="adicionar-texto-botao" class="btn btn-primary w-100">Adicionar Texto</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Aba de Camadas -->
+                    <div class="tab-pane fade show active" id="camadas-tab-content">
+
+                        <form>
+                            <div class="mb-3">
+                                <label for="cor" class="form-label">Cor da Camada:</label>
+                                <input type="color" id="cor" class="form-control">
+
+                                <label for="layer-select" class="form-label">Escolha a Camada:</label>
+                                <select id="layer-select" class="form-control">
+                                    <!-- As opções de camada serão adicionadas dinamicamente pelo JavaScript -->
+                                </select>
+                            </div>
+                        </form>
+
+
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-9 d-flex align-items-center justify-content-center">
+                <div class="text-center mt-4">
+                    <div class="d-flex justify-content-center align-items-center">
+                        <div id="adesivo-canvas" class="bg-white" style="width: 100%; max-width: 900px; height: auto; aspect-ratio: 16/9; overflow: hidden; position: relative;"></div>
+                    </div>
+                    <div class="d-flex justify-content-center gap-2 mb-4" style="margin-top: .5rem">
+                        <button id="undo-button" class="btn btn-secondary"><i class="fa-solid fa-backward"></i></button>
+                        <button id="redo-button" class="btn btn-secondary"><i class="fa-solid fa-forward"></i></button>
+                        <button id="zoom-in" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                        <button id="zoom-out" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                        <button id="reset-zoom" class="btn btn-secondary"><i class="fa-solid fa-arrow-rotate-right"></i></button>
+                        <button id="salvar-modelo-botao" class="btn btn-primary">Salvar Modelo</button>
+                        <button id="salvar-adesivo-botao" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#salvarAdesivoModal">Salvar Adesivo</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="row">
-        <div class="col-md-3 mb-3">
-            <label for="cor" class="form-label">Cor da Camada:</label>
-            <input type="color" id="cor" class="form-control">
-        </div>
-        <div class="col-md-3 mb-3">
-            <label for="layer-select" class="form-label">Escolha a Camada:</label>
-            <select id="layer-select" class="form-control">
-                <!-- As opções de camada serão adicionadas dinamicamente pelo JavaScript -->
-            </select>
-        </div>
-        <div class="col-md-3 mb-3">
-            <label for="cor-texto" class="form-label">Cor do Texto:</label>
-            <input type="color" id="cor-texto" class="form-control" value="#000000">
-        </div>
-        <div class="col-md-3 mb-3">
-            <label for="tamanho-fonte" class="form-label">Tamanho da Fonte:</label>
-            <input type="number" id="tamanho-fonte" class="form-range" min="10" max="100" value="25">
-        </div>
-        <div class="col-md-3 mb-3">
-            <label for="fontPicker" class="form-label">Fonte:</label>
-            <select id="fontPicker" class="form-control">
-                <option value="Arial">Arial</option>
-                <option value="Times New Roman">Times New Roman</option>
-                <option value="Courier New">Courier New</option>
-                <option value="Georgia">Georgia</option>
-                <option value="Verdana">Verdana</option>
-                <!-- Adicione mais fontes se necessário -->
-            </select>
-        </div>
-        <div class="col-md-3 mb-3">
-            <label for="texto" class="form-label">Texto do Adesivo:</label>
-            <input type="text" id="texto" class="form-control" placeholder="Digite o texto do adesivo">
-        </div>
-        <div class="col-md-3 mb-3">
-            <label for="rotacao-texto" class="form-label">Rotação do Texto:</label>
-            <input type="range" id="rotacao-texto" class="form-range" min="-180" max="180" step="0.1" value="0" style="width: 100%;">
-            <input type="number" id="rotacao-texto-valor" class="form-control mt-1" min="-180" max="180" step="0.4" value="0">
-        </div>
 
-        <div class="col-md-3 mb-3 d-flex align-items-end">
-            <button id="adicionar-texto-botao" class="btn btn-primary w-100">Adicionar Texto</button>
-        </div>
-    </div>
 
-    <div class="text-center mt-4">
-        <div class="d-flex justify-content-center gap-2 mb-4">
-            <button id="salvar-adesivo-botao" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#salvarAdesivoModal">Salvar Adesivo</button>
-            <button id="salvar-modelo-botao" class="btn btn-primary">Salvar Modelo</button>
-            <button id="undo-button" class="btn btn-secondary">Desfazer</button>
-            <button id="redo-button" class="btn btn-secondary">Refazer</button>
-            <button id="zoom-in" class="btn btn-secondary">+</button>
-            <button id="zoom-out" class="btn btn-secondary">-</button>
-            <button id="reset-zoom" class="btn btn-secondary">Resetar Zoom</button>
-        </div>
-        <div class="d-flex justify-content-center align-items-center">
-            <div id="adesivo-canvas" class="border bg-white" style="width: 100%; max-width: 800px; height: auto; aspect-ratio: 16/9; overflow: hidden; position: relative;"></div>
-        </div>
-    </div>
-
-    <script src="/assets/css/customizador.css"></script>
     <!-- Modal para coletar Nome e Email -->
     <div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
         <div class="modal-dialog">
@@ -99,6 +136,8 @@
     </div>
 </div>
 
+
+<!-- Modal para salvar o Adesivo -->
 <div class="modal fade" id="salvarAdesivoModal" tabindex="-1" aria-labelledby="salvarAdesivoModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
