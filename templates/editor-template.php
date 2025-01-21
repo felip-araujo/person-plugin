@@ -20,10 +20,10 @@
             <div class="col-md-3 border-end" style="height: 100vh; overflow-y:auto;">
                 <!-- Abas para alternar entre Texto e Camadas -->
                 <ul class="nav nav-tabs">
-                    <li class="nav-item">
+                    <li class="nav-item col-6 p-0 text-center">
                         <a class="nav-link active" id="tab-camadas" data-bs-toggle="tab" href="#camadas-tab-content">Camadas</a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item col-6 p-0 text-center">
                         <a class="nav-link " id="tab-texto" data-bs-toggle="tab" href="#texto-tab-content">Texto</a>
                     </li>
                 </ul>
@@ -35,6 +35,10 @@
 
                         <div class="">
 
+                            <div class="">
+                                <label for="texto" class="form-label">Texto do Adesivo:</label>
+                                <input type="text" id="texto" class="form-control" placeholder="Digite o texto do adesivo">
+                            </div>
                             <div class="">
                                 <label for="cor-texto" class="form-label">Cor do Texto:</label>
                                 <input type="color" id="cor-texto" class="form-control" value="#000000">
@@ -63,10 +67,6 @@
                                 </select>
                             </div>
                             <div class="">
-                                <label for="texto" class="form-label">Texto do Adesivo:</label>
-                                <input type="text" id="texto" class="form-control" placeholder="Digite o texto do adesivo">
-                            </div>
-                            <div class="">
                                 <label for="rotacao-texto" class="form-label">Rotação do Texto:</label>
                                 <input type="range" id="rotacao-texto" class="form-range" min="-180" max="180" step="0.1" value="0" style="width: 100%;">
                                 <input type="number" id="rotacao-texto-valor" class="form-control mt-1" min="-180" max="180" step="0.4" value="0">
@@ -82,13 +82,13 @@
 
                         <form>
                             <div class="mb-3">
-                                <label for="cor" class="form-label">Cor da Camada:</label>
-                                <input type="color" id="cor" class="form-control">
-
                                 <label for="layer-select" class="form-label">Escolha a Camada:</label>
                                 <select id="layer-select" class="form-control">
                                     <!-- As opções de camada serão adicionadas dinamicamente pelo JavaScript -->
                                 </select>
+
+                                <label for="cor" class="form-label">Cor da Camada:</label>
+                                <input type="color" id="cor" class="form-control">
                             </div>
                         </form>
 
@@ -101,12 +101,12 @@
                     <div class="d-flex justify-content-center align-items-center">
                         <div id="adesivo-canvas" class="bg-white" style="width: 100%; max-width: 900px; height: auto; aspect-ratio: 16/9; overflow: hidden; position: relative;"></div>
                     </div>
-                    <div class="d-flex justify-content-center gap-2 mb-4" style="margin-top: .5rem">
-                        <button id="undo-button" class="btn btn-secondary"><i class="fa-solid fa-backward"></i></button>
-                        <button id="redo-button" class="btn btn-secondary"><i class="fa-solid fa-forward"></i></button>
+                    <div class="d-flex justify-content-center gap-1 mb-4" style="margin-top: .5rem">
+                        <button id="undo-button" class="btn btn-secondary"><i class="fa-solid fa-rotate-left"></i></button>
+                        <button id="redo-button" class="btn btn-secondary"><i class="fa-solid fa-rotate-right"></i></button>
                         <button id="zoom-in" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
                         <button id="zoom-out" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
-                        <button id="reset-zoom" class="btn btn-secondary"><i class="fa-solid fa-arrow-rotate-right"></i></button>
+                        <button id="reset-zoom" class="btn btn-secondary">100%</button>
                         <button id="salvar-modelo-botao" class="btn btn-primary">Salvar Modelo</button>
                         <button id="salvar-adesivo-botao" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#salvarAdesivoModal">Salvar Adesivo</button>
                     </div>
