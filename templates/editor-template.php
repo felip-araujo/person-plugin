@@ -67,7 +67,21 @@
         .d-flex button {
             margin-bottom: 5px;
         }
+
+        #abas-1 {
+            padding: 1.2rem;
+        }
+
+        #imagem-botao-container {
+            flex-direction: initial;
+        }
+        #close-editor{
+            text-align: right; 
+            background-color: none;
+        }
     }
+
+
 
     @media (min-width: 768px) {
         .btn {
@@ -88,6 +102,7 @@
             margin-top: 8px;
             /* Ajuste conforme necessário */
         }
+
     }
 </style>
 
@@ -96,25 +111,25 @@
         <!-- Titulo -->
         <div class="d-flex justify-content-between align-items-center">
             <h2 class="text-left" id="titulo">Personalize seu Adesivo</h2>
-            <button id="close-editor" class="btn btn-outline-secondary d-flex align-items-center justify-content-center" style="border: none; background: transparent;">
+            <button id="close-editor" class="btn btn-outline-danger" style="border: none; color: white;">
                 <i class="fas fa-times"></i>
             </button>
         </div>
         <!-- Row para Divisao Lado a Lado -->
-        <div class="row">
+        <div class="row" id="abas">
             <div class="col-md-3 border-end" style="height: 100vh; overflow-y:auto;">
                 <!-- Abas para alternar entre Texto e Camadas -->
-                <ul class="nav nav-tabs">
+                <ul class="nav nav-tabs" >
                     <li class="nav-item col-6 p-0 text-center">
-                        <a class="nav-link active" id="tab-camadas" data-bs-toggle="tab" href="#camadas-tab-content">Camadas</a>
+                        <a style="text-decoration: none; color: #444" class="nav-link active" id="tab-camadas" data-bs-toggle="tab" href="#camadas-tab-content">Camadas</a>
                     </li>
                     <li class="nav-item col-6 p-0 text-center">
-                        <a class="nav-link" id="tab-texto" data-bs-toggle="tab" href="#texto-tab-content">Texto</a>
+                        <a style="text-decoration: none;" class="nav-link" id="tab-texto" data-bs-toggle="tab" href="#texto-tab-content">Texto</a>
                     </li>
                 </ul>
 
                 <!-- Conteúdo das Abas -->
-                <div class="tab-content mt-3">
+                <div class="tab-content mt-3" id="abas-1">
                     <!-- Aba de Texto -->
                     <div class="tab-pane fade" id="texto-tab-content">
                         <div>
@@ -169,7 +184,7 @@
                                 </button>
 
                                 <!-- Botões de aumentar/diminuir o PNG -->
-                                <div class="d-flex gap-2 mt-3">
+                                <div class="d-flex gap-2 mt-3" id="imagem-botao-container">
                                     <button id="aumentar-png-botao" type="button" class="btn btn-secondary w-50">
                                         Aumentar
                                     </button>
@@ -196,7 +211,7 @@
                 <button id="redo-button" class="btn btn-secondary"><i class="fa-solid fa-rotate-right"></i></button>
                 <button id="zoom-in" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
                 <button id="zoom-out" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
-                <button id="reset-zoom" class="btn btn-secondary">100%</button>
+                <button id="reset-zoom" class="btn btn-secondary"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></button>
                 <button id="salvar-modelo-botao" class="btn btn-primary">Salvar Modelo</button>
                 <button id="salvar-adesivo-botao" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#salvarAdesivoModal">Salvar Adesivo</button>
             </div>
