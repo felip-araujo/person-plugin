@@ -169,10 +169,12 @@ body {
     border: 2px solid #3a3a3c;
     margin: 0 auto;
     width: 100%; /* Ajusta para ocupar 100% do container */
-    max-width: 800px; /* Limita o tamanho máximo */
+    max-width: 100%; /* Limita o tamanho máximo */
     height: auto; /* Ajusta a altura proporcionalmente */
     aspect-ratio: 16/9; /* Mantém a proporção */
     overflow: hidden;
+    position: relative;
+    display: block;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
