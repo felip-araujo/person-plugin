@@ -25,7 +25,7 @@
 
     /* Ajustar a altura do sidebar para mobile */
     .col-md-3 {
-        max-height: 70vh;
+        max-height: 60vh;
         overflow-y: auto;
     }
 
@@ -75,8 +75,9 @@
         #imagem-botao-container {
             flex-direction: initial;
         }
-        #close-editor{
-            text-align: right; 
+
+        #close-editor {
+            text-align: right;
             background-color: none;
         }
     }
@@ -119,7 +120,7 @@
         <div class="row" id="abas">
             <div class="col-md-3 border-end" style="height: 100vh; overflow-y:auto;">
                 <!-- Abas para alternar entre Texto e Camadas -->
-                <ul class="nav nav-tabs" >
+                <ul class="nav nav-tabs">
                     <li class="nav-item col-6 p-0 text-center">
                         <a style="text-decoration: none; color: #444" class="nav-link active" id="tab-camadas" data-bs-toggle="tab" href="#camadas-tab-content">Camadas</a>
                     </li>
@@ -198,6 +199,11 @@
                                     Limpar Tela
                                 </button>
                             </div>
+                            <p class="alert alert-info alert-dismissible fade show d-flex align-items-center" role="alert" style="font-size: .8rem; text-align: left;">
+                                <button  type="button" class="btn-close ms-auto  d-flex align-items-center" data-bs-dismiss="alert" aria-label="Close"></button>
+                               <span> Ao utilizar nosso serviço de edição de adesivos, você concorda com os nossos <a href="https://palevioletred-parrot-583208.hostingersite.com/"> Termos de Uso. </a> </span> 
+                            </p>
+
                         </form>
                     </div>
                 </div>
