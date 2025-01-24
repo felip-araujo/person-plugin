@@ -3,8 +3,93 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://kit.fontawesome.com/d4755c66d3.js" crossorigin="anonymous"></script>
-<!-- Se precisar, inclua também o Konva -->
-<!-- <script src="https://cdn.jsdelivr.net/npm/konva@8.4.2/konva.min.js"></script> -->
+
+<style>
+    /* Ajustes para tornar o layout responsivo */
+    .container-fluid {
+        padding: 0;
+    }
+
+    .container {
+        max-width: 100%;
+        padding: 15px;
+    }
+
+    #adesivo-canvas {
+        background-color: #fff;
+        width: 100%;
+        height: 100%;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Ajustar a altura do sidebar para mobile */
+    .col-md-3 {
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
+    /* Responsividade para mobile */
+    @media (max-width: 768px) {
+        .col-md-3 {
+            width: 100%;
+            max-height: 75vh;
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        .col-md-9 {
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .d-flex {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        #titulo {
+            font-size: 20px;
+            text-align: center;
+        }
+
+        /* Ajustar para tela pequena */
+        .tab-content {
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        /* Ajustar espaçamento para os botões no mobile */
+        .d-flex button {
+            margin-bottom: 5px;
+        }
+    }
+
+    @media (min-width: 768px) {
+        .btn {
+            width: auto;
+        }
+
+        button#limpar-tela {
+            margin-bottom: 8px;
+            /* Ajuste conforme necessário */
+            background-color: red;
+        }
+
+        button#aumentar-png-botao {
+            text-align: center;
+        }
+
+        #caixa-visualizacao {
+            margin-top: 8px;
+            /* Ajuste conforme necessário */
+        }
+    }
+</style>
 
 <div class="container-fluid">
     <div class="container mt-5">
@@ -104,24 +189,21 @@
             </div>
 
             <div class="col-md-9 d-flex align-items-center justify-content-center">
-                <div class="text-center mt-4">
-                    <div class="d-flex justify-content-center align-items-center">
-                        <div id="adesivo-canvas" class="bg-white" style="width: 100%; max-width: 900px; height: auto; aspect-ratio: 16/9; overflow: hidden; position: relative;"></div>
-                    </div>
-                    <div class="d-flex justify-content-center gap-1 mb-4 mt-3">
-                        <button id="undo-button" class="btn btn-secondary"><i class="fa-solid fa-rotate-left"></i></button>
-                        <button id="redo-button" class="btn btn-secondary"><i class="fa-solid fa-rotate-right"></i></button>
-                        <button id="zoom-in" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
-                        <button id="zoom-out" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
-                        <button id="reset-zoom" class="btn btn-secondary">100%</button>
-                        <button id="salvar-modelo-botao" class="btn btn-primary">Salvar Modelo</button>
-                        <button id="salvar-adesivo-botao" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#salvarAdesivoModal">Salvar Adesivo</button>
-                    </div>
-                </div>
+                <div id="adesivo-canvas" style="width: 100%; height: 100%;" class="bg-white"></div>
+            </div>
+            <div class="d-flex justify-content-center gap-1 mb-4 mt-3">
+                <button id="undo-button" class="btn btn-secondary"><i class="fa-solid fa-rotate-left"></i></button>
+                <button id="redo-button" class="btn btn-secondary"><i class="fa-solid fa-rotate-right"></i></button>
+                <button id="zoom-in" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                <button id="zoom-out" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                <button id="reset-zoom" class="btn btn-secondary">100%</button>
+                <button id="salvar-modelo-botao" class="btn btn-primary">Salvar Modelo</button>
+                <button id="salvar-adesivo-botao" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#salvarAdesivoModal">Salvar Adesivo</button>
             </div>
         </div>
     </div>
 </div>
+
 
 
 <!-- Modal para salvar o Adesivo -->
