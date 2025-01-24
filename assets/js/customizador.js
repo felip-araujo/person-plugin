@@ -355,7 +355,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function inserirImagem() {
         var fileInput = document.createElement('input');
         fileInput.type = 'file';
-        fileInput.accept = 'image/png'; 
+        fileInput.accept = 'image/*'; 
         fileInput.onchange = function (e) {
             var file = e.target.files[0];
             if (!file) return;
