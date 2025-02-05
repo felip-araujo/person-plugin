@@ -31,9 +31,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // Se pluginData.stickerUrl existir, carregar o adesivo
     if (typeof pluginData !== 'undefined' && pluginData.stickerUrl) {
         carregarAdesivo(pluginData.stickerUrl);
-    } else {
-        console.error('pluginData ou stickerUrl não está definido.');
+    //else {
+    //    console.error('pluginData.stickerUrl não definido');
     }
+    // Continuar execução mesmo que pluginData.stickerUrl não esteja definido
 
     // -------------------
     //  FUNÇÕES PRINCIPAIS

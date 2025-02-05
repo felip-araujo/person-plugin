@@ -40,12 +40,10 @@ function carregar_bootstrap_no_admin($hook_suffix)
 }
 add_action('admin_enqueue_scripts', 'carregar_bootstrap_no_admin');
 
-function person_plugin_enqueue_frontend_scripts()
-{
-    if (!is_product()) {
-        return;
-    }
-
+function person_plugin_enqueue_frontend_scripts() {
+    // Remova ou comente a linha abaixo:
+    // if ( !is_product() ) { return; }
+    
     wp_enqueue_style('bootstrap-css', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css');
     wp_enqueue_style('person-plugin-customizer-css', plugin_dir_url(__FILE__) . 'assets/css/customizador.css');
     wp_enqueue_script('bootstrap-js', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js', array('jquery'), null, true);
@@ -54,6 +52,7 @@ function person_plugin_enqueue_frontend_scripts()
     wp_enqueue_media();
 }
 add_action('wp_enqueue_scripts', 'person_plugin_enqueue_frontend_scripts');
+
 
 function meu_plugin_carregar_fontawesome_kit()
 {
@@ -157,73 +156,46 @@ function plugin_processar_upload($plugin_sticker_dir)
     }
 }
 
-function person_plugin_display_customizer()
-{
-    if (!function_exists('is_product') || !is_product()) {
-        return;
-    }
+function person_plugin_display_customizer( $sticker_url = '' ) {
+    // Se não houver adesivo selecionado, você pode definir um padrão ou deixar vazio.
+    // Exemplo (opcional):
+    // if ( empty( $sticker_url ) ) { $sticker_url = 'URL_PADRÃO.svg'; }
 
-    global $product;
-    if (!$product) {
-        $product = wc_get_product(get_the_ID());
-    }
-
-    if (!$product) {
-        return '<p>Produto não encontrado.</p>';
-    }
-
-    $recognize_sticker_setting = get_option('person_plugin_recognize_sticker', 'yes');
-    $sticker_url = '';
-
-    if ($recognize_sticker_setting === 'yes') {
-        $product_name = $product->get_name();
-        $sanitized_name = sanitize_title($product_name);
-
-        $args = array(
-            'post_type'      => 'attachment',
-            'post_mime_type' => 'image/svg+xml',
-            'post_status'    => 'inherit',
-            'meta_query'     => array(
-                array(
-                    'key'     => '_wp_attached_file',
-                    'value'   => $sanitized_name . '.svg',
-                    'compare' => 'LIKE',
-                ),
-            ),
-        );
-
-        $attachments = get_posts($args);
-
-        if (!empty($attachments)) {
-            $sticker_url = wp_get_attachment_url($attachments[0]->ID);
-        }
-    }
-
-    if (empty($sticker_url)) {
-        $associated_sticker_id = get_post_meta($product->get_id(), '_associated_sticker', true);
-        if ($associated_sticker_id) {
-            $sticker_url = wp_get_attachment_url($associated_sticker_id);
-        } else {
-            return '<p>Adesivo não encontrado para este produto.</p>';
-        }
-    }
-
-    wp_enqueue_script('person-plugin-customizer-js', plugin_dir_url(__FILE__) . 'assets/js/customizador.js', array('jquery'), null, true);
+    // Enfileira os scripts e estilos necessários para o editor
+    wp_enqueue_script(
+        'person-plugin-customizer-js',
+        plugin_dir_url( __FILE__ ) . 'assets/js/customizador.js',
+        array( 'jquery', 'konva-js' ),
+        null,
+        true
+    );
     wp_localize_script(
         'person-plugin-customizer-js',
         'pluginData',
         array(
             'stickerUrl' => $sticker_url,
-            'ajaxUrl'    => admin_url('admin-ajax.php'),
+            'ajaxUrl'    => admin_url( 'admin-ajax.php' ),
         )
     );
 
+    // Inclui o template do editor (por exemplo, editor-template.php)
     ob_start();
-    include plugin_dir_path(__FILE__) . 'templates/editor-template.php';
+    include plugin_dir_path( __FILE__ ) . 'templates/editor-template.php';
     return ob_get_clean();
 }
 
-add_shortcode('customizador_adesivo', 'person_plugin_display_customizer');
+
+
+
+function person_plugin_customizer_page() {
+    ob_start();
+    include plugin_dir_path( __FILE__ ) . 'templates/customizador-page.php';
+    return ob_get_clean();
+}
+add_shortcode( 'customizador_adesivo_page', 'person_plugin_customizer_page' );
+
+
+
 
 function carregar_font_awesome()
 {
