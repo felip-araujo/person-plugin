@@ -181,12 +181,20 @@ body, html {
 }
 
 /* Sidebar dos adesivos (ficará à esquerda) */
+/* Sidebar dos adesivos fixada à esquerda, ocupando toda a altura da página */
 .sticker-sidebar {
-    width: 250px; /* Largura fixa para manter a área lateral */
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 250px; /* Ajuste a largura conforme necessário */
     background-color: #f8f9fa;
-    border: 1px solid #ddd;
+    border-right: 1px solid #ddd;
     padding: 10px;
+    overflow-y: auto;
+    z-index: 1000;
 }
+
 .sticker-sidebar h2 {
     font-size: 1.4rem;
     text-align: center;
