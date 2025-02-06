@@ -5,7 +5,12 @@
 <script src="https://kit.fontawesome.com/d4755c66d3.js" crossorigin="anonymous"></script>
 
 <style>
-    /* Ajustes para tornar o layout responsivo */
+    /* Ajustes para tornar o layout responsivo */ 
+
+    body{
+        font-family: 'Montserrat', sans-serif;
+    }
+
     .container-fluid {
         padding: 0;
     }
@@ -53,7 +58,7 @@
         }
 
         #titulo {
-            font-size: 20px;
+            font-size: 25px;
             text-align: center;
         }
 
@@ -111,7 +116,7 @@
     <div class="container mt-5">
         <!-- Titulo -->
         <div class="d-flex justify-content-between align-items-center">
-            <h2 class="text-left" id="titulo">Personalize seu Adesivo</h2>
+            <h2 class="text-left font" id="titulo">Personalize seu Adesivo</h2>
             <button id="close-editor" class="btn btn-outline-danger" style="border: none; color: white;">
                 <i class="fas fa-times"></i>
             </button>
@@ -200,8 +205,8 @@
                                 </button>
                             </div>
                             <p class="alert alert-info alert-dismissible fade show d-flex align-items-center" role="alert" style="font-size: .8rem; text-align: left;">
-                                <button  type="button" class="btn-close ms-auto  d-flex align-items-center" data-bs-dismiss="alert" aria-label="Close"></button>
-                               <span> Ao utilizar nosso serviço de edição de adesivos, você concorda com os nossos <a href="https://palevioletred-parrot-583208.hostingersite.com/"> Termos de Uso. </a> </span> 
+                                <button type="button" class="btn-close ms-auto  d-flex align-items-center" data-bs-dismiss="alert" aria-label="Close"></button>
+                                <span> Ao utilizar nosso serviço de edição de adesivos, você concorda com os nossos <a href="https://palevioletred-parrot-583208.hostingersite.com/"> Termos de Uso. </a> </span>
                             </p>
 
                         </form>
