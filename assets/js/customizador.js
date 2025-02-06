@@ -412,7 +412,7 @@ document.addEventListener('DOMContentLoaded', function () {
         saveHistory();
     });
 
-    // Formulário Salvar Adesivo
+    // Formulário Salvar Adesivo 01
     const loadingOverlay = document.createElement('div');
     loadingOverlay.style.position = 'fixed';
     loadingOverlay.style.top = 0;
