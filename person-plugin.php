@@ -20,7 +20,8 @@ add_filter('upload_mimes', 'permitir_svg_upload');
 
 add_filter('admin_footer_text', 'customizar_rodape_plugin');
 
-function customizar_rodape_plugin($footer_text) {
+function customizar_rodape_plugin($footer_text)
+{
     // Verifica se estamos na tela específica do plugin
     $tela_atual = get_current_screen();
     if ($tela_atual->id === 'toplevel_page_plugin-adesivos') {
@@ -40,10 +41,11 @@ function carregar_bootstrap_no_admin($hook_suffix)
 }
 add_action('admin_enqueue_scripts', 'carregar_bootstrap_no_admin');
 
-function person_plugin_enqueue_frontend_scripts() {
+function person_plugin_enqueue_frontend_scripts()
+{
     // Remova ou comente a linha abaixo:
     // if ( !is_product() ) { return; }
-    
+
     wp_enqueue_style('bootstrap-css', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css');
     wp_enqueue_style('person-plugin-customizer-css', plugin_dir_url(__FILE__) . 'assets/css/customizador.css');
     wp_enqueue_script('bootstrap-js', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js', array('jquery'), null, true);
@@ -52,6 +54,17 @@ function person_plugin_enqueue_frontend_scripts() {
     wp_enqueue_media();
 }
 add_action('wp_enqueue_scripts', 'person_plugin_enqueue_frontend_scripts');
+
+
+function person_plugin_enqueue_scripts()
+{
+    wp_enqueue_script('person-plugin-js', plugins_url('script.js', __FILE__), ['jquery'], null, true);
+
+    wp_localize_script('person-plugin-js', 'personPlugin', [
+        'ajax_url' => admin_url('admin-ajax.php'),
+    ]);
+}
+add_action('wp_enqueue_scripts', 'person_plugin_enqueue_scripts');
 
 
 function meu_plugin_carregar_fontawesome_kit()
@@ -156,7 +169,8 @@ function plugin_processar_upload($plugin_sticker_dir)
     }
 }
 
-function person_plugin_display_customizer( $sticker_url = '' ) {
+function person_plugin_display_customizer($sticker_url = '')
+{
     // Se não houver adesivo selecionado, você pode definir um padrão ou deixar vazio.
     // Exemplo (opcional):
     // if ( empty( $sticker_url ) ) { $sticker_url = 'URL_PADRÃO.svg'; }
@@ -164,8 +178,8 @@ function person_plugin_display_customizer( $sticker_url = '' ) {
     // Enfileira os scripts e estilos necessários para o editor
     wp_enqueue_script(
         'person-plugin-customizer-js',
-        plugin_dir_url( __FILE__ ) . 'assets/js/customizador.js',
-        array( 'jquery', 'konva-js' ),
+        plugin_dir_url(__FILE__) . 'assets/js/customizador.js',
+        array('jquery', 'konva-js'),
         null,
         true
     );
@@ -174,25 +188,26 @@ function person_plugin_display_customizer( $sticker_url = '' ) {
         'pluginData',
         array(
             'stickerUrl' => $sticker_url,
-            'ajaxUrl'    => admin_url( 'admin-ajax.php' ),
+            'ajaxUrl'    => admin_url('admin-ajax.php'),
         )
     );
 
     // Inclui o template do editor (por exemplo, editor-template.php)
     ob_start();
-    include plugin_dir_path( __FILE__ ) . 'templates/editor-template.php';
+    include plugin_dir_path(__FILE__) . 'templates/editor-template.php';
     return ob_get_clean();
 }
 
 
 
 
-function person_plugin_customizer_page() {
+function person_plugin_customizer_page()
+{
     ob_start();
-    include plugin_dir_path( __FILE__ ) . 'templates/customizador-page.php';
+    include plugin_dir_path(__FILE__) . 'templates/customizador-page.php';
     return ob_get_clean();
 }
-add_shortcode( 'customizador_adesivo_page', 'person_plugin_customizer_page' );
+add_shortcode('customizador_adesivo_page', 'person_plugin_customizer_page');
 
 
 
@@ -237,121 +252,91 @@ function criar_tabela_adesivos()
     dbDelta($sql);
 }
 
-add_action('wp_ajax_salvar_adesivo_cliente', 'salvar_adesivo_cliente');
-add_action('wp_ajax_nopriv_salvar_adesivo_cliente', 'salvar_adesivo_cliente');
+add_action('wp_ajax_salvar_adesivo', 'salvar_adesivo'); // Para usuários logados
+add_action('wp_ajax_nopriv_salvar_adesivo', 'salvar_adesivo'); // Para usuários não logados
 
-// C:\xampp\htdocs\site_paulo\wordpress\wp-content\plugins\person-plugin\person-plugin.php
+function salvar_imagem_personalizada($base64_image) {
+    $upload_dir = wp_upload_dir();
+    $upload_path = $upload_dir['path'] . '/adesivo-' . time() . '.png';
+    $upload_url = $upload_dir['url'] . '/adesivo-' . time() . '.png';
 
-function salvar_adesivo_cliente()
-{
-    global $wpdb;
-
-    if (empty($_POST['nome']) || empty($_POST['email'])) {
-        wp_send_json_error(['message' => 'Nome e email são obrigatórios.']);
-        wp_die();
+    $image_data = explode(',', $base64_image);
+    if (!isset($image_data[1])) {
+        error_log('❌ Base64 inválido.');
+        return false;
     }
 
-    $nome = sanitize_text_field($_POST['nome']);
-    $email = sanitize_email($_POST['email']);
-    $telefone = sanitize_text_field($_POST['telefone'] ?? '');
-    $material = sanitize_text_field($_POST['material'] ?? '');
-    $quantidade = intval($_POST['quantidade'] ?? 1);
-    $texto_instrucoes = sanitize_textarea_field($_POST['texto_instrucoes'] ?? '');
+    $decoded_image = base64_decode($image_data[1]);
 
-    // NOVO: Recebe a imagem base64 do adesivo
-    $sticker_image_base64 = $_POST['sticker_image'] ?? '';
-
-    $tabela = $wpdb->prefix . 'adesivos';
-    $inserir = $wpdb->insert(
-        $tabela,
-        [
-            'nome_cliente' => $nome,
-            'email_cliente' => $email,
-            'telefone_cliente' => $telefone,
-            'material' => $material,
-            'quantidade' => $quantidade,
-            'texto_instrucoes' => $texto_instrucoes,
-        ],
-        ['%s', '%s', '%s', '%s', '%d', '%s']
-    );
-
-    if ($inserir) {
-        $admin_email = get_option('person_plugin_admin_email');
-        $sender_email = get_option('person_plugin_sender_email');
-        $sender_password = get_option('person_plugin_sender_password');
-
-        if (!$sender_email || !$sender_password) {
-            wp_send_json_error(['message' => 'Email de remetente não configurado.']);
-            wp_die();
-        }
-
-        $mail = new PHPMailer(true);
-
-        try {
-            $mail->isSMTP();
-            $mail->Host = 'smtp.gmail.com';
-            $mail->SMTPAuth = true;
-            $mail->Username = $sender_email;
-            $mail->Password = $sender_password;
-            $mail->SMTPSecure = 'tls';
-            $mail->Port = 587;
-
-            // Define charset para evitar caracteres estranhos
-            $mail->CharSet = 'UTF-8';
-            $mail->Encoding = 'base64';
-
-            // Email para o cliente
-            $mail->setFrom($sender_email, 'Equipe de Produção');
-            $mail->addAddress($email);
-            $mail->isHTML(true);
-            $mail->Subject = 'Confirmação do Pedido de Adesivo';
-            $mail->Body = "
-                Olá, $nome!<br><br>
-                Recebemos o seu pedido de adesivo. Aqui estão os detalhes do seu pedido:<br>
-                - Material: $material<br>
-                - Quantidade: $quantidade<br>
-                - Instruções: $texto_instrucoes<br><br>
-                Em breve entraremos em contato para finalizar o processo.<br><br>
-                Atenciosamente,<br>
-                Equipe de Produção
-            ";
-            $mail->send();
-            $mail->clearAddresses();
-
-            // Email para o administrador
-            if ($admin_email) {
-                $mail->addAddress($admin_email);
-                $mail->Subject = 'Novo Pedido de Adesivo Recebido';
-                $body_admin = "
-                    Um novo pedido de adesivo foi realizado:<br><br>
-                    - Nome do Cliente: $nome<br>
-                    - Email do Cliente: $email<br>
-                    - Telefone do Cliente: $telefone<br>
-                    - Material: $material<br>
-                    - Quantidade: $quantidade<br>
-                    - Instruções: $texto_instrucoes<br><br>
-                ";
-
-                // NOVO: Anexa a imagem PNG do adesivo
-                if (!empty($sticker_image_base64)) {
-                    $img_data = base64_decode(str_replace('data:image/png;base64,', '', $sticker_image_base64));
-                    if ($img_data !== false) {
-                        $mail->addStringAttachment($img_data, 'adesivo.png', 'base64', 'image/png');
-                    }
-                }
-
-                $mail->Body = $body_admin;
-                $mail->send();
-            }
-
-            wp_send_json_success(['message' => 'Pedido salvo com sucesso e emails enviados!']);
-        } catch (Exception $e) {
-            error_log('Erro ao enviar email: ' . $mail->ErrorInfo);
-            wp_send_json_error(['message' => 'Pedido salvo, mas ocorreu um erro ao enviar os emails.']);
-        }
-    } else {
-        wp_send_json_error(['message' => 'Erro ao salvar pedido no banco de dados.']);
+    if (!$decoded_image) {
+        error_log('❌ Erro ao decodificar a imagem.');
+        return false;
     }
 
-    wp_die();
+    file_put_contents($upload_path, $decoded_image);
+
+    return $upload_url;
 }
+
+
+function adicionar_adesivo_ao_carrinho() { 
+    $adesivo_url = isset($_POST['adesivo_url']) ? $_POST['adesivo_url'] : '';
+
+    if (!empty($adesivo_url)) {
+        $salva_url = salvar_imagem_personalizada($adesivo_url);
+        if ($salva_url) {
+            error_log('✅ Imagem salva em: ' . $salva_url);
+            $adesivo_url = $salva_url; // Substituímos pelo link real da imagem
+        }
+    }
+    
+
+    if (!isset($_POST['adesivo_url'])) {
+        wp_send_json_error(['message' => 'Nenhuma imagem foi enviada.']);
+    }
+
+    
+    // URL da imagem salva
+    $adesivo_url = sanitize_text_field($_POST['adesivo_url']);
+
+    // ID fixo do produto "Adesivo Personalizado"
+    $produto_id = 77; // Substitua pelo ID real
+
+    // Adicionar ao carrinho com meta personalizada
+    $cart_item_data = ['adesivo_url' => $adesivo_url];
+    $cart_item_key = WC()->cart->add_to_cart($produto_id, 1, 0, [], $cart_item_data);
+
+    if ($cart_item_key) {
+        wp_send_json_success(['message' => 'Produto adicionado ao carrinho!', 'cart_url' => wc_get_cart_url()]);
+    } else {
+        wp_send_json_error(['message' => 'Erro ao adicionar o produto ao carrinho.']);
+    }
+
+    error_log('Adicionando ao carrinho: ' . print_r($cart_item_data, true));
+
+}
+add_action('wp_ajax_adicionar_adesivo_ao_carrinho', 'adicionar_adesivo_ao_carrinho');
+add_action('wp_ajax_nopriv_adicionar_adesivo_ao_carrinho', 'adicionar_adesivo_ao_carrinho');
+
+
+// Adicionar a URL da imagem personalizada na exibição do carrinho
+function exibir_imagem_personalizada_no_carrinho($item_data, $cart_item) {
+    if (isset($cart_item['adesivo_url'])) {
+        $item_data[] = array(
+            'key'   => 'Imagem Personalizada',
+            'value' => '<img src="' . esc_url($cart_item['adesivo_url']) . '" style="max-width:100px; height:auto;">'
+        );
+    }
+    return $item_data;
+}
+add_filter('woocommerce_get_item_data', 'exibir_imagem_personalizada_no_carrinho', 10, 2);
+
+// Substituir a miniatura do produto no carrinho pela imagem personalizada
+function substituir_imagem_no_carrinho($product_image, $cart_item, $cart_item_key) {
+    if (isset($cart_item['adesivo_url'])) {
+        return '<img src="' . esc_url($cart_item['adesivo_url']) . '" style="max-width:100px; height:auto;">';
+    }
+    return $product_image;
+}
+add_filter('woocommerce_cart_item_thumbnail', 'substituir_imagem_no_carrinho', 10, 3);
+

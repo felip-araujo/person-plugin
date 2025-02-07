@@ -224,64 +224,13 @@
                 <button id="zoom-out" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
                 <button id="reset-zoom" class="btn btn-secondary"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></button>
                 <button id="salvar-modelo-botao" class="btn btn-primary">Salvar Modelo</button>
-                <button id="salvar-adesivo-botao" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#salvarAdesivoModal">Salvar Adesivo</button>
+                <button type="submit" id="salvar-adesivo-botao" class="btn btn-success">Salvar Adesivo</button>
             </div>
         </div>
     </div>
 </div>
 
 
-
-<!-- Modal para salvar o Adesivo -->
-<div class="modal fade" id="salvarAdesivoModal" tabindex="-1" aria-labelledby="salvarAdesivoModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="salvarAdesivoModalLabel">Salvar Adesivo</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-            </div>
-            <div class="modal-body">
-                <form id="salvarAdesivoForm">
-                    <div class="mb-3">
-                        <div id="mensagem" class="alert d-none" role="alert"></div>
-                        <label for="nome" class="form-label">Nome Completo:</label>
-                        <input type="text" class="form-control" id="nome" placeholder="Digite seu nome" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="email" class="form-label">E-mail:</label>
-                        <input type="email" class="form-control" id="email" placeholder="Digite seu e-mail" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="telefone" class="form-label">Telefone (opcional):</label>
-                        <input type="text" class="form-control" id="telefone" placeholder="Digite seu telefone">
-                    </div>
-                    <div class="mb-3">
-                        <label for="material" class="form-label">Material:</label>
-                        <select class="form-select" id="material">
-                            <option value="Vinil Brilhante">Vinil Brilhante</option>
-                            <option value="Vinil Fosco">Vinil Fosco</option>
-                            <option value="Transparente">Transparente</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="quantidade" class="form-label">Quantidade:</label>
-                        <input type="number" class="form-control" id="quantidade" min="1" value="1">
-                    </div>
-                    <div class="mb-3">
-                        <label for="texto_instrucoes" class="form-label">Texto Adicional ou Instruções:</label>
-                        <textarea class="form-control" id="texto_instrucoes" placeholder="Adicione instruções ou informações adicionais"></textarea>
-                    </div>
-
-                    <div id="loadingText" style="display: none; color:#333;">
-                        <i class="fas fa-spinner fa-spin"></i>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary w-100">Confirmar e Salvar</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
 
 <script>
     document.getElementById('close-editor').addEventListener('click', function() {
