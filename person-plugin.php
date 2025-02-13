@@ -243,8 +243,9 @@ function salvar_imagem_personalizada($base64_image)
     $filename = 'adesivo-' . time() . '.png';
     $upload_path = $upload_dir['path'] . '/' . $filename;
 
-    // Garante que a URL inclua a pasta correta (ano/mês)
-    $upload_url = $upload_dir['baseurl'] . '/' . basename($upload_dir['path']) . '/' . $filename;
+    // Obtém a subpasta correta (ano/mês)
+    $relative_path = str_replace($upload_dir['basedir'], '', $upload_dir['path']);
+    $upload_url = $upload_dir['baseurl'] . $relative_path . '/' . $filename;
 
 
 
