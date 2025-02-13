@@ -5,9 +5,9 @@
 <script src="https://kit.fontawesome.com/d4755c66d3.js" crossorigin="anonymous"></script>
 
 <style>
-    /* Ajustes para tornar o layout responsivo */ 
+    /* Ajustes para tornar o layout responsivo */
 
-    body{
+    body {
         font-family: 'Montserrat', sans-serif;
     }
 
@@ -36,9 +36,14 @@
 
     /* Responsividade para mobile */
     @media (max-width: 768px) {
+
+        body {
+            overflow-y: auto;
+        }
+
         .col-md-3 {
             width: 100%;
-            max-height: 75vh;
+            max-height: 60vh;
             overflow-y: auto;
             padding: 0;
         }
@@ -74,7 +79,8 @@
         }
 
         #abas-1 {
-            padding: 1.2rem;
+            padding: 1.5rem;
+            
         }
 
         #imagem-botao-container {
@@ -82,14 +88,15 @@
         }
 
         #close-editor {
-            text-align: right;
-            background-color: none;
+            margin-left: 35vh;
+            background-color: red;
+            
         }
     }
 
 
 
-    @media (min-width: 768px) {
+    @media (max-width: 568px) {
         .btn {
             width: auto;
         }
@@ -112,7 +119,7 @@
     }
 </style>
 
-<div class="container-fluid">
+<div class="container-fluid" style="overflow-y: auto;">
     <div class="container mt-5">
         <!-- Titulo -->
         <div class="d-flex justify-content-between align-items-center">
@@ -238,4 +245,4 @@
     });
 </script>
 <!-- Certifique-se de que o customizador.js está sendo carregado -->
-<!-- <script src="SEU_CAMINHO/customizador.js"></script> -->
+<script src="assets/customizador.js"></script>

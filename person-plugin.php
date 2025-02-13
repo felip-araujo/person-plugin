@@ -31,7 +31,6 @@ function customizar_rodape_plugin($footer_text)
     return $footer_text; // Retorna o rodapé padrão para outras páginas
 }
 
-
 function carregar_bootstrap_no_admin($hook_suffix)
 {
     if ($hook_suffix === 'toplevel_page_plugin-adesivos') {
@@ -55,7 +54,6 @@ function person_plugin_enqueue_frontend_scripts()
 }
 add_action('wp_enqueue_scripts', 'person_plugin_enqueue_frontend_scripts');
 
-
 function person_plugin_enqueue_scripts()
 {
     wp_enqueue_script('person-plugin-js', plugins_url('script.js', __FILE__), ['jquery'], null, true);
@@ -65,7 +63,6 @@ function person_plugin_enqueue_scripts()
     ]);
 }
 add_action('wp_enqueue_scripts', 'person_plugin_enqueue_scripts');
-
 
 function meu_plugin_carregar_fontawesome_kit()
 {
@@ -80,10 +77,7 @@ function meu_plugin_carregar_fontawesome_kit()
         );
     }
 }
-
-
 add_action('admin_enqueue_scripts', 'meu_plugin_carregar_fontawesome_kit');
-
 
 function plugin_adicionar_menu()
 {
@@ -108,7 +102,6 @@ function plugin_pagina_de_configuracao()
         Adicione a tag <strong>[customizador_adesivo]</strong> na página onde você deseja exibir o editor de adesivos.
     </p>
 </div>';
-
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_sticker'])) {
         plugin_processar_upload($plugin_sticker_dir);
@@ -198,9 +191,6 @@ function person_plugin_display_customizer($sticker_url = '')
     return ob_get_clean();
 }
 
-
-
-
 function person_plugin_customizer_page()
 {
     ob_start();
@@ -208,9 +198,6 @@ function person_plugin_customizer_page()
     return ob_get_clean();
 }
 add_shortcode('customizador_adesivo_page', 'person_plugin_customizer_page');
-
-
-
 
 function carregar_font_awesome()
 {
@@ -223,9 +210,6 @@ function carregar_font_awesome()
 }
 add_action('admin_enqueue_scripts', 'carregar_font_awesome');
 add_action('wp_enqueue_scripts', 'carregar_font_awesome');
-
-add_action('wp_ajax_salvar_adesivo', 'salvar_adesivo');
-add_action('wp_ajax_nopriv_salvar_adesivo', 'salvar_adesivo');
 
 register_activation_hook(__FILE__, 'criar_tabela_adesivos');
 
@@ -251,21 +235,21 @@ function criar_tabela_adesivos()
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
     dbDelta($sql);
 }
-
-add_action('wp_ajax_salvar_adesivo', 'salvar_adesivo'); // Para usuários logados
-add_action('wp_ajax_nopriv_salvar_adesivo', 'salvar_adesivo'); // Para usuários não logados
-
+// 1️⃣ Salvar a imagem personalizada no servidor e retornar a URL correta
 function salvar_imagem_personalizada($base64_image) {
     $upload_dir = wp_upload_dir();
-    $upload_path = $upload_dir['path'] . '/adesivo-' . time() . '.png';
-    $upload_url = $upload_dir['url'] . '/adesivo-' . time() . '.png';
+    $filename = 'adesivo-' . time() . '.png';
+    $upload_path = $upload_dir['path'] . '/' . $filename;
+    $upload_url = site_url('/wp-content/uploads/') . $filename;
 
+
+
+    // Decodificar Base64
     $image_data = explode(',', $base64_image);
     if (!isset($image_data[1])) {
         error_log('❌ Base64 inválido.');
         return false;
     }
-
     $decoded_image = base64_decode($image_data[1]);
 
     if (!$decoded_image) {
@@ -273,70 +257,103 @@ function salvar_imagem_personalizada($base64_image) {
         return false;
     }
 
-    file_put_contents($upload_path, $decoded_image);
+    // Salvar imagem no diretório de uploads
+    if (file_put_contents($upload_path, $decoded_image) === false) {
+        error_log('❌ Erro ao salvar a imagem.');
+        return false;
+    }
 
+    error_log('✅ Imagem salva com sucesso: ' . $upload_url);
     return $upload_url;
 }
 
-
-function adicionar_adesivo_ao_carrinho() { 
-    $adesivo_url = isset($_POST['adesivo_url']) ? $_POST['adesivo_url'] : '';
-
-    if (!empty($adesivo_url)) {
-        $salva_url = salvar_imagem_personalizada($adesivo_url);
-        if ($salva_url) {
-            error_log('✅ Imagem salva em: ' . $salva_url);
-            $adesivo_url = $salva_url; // Substituímos pelo link real da imagem
-        }
-    }
-    
-
+// 2️⃣ Adicionar o adesivo ao carrinho do WooCommerce corretamente
+function adicionar_adesivo_ao_carrinho() {
     if (!isset($_POST['adesivo_url'])) {
+        error_log('❌ Nenhuma imagem foi enviada.');
         wp_send_json_error(['message' => 'Nenhuma imagem foi enviada.']);
     }
 
-    
-    // URL da imagem salva
-    $adesivo_url = sanitize_text_field($_POST['adesivo_url']);
+    // Salvar imagem e obter a URL
+    $adesivo_url = salvar_imagem_personalizada($_POST['adesivo_url']);
+    if (!$adesivo_url) {
+        error_log('❌ Erro ao salvar a imagem.');
+        wp_send_json_error(['message' => 'Erro ao salvar a imagem.']);
+    }
 
-    // ID fixo do produto "Adesivo Personalizado"
+    // ID do produto no WooCommerce
     $produto_id = 77; // Substitua pelo ID real
 
-    // Adicionar ao carrinho com meta personalizada
-    $cart_item_data = ['adesivo_url' => $adesivo_url];
+    // Garantir que o WooCommerce reconheça o dado personalizado
+    $cart_item_data = [
+        'adesivo_url' => $adesivo_url,
+        'unique_key' => md5(microtime().rand()) // Garante que o item não se agrupe no carrinho
+    ];
+
     $cart_item_key = WC()->cart->add_to_cart($produto_id, 1, 0, [], $cart_item_data);
 
     if ($cart_item_key) {
-        wp_send_json_success(['message' => 'Produto adicionado ao carrinho!', 'cart_url' => wc_get_cart_url()]);
+        error_log('✅ Produto adicionado ao carrinho com imagem: ' . $adesivo_url);
+        wp_send_json_success([
+            'message' => 'Produto adicionado ao carrinho!',
+            'cart_url' => wc_get_cart_url()
+        ]);
     } else {
+        error_log('❌ Erro ao adicionar o produto ao carrinho.');
         wp_send_json_error(['message' => 'Erro ao adicionar o produto ao carrinho.']);
     }
-
-    error_log('Adicionando ao carrinho: ' . print_r($cart_item_data, true));
-
 }
 add_action('wp_ajax_adicionar_adesivo_ao_carrinho', 'adicionar_adesivo_ao_carrinho');
 add_action('wp_ajax_nopriv_adicionar_adesivo_ao_carrinho', 'adicionar_adesivo_ao_carrinho');
 
-
-// Adicionar a URL da imagem personalizada na exibição do carrinho
-function exibir_imagem_personalizada_no_carrinho($item_data, $cart_item) {
+// 3️⃣ Recuperar a URL da imagem ao recarregar o carrinho
+function recuperar_dados_personalizados_carrinho($cart_item, $cart_item_key) {
     if (isset($cart_item['adesivo_url'])) {
+        $cart_item['data']->add_meta_data('adesivo_url', $cart_item['adesivo_url'], true);
+    }
+    return $cart_item;
+}
+add_filter('woocommerce_get_cart_item_from_session', 'recuperar_dados_personalizados_carrinho', 10, 2);
+
+// 4️⃣ Exibir a imagem na lista de itens do carrinho
+function exibir_imagem_personalizada_no_carrinho($item_data, $cart_item) {
+    if (!empty($cart_item['adesivo_url'])) {
         $item_data[] = array(
-            'key'   => 'Imagem Personalizada',
-            'value' => '<img src="' . esc_url($cart_item['adesivo_url']) . '" style="max-width:100px; height:auto;">'
+            'key'     => __('Imagem Personalizada', 'woocommerce'),
+            'value'   => '<img src="' . esc_url($cart_item['adesivo_url']) . '" style="max-width:100px; height:auto;">',
+            'display' => '<img src="' . esc_url($cart_item['adesivo_url']) . '" style="max-width:100px; height:auto;">'
         );
     }
     return $item_data;
 }
 add_filter('woocommerce_get_item_data', 'exibir_imagem_personalizada_no_carrinho', 10, 2);
 
-// Substituir a miniatura do produto no carrinho pela imagem personalizada
+
 function substituir_imagem_no_carrinho($product_image, $cart_item, $cart_item_key) {
-    if (isset($cart_item['adesivo_url'])) {
-        return '<img src="' . esc_url($cart_item['adesivo_url']) . '" style="max-width:100px; height:auto;">';
+    if (!empty($cart_item['adesivo_url']) && filter_var($cart_item['adesivo_url'], FILTER_VALIDATE_URL)) {
+        error_log('📌 Substituindo imagem no carrinho com: ' . esc_url($cart_item['adesivo_url']));
+        return '<img src="' . esc_url($cart_item['adesivo_url']) . '" style="width: 80px; height: auto;">';
     }
+
     return $product_image;
 }
 add_filter('woocommerce_cart_item_thumbnail', 'substituir_imagem_no_carrinho', 10, 3);
+
+
+
+// 6️⃣ Garantir que a imagem seja salva corretamente no pedido
+function salvar_imagem_personalizada_no_pedido($item, $cart_item_key, $values, $order) {
+    if (isset($values['adesivo_url']) && !empty($values['adesivo_url'])) {
+        $item->add_meta_data('Imagem Personalizada', esc_url($values['adesivo_url']));
+    }
+}
+add_action('woocommerce_checkout_create_order_line_item', 'salvar_imagem_personalizada_no_pedido', 10, 4);
+
+function restaurar_dados_personalizados_no_carrinho($cart_item, $cart_item_key) {
+    if (isset($cart_item['adesivo_url'])) {
+        $cart_item['data']->add_meta_data('adesivo_url', $cart_item['adesivo_url'], true);
+    }
+    return $cart_item;
+}
+add_filter('woocommerce_get_cart_item_from_session', 'restaurar_dados_personalizados_no_carrinho', 10, 2);
 

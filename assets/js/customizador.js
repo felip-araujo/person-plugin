@@ -499,9 +499,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById("salvar-adesivo-botao").addEventListener("click", function (e) {
         e.preventDefault();
-
+    
+        // Captura a imagem do canvas como base64
         const adesivoData = stage.toDataURL({ mimeType: "image/png" });
-
+        
+    
+        // Envia a imagem para o servidor via AJAX
         fetch(personPlugin.ajax_url, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -510,18 +513,31 @@ document.addEventListener('DOMContentLoaded', function () {
                 adesivo_url: adesivoData
             })
         })
-            .then(response => response.json())
-            .then(data => {
-                console.log("Resposta do servidor:", data);
-
-                if (data.success) {
-                    // alert("Adesivo adicionado ao carrinho!");
-                    window.location.href = data.data.cart_url;
-                } else {
-                    alert("Erro: " + data.data.message);
-                }
-            })
-            .catch(error => console.error("Erro no AJAX:", error));
+        .then(response => response.json())
+        .then(data => {
+            console.log("Resposta do servidor:", data);
+    
+            if (data.success) {
+                // Redireciona para o carrinho
+                window.location.href = data.data.cart_url;
+            } else {
+                alert("Erro: " + data.data.message);
+            }
+        })
+        .catch(error => console.error("Erro no AJAX:", error));
     });
 
 });
+
+
+jQuery(document).ready(function($) {
+    setTimeout(function() {
+        $('td.product-thumbnail img').each(function() {
+            var imgSrc = $(this).attr('src');
+            if (imgSrc.includes('placeholder')) {
+                $(this).attr('src', $(this).closest('tr').find('.product-name img').attr('src'));
+            }
+        });
+    }, 500);
+});
+
