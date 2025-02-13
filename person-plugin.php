@@ -99,7 +99,7 @@ function plugin_pagina_de_configuracao()
 <div class="alert alert-warning" style="display: inline-flex; align-items: center; font-size: 1.2rem; margin-top: 1rem; padding: 10px;">
     <i class="fa-solid fa-circle-exclamation" style="margin-right: 10px;"></i>
     <p style="margin: 0;">
-        Adicione a tag <strong>[customizador_adesivo]</strong> na página onde você deseja exibir o editor de adesivos.
+       Crie uma página com a tag <strong> [customizador_adesivo_page] </strong> para exibir o editor de adesivos, copie a tag abaixo.
     </p>
 </div>';
 

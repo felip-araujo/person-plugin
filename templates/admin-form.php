@@ -52,7 +52,7 @@ echo '
     </tr>
 </table>
 <!-- Input invisível para copiar a tag -->
-<input type="text" id="tagInput" value="[customizador_adesivo]" style="position: absolute; left: -9999px;">
+<input type="text" id="tagInput" value="[customizador_adesivo_page]" style="position: absolute; left: -9999px;">
 ';
 
 $args_products = array(

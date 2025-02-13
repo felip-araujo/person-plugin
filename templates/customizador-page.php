@@ -246,6 +246,7 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
         editorContainer.classList.toggle('open');
     }
 
+    // funcao para bloquear botao direito no navegador 
     if (document.addEventListener) {
         document.addEventListener("contextmenu", function(e) {
             e.preventDefault();
@@ -259,6 +260,7 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
         });
     }
 
+    // funcao para bloquear ctrl+u e ctrl+s no naveegador
     if (document.addEventListener) {
         document.addEventListener("keydown", bloquearSource);
     } else { //Versões antigas do IE 
