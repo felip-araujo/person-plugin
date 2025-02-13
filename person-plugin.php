@@ -10,6 +10,7 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/templates/email-handlers.php';
 
 function permitir_svg_upload($mimes)
 {
@@ -241,7 +242,10 @@ function salvar_imagem_personalizada($base64_image)
     $upload_dir = wp_upload_dir();
     $filename = 'adesivo-' . time() . '.png';
     $upload_path = $upload_dir['path'] . '/' . $filename;
-    $upload_url = site_url('/wp-content/uploads/') . $filename;
+
+    // Garante que a URL inclua a pasta correta (ano/mês)
+    $upload_url = $upload_dir['baseurl'] . '/' . basename($upload_dir['path']) . '/' . $filename;
+
 
 
 
@@ -285,7 +289,7 @@ function adicionar_adesivo_ao_carrinho()
 
     // ID do produto no WooCommerce
     // Substitua $produto_id = 77; pelo seguinte:
-    $produto_id = get_option('manual_product_id', 77); // '77' é um valor padrão caso a configuração ainda não tenha sido definida
+    $produto_id = get_option('manual_product_id'); // '77' é um valor padrão caso a configuração ainda não tenha sido definida
 
 
     // Garantir que o WooCommerce reconheça o dado personalizado
