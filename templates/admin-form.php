@@ -84,7 +84,7 @@ $query = new WP_Query($args_attachments);
 // Renderiza a tabela de adesivos
 if ($query->have_posts()) {
     echo '<table id="form-table" style="" class="table table-dark">';
-    echo '<thead><tr><th>Visualização</th><th>Nome do Adesivo</th><th>Associar Produto</th><th>Gerenciar</th></tr></thead>';
+    echo '<thead><tr><th>Visualização</th><th>Nome do Adesivo</th><th>Gerenciar</th></tr></thead>';
     echo '<tbody>';
     while ($query->have_posts()) {
         $query->the_post();
@@ -113,25 +113,6 @@ if ($query->have_posts()) {
         if (!empty($products_with_this_sticker)) {
             $associated_product_id = $products_with_this_sticker[0]->ID;
         }
-
-        // Campo de seleção de produto e botão de salvar
-        echo '<td>';
-        echo '<form method="post">';
-        wp_nonce_field('associate_sticker_nonce', 'associate_nonce');
-        echo '<input type="hidden" name="sticker_id" value="' . esc_attr($attachment_id) . '">';
-        echo '<div class="input-group">';
-        echo '<select name="product_id" class="form-control">';
-        echo '<option value="">Selecione um produto</option>';
-        foreach ($products as $product) {
-            $selected = ($product->ID == $associated_product_id) ? 'selected' : '';
-            echo '<option value="' . esc_attr($product->ID) . '" ' . $selected . '>' . esc_html($product->post_title) . '</option>';
-        }
-        echo '</select>';
-        echo '<button type="submit" name="save_association" class="btn btn-success" style="margin-left: 0.5rem;">Salvar</button>';
-        echo '</div>'; // Fecha input-group
-        echo '</form>';
-        echo '</td>';
-
         // Botão de exclusão
         echo '<td>';
         echo '<form method="post" style="display:inline;">';
@@ -165,15 +146,6 @@ if ($query->have_posts()) {
     wp_reset_postdata();
 } else {
     echo '<p>Nenhum adesivo encontrado.</p>';
-}
-
-// Mensagem de sucesso ou erro no admin
-if (isset($_GET['editor_habilitado'])) {
-    if ($_GET['editor_habilitado'] === 'sucesso') {
-        echo '<div class="notice notice-success is-dismissible"><p>O editor foi habilitado com sucesso para este produto!</p></div>';
-    } elseif ($_GET['editor_habilitado'] === 'erro') {
-        echo '<div class="notice notice-error is-dismissible"><p>Erro ao habilitar o editor. Tente novamente.</p></div>';
-    }
 }
 
 // Processar habilitação do editor ao salvar
@@ -237,6 +209,38 @@ echo '
     <h4 style="margin-top: .4rem;margin-left: .5rem; font-size: 1.2rem"; class="mb-6"> Configurações </h4>
 </div>';
 
+// Campo para inserir ID do produto manualmente
+echo '<td>';
+echo '<form method="post">';
+wp_nonce_field('manual_product_id_nonce', 'manual_id_nonce_field');
+echo '<input type="hidden" name="sticker_id" value="' . esc_attr($attachment_id) . '">';
+echo '<div class="input-group">';
+echo '<input type="number" name="manual_product_id" class="form-control" placeholder="ID do Produto" required>';
+echo '<button type="submit" name="save_manual_id" class="btn btn-info" style="margin-left: 0.5rem;">Salvar</button>';
+echo '</div>'; // Fecha input-group
+echo '</form>';
+echo '</td>';
+
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_manual_id'])) {
+    if (!isset($_POST['manual_id_nonce_field']) || !wp_verify_nonce($_POST['manual_id_nonce_field'], 'manual_product_id_nonce')) {
+        die('Ação não autorizada.');
+    }
+
+    $manual_product_id = intval($_POST['manual_product_id']); // Captura o ID do produto enviado no formulário
+
+    if ($manual_product_id) {
+        // Salva o ID do produto em uma opção ou meta (como preferir)
+        update_option('manual_product_id', $manual_product_id);
+
+        // Mensagem de sucesso
+        echo '<div class="notice notice-success"><p>ID do produto salvo com sucesso!</p></div>';
+    } else {
+        // Mensagem de erro
+        echo '<div class="notice notice-error"><p>Erro ao salvar o ID do produto. Verifique o valor inserido.</p></div>';
+    }
+}
+
 
 $recognize_sticker_setting = get_option('person_plugin_recognize_sticker', 'yes');
 $admin_email = get_option('person_plugin_admin_email', '');
@@ -291,8 +295,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_plugin_settings'
     }
 }
 
-
-
 // Scripts
 echo "
 <script>
@@ -311,7 +313,7 @@ echo "
     
 </script>
 ";
- 
+
 echo '
 <script>
 function copiarTag(event) {
