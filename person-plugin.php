@@ -57,7 +57,7 @@ add_action('wp_enqueue_scripts', 'person_plugin_enqueue_frontend_scripts', 20);
 
 function person_plugin_enqueue_scripts()
 {
-    wp_enqueue_script('person-plugin-js', plugins_url('customizador.js', __FILE__), ['jquery'], null, true);
+    wp_enqueue_script('person-plugin-js', plugins_url('/assets/js/customizador.js', __FILE__), ['jquery'], null, true);
 
     wp_localize_script('person-plugin-js', 'personPlugin', [
         'ajax_url' => admin_url('admin-ajax.php'),
