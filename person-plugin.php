@@ -43,15 +43,14 @@ add_action('admin_enqueue_scripts', 'carregar_bootstrap_no_admin');
 
 function person_plugin_enqueue_frontend_scripts()
 {
-    // Remova ou comente a linha abaixo:
-    // if ( !is_product() ) { return; }
-
-    wp_enqueue_style('bootstrap-css', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css');
-    wp_enqueue_style('person-plugin-customizer-css', plugin_dir_url(__FILE__) . 'assets/css/customizador.css');
-    wp_enqueue_script('bootstrap-js', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js', array('jquery'), null, true);
-    wp_enqueue_script('konva-js', 'https://cdn.jsdelivr.net/npm/konva@8.4.2/konva.min.js', array(), null, true);
-    wp_enqueue_script('person-plugin-customizer-js', plugin_dir_url(__FILE__) . 'assets/js/customizador.js', array('jquery', 'konva-js'), null, true);
-    wp_enqueue_media();
+    if (is_page('custom-sticker')) {
+        wp_enqueue_style('bootstrap-css', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css');
+        wp_enqueue_style('person-plugin-customizer-css', plugin_dir_url(__FILE__) . 'assets/css/customizador.css');
+        wp_enqueue_script('bootstrap-js', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js', array('jquery'), null, true);
+        wp_enqueue_script('konva-js', 'https://cdn.jsdelivr.net/npm/konva@8.4.2/konva.min.js', array(), null, true);
+        wp_enqueue_script('person-plugin-customizer-js', plugin_dir_url(__FILE__) . 'assets/js/customizador.js', array('jquery', 'konva-js'), null, true);
+        wp_enqueue_media();
+    }
 }
 add_action('wp_enqueue_scripts', 'person_plugin_enqueue_frontend_scripts', 20);
 
@@ -82,7 +81,7 @@ add_action('admin_enqueue_scripts', 'meu_plugin_carregar_fontawesome_kit');
 
 function plugin_adicionar_menu()
 {
-    add_menu_page( 
+    add_menu_page(
         'Configurações de Adesivos',
         'Seus Adesivos',
         'manage_options',
@@ -373,13 +372,15 @@ function restaurar_dados_personalizados_no_carrinho($cart_item, $cart_item_key)
 add_filter('woocommerce_get_cart_item_from_session', 'restaurar_dados_personalizados_no_carrinho', 10, 2);
 
 add_filter('theme_page_templates', 'mp_adicionar_template_no_dropdown');
-function mp_adicionar_template_no_dropdown($templates) {
-    $templates['page-adesivos.php'] = 'Editor de Adesivos'; 
+function mp_adicionar_template_no_dropdown($templates)
+{
+    $templates['page-adesivos.php'] = 'Editor de Adesivos';
     return $templates;
 }
 
 add_filter('template_include', 'mp_carregar_template_personalizado');
-function mp_carregar_template_personalizado($template) {
+function mp_carregar_template_personalizado($template)
+{
     if (is_page()) {
         $pagina_id = get_queried_object_id();
         $escolhido = get_page_template_slug($pagina_id);
