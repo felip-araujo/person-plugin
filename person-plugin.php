@@ -53,7 +53,7 @@ function person_plugin_enqueue_frontend_scripts()
     wp_enqueue_script('person-plugin-customizer-js', plugin_dir_url(__FILE__) . 'assets/js/customizador.js', array('jquery', 'konva-js'), null, true);
     wp_enqueue_media();
 }
-add_action('wp_enqueue_scripts', 'person_plugin_enqueue_frontend_scripts');
+add_action('wp_enqueue_scripts', 'person_plugin_enqueue_frontend_scripts', 20);
 
 function person_plugin_enqueue_scripts()
 {
@@ -371,3 +371,27 @@ function restaurar_dados_personalizados_no_carrinho($cart_item, $cart_item_key)
     return $cart_item;
 }
 add_filter('woocommerce_get_cart_item_from_session', 'restaurar_dados_personalizados_no_carrinho', 10, 2);
+
+add_filter('theme_page_templates', 'mp_adicionar_template_no_dropdown');
+function mp_adicionar_template_no_dropdown($templates) {
+    $templates['page-adesivos.php'] = 'Editor de Adesivos'; 
+    return $templates;
+}
+
+add_filter('template_include', 'mp_carregar_template_personalizado');
+function mp_carregar_template_personalizado($template) {
+    if (is_page()) {
+        $pagina_id = get_queried_object_id();
+        $escolhido = get_page_template_slug($pagina_id);
+
+        // Verifica se o template selecionado é o nosso
+        if ($escolhido === 'page-adesivos.php') {
+            // Caminho do template dentro do plugin
+            $template_custom = plugin_dir_path(__FILE__) . 'templates/page-adesivos.php';
+            if (file_exists($template_custom)) {
+                return $template_custom;
+            }
+        }
+    }
+    return $template;
+}
