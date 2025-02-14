@@ -15,10 +15,17 @@ var historyIndex = -1;
 var tempTextObject = null;
 
 document.addEventListener('DOMContentLoaded', function () {
+    // Verifica se o elemento 'adesivo-canvas' existe
+    var canvasElement = document.getElementById('adesivo-canvas');
+    if (!canvasElement) {
+        // Se não existir, encerra a execução deste script para evitar erros
+        return;
+    }
+
     var stage = new Konva.Stage({
         container: 'adesivo-canvas',
-        width: document.getElementById('adesivo-canvas').offsetWidth,
-        height: document.getElementById('adesivo-canvas').offsetHeight,
+        width: canvasElement.offsetWidth,
+        height: canvasElement.offsetHeight,
         draggable: false, // Canvas fixo inicialmente
     });
 
@@ -436,74 +443,12 @@ document.addEventListener('DOMContentLoaded', function () {
     loadingOverlay.appendChild(loadingText);
     document.body.appendChild(loadingOverlay);
 
-    // document.getElementById("salvarAdesivoForm").addEventListener("submit", function (e) {
-    //     e.preventDefault();
-
-    //     const nome = document.getElementById("nome").value;
-    //     const email = document.getElementById("email").value;
-    //     const telefone = document.getElementById("telefone").value;
-    //     const material = document.getElementById("material").value;
-    //     const quantidade = document.getElementById("quantidade").value;
-    //     const texto_instrucoes = document.getElementById("texto_instrucoes").value;
-
-    //     // Captura o canvas como PNG base64
-    //     const dataUrl = stage.toDataURL();
-
-    //     const mensagemDiv = document.getElementById("mensagem");
-    //     const loadingText = document.getElementById("loadingText");  
-
-    //     loadingText.style.display = 'block';
-    //     mensagemDiv.classList.add("d-none");
-    //     loadingText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando Adesivo...';
-
-    //     fetch(pluginData.ajaxUrl, {
-    //         method: "POST",
-    //         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    //         body: new URLSearchParams({
-    //             action: "salvar_adesivo_cliente",
-    //             nome,
-    //             email,
-    //             telefone,
-    //             material,
-    //             quantidade,
-    //             texto_instrucoes,
-    //             sticker_image: dataUrl
-    //         }).toString(),
-    //     })
-    //         .then(async (response) => {
-    //             loadingText.style.display = 'none';
-    //             if (!response.ok) {
-    //                 const errorText = await response.text();
-    //                 throw new Error(`HTTP status ${response.status}: ${errorText}`);
-    //             }
-    //             return response.json();
-    //         })
-    //         .then((data) => {
-    //             mensagemDiv.classList.remove("d-none", "alert-danger");
-    //             mensagemDiv.classList.add("alert-success");
-    //             mensagemDiv.textContent = "Adesivo salvo com sucesso!";
-    //             document.getElementById("salvarAdesivoForm").reset();
-    //             setTimeout(() => {
-    //                 bootstrap.Modal.getInstance(document.getElementById("salvarAdesivoModal")).hide();
-    //                 mensagemDiv.classList.add("d-none");
-    //             }, 3000);
-    //         })
-    //         .catch((error) => {
-    //             loadingText.style.display = 'none';
-    //             mensagemDiv.classList.remove("d-none", "alert-success");
-    //             mensagemDiv.classList.add("alert-danger");
-    //             mensagemDiv.textContent = "Erro ao salvar adesivo. Tente novamente.";
-    //             console.error("Erro no fetch:", error);
-    //         });
-    // });
-
     document.getElementById("salvar-adesivo-botao").addEventListener("click", function (e) {
         e.preventDefault();
-    
+
         // Captura a imagem do canvas como base64
         const adesivoData = stage.toDataURL({ mimeType: "image/png" });
-        
-    
+
         // Envia a imagem para o servidor via AJAX
         fetch(personPlugin.ajax_url, {
             method: "POST",
@@ -516,7 +461,7 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(response => response.json())
         .then(data => {
             console.log("Resposta do servidor:", data);
-    
+
             if (data.success) {
                 // Redireciona para o carrinho
                 window.location.href = data.data.cart_url;
@@ -529,7 +474,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 
-
 jQuery(document).ready(function($) {
     setTimeout(function() {
         $('td.product-thumbnail img').each(function() {
@@ -540,4 +484,3 @@ jQuery(document).ready(function($) {
         });
     }, 500);
 });
-
