@@ -9,7 +9,7 @@
 
     body {
         font-family: 'Montserrat', sans-serif;
-    }
+    } 
 
     .container-fluid {
         padding: 0;
