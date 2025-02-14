@@ -200,7 +200,7 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
 
         <!-- Sidebar de adesivos -->
         <button class="btn d-md-none hamburger-btn" onclick="toggleSidebar()">
-            <i class="fas fa-bars"></i>
+            <i class="fas fa-bars"></i> Adesivos
         </button>
 
         <div class="p-4 bg-white ml-4 border-right shadow-sm overflow-auto side-bar d-md-block hidden" id="sidebar">
