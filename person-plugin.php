@@ -82,7 +82,7 @@ add_action('admin_enqueue_scripts', 'meu_plugin_carregar_fontawesome_kit');
 
 function plugin_adicionar_menu()
 {
-    add_menu_page(
+    add_menu_page( 
         'Configurações de Adesivos',
         'Seus Adesivos',
         'manage_options',
