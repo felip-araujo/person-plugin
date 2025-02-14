@@ -165,7 +165,7 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
         .hamburger-btn {
             position: absolute;
             top: 10px;
-            left: 38vh;
+            right: 10px;
             z-index: 1050;
         }
     }
@@ -199,7 +199,7 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
         </div>
 
         <!-- Sidebar de adesivos -->
-        <button class="btn btn-primary d-md-none hamburger-btn" onclick="toggleSidebar()">
+        <button class="btn d-md-none hamburger-btn" onclick="toggleSidebar()">
             <i class="fas fa-bars"></i>
         </button>
 

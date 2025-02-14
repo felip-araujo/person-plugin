@@ -9,7 +9,7 @@
 
     body {
         font-family: 'Montserrat', sans-serif;
-    } 
+    }
 
     .container-fluid {
         padding: 0;
@@ -34,8 +34,20 @@
         overflow-y: auto;
     }
 
+    #titulo {
+        font-size: 1.4rem;
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 400 ;
+        text-align: left;
+    }
+
     /* Responsividade para mobile */
     @media (max-width: 768px) {
+
+
+        #alert {
+            visibility: hidden;
+        }
 
         body {
             overflow-y: auto;
@@ -63,8 +75,11 @@
         }
 
         #titulo {
-            font-size: 25px;
+            font-size: 1.4rem;
+            font-family: 'Montserrat', sans-serif;
             text-align: center;
+
+
         }
 
         /* Ajustar para tela pequena */
@@ -80,7 +95,7 @@
 
         #abas-1 {
             padding: 1.5rem;
-            
+
         }
 
         #imagem-botao-container {
@@ -90,7 +105,7 @@
         #close-editor {
             margin-left: 35vh;
             background-color: red;
-            
+
         }
     }
 
@@ -122,11 +137,8 @@
 <div class="container-fluid" style="overflow-y: auto;">
     <div class="container mt-5">
         <!-- Titulo -->
-        <div class="d-flex justify-content-between align-items-center">
-            <h2 class="text-left font" id="titulo">Personalize seu Adesivo</h2>
-            <button id="close-editor" class="btn btn-outline-danger" style="border: none; color: white;">
-                <i class="fas fa-times"></i>
-            </button>
+        <div>
+            <h2 id="titulo">Personalize seu Adesivo</h2>
         </div>
         <!-- Row para Divisao Lado a Lado -->
         <div class="row" id="abas">
@@ -211,7 +223,7 @@
                                     Limpar Tela
                                 </button>
                             </div>
-                            <p class="alert alert-info alert-dismissible fade show d-flex align-items-center" role="alert" style="font-size: .8rem; text-align: left;">
+                            <p id="alert" class="alert alert-info alert-dismissible fade show d-flex align-items-center" role="alert" style="font-size: .8rem; text-align: left;">
                                 <button type="button" class="btn-close ms-auto  d-flex align-items-center" data-bs-dismiss="alert" aria-label="Close"></button>
                                 <span> Ao utilizar nosso serviço de edição de adesivos, você concorda com os nossos <a href="https://palevioletred-parrot-583208.hostingersite.com/"> Termos de Uso. </a> </span>
                             </p>
@@ -245,4 +257,4 @@
     });
 </script>
 <!-- Certifique-se de que o customizador.js está sendo carregado -->
-<script src="assets/customizador.js"></script>
+<script src="assets/customizador.js" defer></script>
