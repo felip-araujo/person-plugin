@@ -12,7 +12,6 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
     $selected_sticker = urldecode($_GET['sticker']);
 }
 ?>
-
 <style>
     /*desabilita a seleção no body*/
     body {
@@ -188,7 +187,15 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
         }
     }
 </style>
-</head>
+
+
+
+
+
+
+
+
+
 
 <body>
     <div class="container-fluid" back>
