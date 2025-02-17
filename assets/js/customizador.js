@@ -17,7 +17,7 @@ var tempTextObject = null;
 document.addEventListener('DOMContentLoaded', function () {
     // Verifica se o elemento 'adesivo-canvas' existe
     var canvasElement = document.getElementById('adesivo-canvas');
-    if (!canvasElement) {
+    if (!canvasElement) { 
         // Se não existir, encerra a execução deste script para evitar erros
         return;
     }
