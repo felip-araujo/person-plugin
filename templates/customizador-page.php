@@ -205,6 +205,7 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
 
         <div class="p-4 bg-white ml-4 border-right shadow-sm overflow-auto side-bar d-md-block hidden" id="sidebar">
             <p class="alert alert-info text-center">Selecione um Adesivo</p>
+            <input type="text" id="searchSticker" class="form-control mb-3" placeholder="Buscar adesivo...">
             <div class="d-flex flex-wrap justify-content-center">
                 <?php
                 // Recupera o ID do produto configurado na área administrativa
@@ -267,19 +268,19 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
         editorContainer.classList.toggle('open');
     }
 
-    // funcao para bloquear botao direito no navegador 
-    if (document.addEventListener) {
-        document.addEventListener("contextmenu", function(e) {
-            e.preventDefault();
-            return false;
-        });
-    } else { //Versões antigas do IE 
-        document.attachEvent("oncontextmenu", function(e) {
-            e = e || window.event;
-            e.returnValue = false;
-            return false;
-        });
-    }
+    // // funcao para bloquear botao direito no navegador 
+    // if (document.addEventListener) {
+    //     document.addEventListener("contextmenu", function(e) {
+    //         e.preventDefault();
+    //         return false;
+    //     });
+    // } else { //Versões antigas do IE 
+    //     document.attachEvent("oncontextmenu", function(e) {
+    //         e = e || window.event;
+    //         e.returnValue = false;
+    //         return false;
+    //     });
+    // }
 
     // funcao para bloquear ctrl+u e ctrl+s no naveegador
     if (document.addEventListener) {
@@ -306,4 +307,18 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
             return false;
         }
     }
+
+    document.getElementById('searchSticker').addEventListener('keyup', function() {
+        let filter = this.value.toLowerCase();
+        let stickers = document.querySelectorAll('.sticker-item');
+
+        stickers.forEach(function(sticker) {
+            let name = sticker.querySelector('.sticker-name').textContent.toLowerCase();
+            if (name.includes(filter)) {
+                sticker.style.display = 'flex';
+            } else {
+                sticker.style.display = 'none';
+            }
+        });
+    });
 </script>

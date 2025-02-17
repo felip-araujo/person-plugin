@@ -40,6 +40,7 @@
         font-weight: 400 ;
         text-align: left;
     }
+   
 
     /* Responsividade para mobile */
     @media (max-width: 768px) {
@@ -146,10 +147,10 @@
                 <!-- Abas para alternar entre Texto e Camadas -->
                 <ul class="nav nav-tabs">
                     <li class="nav-item col-6 p-0 text-center">
-                        <a style="text-decoration: none; color: #444" class="nav-link active" id="tab-camadas" data-bs-toggle="tab" href="#camadas-tab-content">Camadas</a>
+                        <a class="nav-link  text-dark active" id="tab-camadas" data-bs-toggle="tab" href="#camadas-tab-content">Camadas</a>
                     </li>
                     <li class="nav-item col-6 p-0 text-center">
-                        <a style="text-decoration: none;" class="nav-link" id="tab-texto" data-bs-toggle="tab" href="#texto-tab-content">Texto</a>
+                        <a class="nav-link text-light" id="tab-texto" data-bs-toggle="tab" href="#texto-tab-content">Texto</a>
                     </li>
                 </ul>
 
@@ -243,7 +244,7 @@
                 <button id="zoom-out" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
                 <button id="reset-zoom" class="btn btn-secondary"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></button>
                 <button id="salvar-modelo-botao" class="btn btn-primary">Salvar Modelo</button>
-                <button type="submit" id="salvar-adesivo-botao" class="btn btn-success">Salvar Adesivo</button>
+                <button type="submit" id="salvar-adesivo-botao" class="btn btn-success">Comprar Agora</button>
             </div>
         </div>
     </div>
@@ -257,4 +258,3 @@
     });
 </script>
 <!-- Certifique-se de que o customizador.js está sendo carregado -->
-<script src="assets/customizador.js" defer></script>
