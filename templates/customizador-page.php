@@ -13,6 +13,11 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
 }
 ?>
 <style>
+    .person-customizer header {
+        position: absolute;
+        z-index: 9999;
+    }
+
     /*desabilita a seleção no body*/
     body {
         -webkit-touch-callout: none;
@@ -188,84 +193,72 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
     }
 </style>
 
+<div class="container-fluid" back>
+    <div class="editor-container" id="editor-container">
+        <?php
+        echo person_plugin_display_customizer($selected_sticker);
+        ?>
+    </div>
 
+    <!-- Sidebar de adesivos -->
+    <button class="btn d-md-none hamburger-btn" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i> Adesivos
+    </button>
 
-
-
-
-
-
-
-
-<body>
-    <div class="container-fluid" back>
-        <div class="editor-container" id="editor-container">
+    <div class="p-4 bg-white ml-4 border-right shadow-sm overflow-auto side-bar d-md-block hidden" id="sidebar">
+        <p class="alert alert-info text-center">Selecione um Adesivo</p>
+        <input type="text" id="searchSticker" class="form-control mb-3" placeholder="Buscar adesivo...">
+        <div class="d-flex flex-wrap justify-content-center">
             <?php
-            echo person_plugin_display_customizer($selected_sticker);
+            // Recupera o ID do produto configurado na área administrativa
+            $produto_id = get_option('manual_product_id');
+            $product = wc_get_product($produto_id);
+
+            // Se o produto for recuperado, obtemos os dados
+            if ($product) {
+                $product_name  = $product->get_name();
+                $product_price = wc_price($product->get_price());
+            } else {
+                // Caso o produto não esteja configurado ou não exista
+                $product_name  = '';
+                $product_price = '';
+            }
+
+            // Recupera todos os adesivos (imagens SVG)
+            $args = array(
+                'post_type'      => 'attachment',
+                'post_mime_type' => 'image/svg+xml',
+                'posts_per_page' => -1,
+                'orderby'        => 'title',
+                'order'          => 'ASC'
+            );
+            $stickers = get_posts($args);
+
+            if ($stickers) :
+                foreach ($stickers as $sticker) :
+                    $sticker_url  = wp_get_attachment_url($sticker->ID);
+                    $link         = esc_url(add_query_arg('sticker', urlencode($sticker_url)));
+                    $sticker_name = pathinfo($sticker_url, PATHINFO_FILENAME);
+            ?>
+                    <a href="<?php echo $link; ?>" class="sticker-item text-center m-2">
+                        <img src="<?php echo esc_url($sticker_url); ?>" class="img-fluid rounded border p-2 bg-light" alt="<?php echo esc_attr($sticker_name); ?>" style="width: 80px; height: 80px;">
+                        <span class="d-block small mt-1 sticker-name"><?php echo esc_html($sticker_name); ?></span>
+                        <?php if (!empty($product_price)) : ?>
+                            <span class="d-block small sticker-price"><?php echo $product_price; ?></span>
+                        <?php endif; ?>
+                    </a>
+            <?php
+                endforeach;
+            else :
+                echo '<p class="text-center text-muted">Nenhum adesivo encontrado.</p>';
+            endif;
             ?>
         </div>
-
-        <!-- Sidebar de adesivos -->
-        <button class="btn d-md-none hamburger-btn" onclick="toggleSidebar()">
-            <i class="fas fa-bars"></i> Adesivos
-        </button>
-
-        <div class="p-4 bg-white ml-4 border-right shadow-sm overflow-auto side-bar d-md-block hidden" id="sidebar">
-            <p class="alert alert-info text-center">Selecione um Adesivo</p>
-            <input type="text" id="searchSticker" class="form-control mb-3" placeholder="Buscar adesivo...">
-            <div class="d-flex flex-wrap justify-content-center">
-                <?php
-                // Recupera o ID do produto configurado na área administrativa
-                $produto_id = get_option('manual_product_id');
-                $product = wc_get_product($produto_id);
-
-                // Se o produto for recuperado, obtemos os dados
-                if ($product) {
-                    $product_name  = $product->get_name();
-                    $product_price = wc_price($product->get_price());
-                } else {
-                    // Caso o produto não esteja configurado ou não exista
-                    $product_name  = '';
-                    $product_price = '';
-                }
-
-                // Recupera todos os adesivos (imagens SVG)
-                $args = array(
-                    'post_type'      => 'attachment',
-                    'post_mime_type' => 'image/svg+xml',
-                    'posts_per_page' => -1,
-                    'orderby'        => 'title',
-                    'order'          => 'ASC'
-                );
-                $stickers = get_posts($args);
-
-                if ($stickers) :
-                    foreach ($stickers as $sticker) :
-                        $sticker_url  = wp_get_attachment_url($sticker->ID);
-                        $link         = esc_url(add_query_arg('sticker', urlencode($sticker_url)));
-                        $sticker_name = pathinfo($sticker_url, PATHINFO_FILENAME);
-                ?>
-                        <a href="<?php echo $link; ?>" class="sticker-item text-center m-2">
-                            <img src="<?php echo esc_url($sticker_url); ?>" class="img-fluid rounded border p-2 bg-light" alt="<?php echo esc_attr($sticker_name); ?>" style="width: 80px; height: 80px;">
-                            <span class="d-block small mt-1 sticker-name"><?php echo esc_html($sticker_name); ?></span>
-                            <?php if (!empty($product_price)) : ?>
-                                <span class="d-block small sticker-price"><?php echo $product_price; ?></span>
-                            <?php endif; ?>
-                        </a>
-                <?php
-                    endforeach;
-                else :
-                    echo '<p class="text-center text-muted">Nenhum adesivo encontrado.</p>';
-                endif;
-                ?>
-            </div>
-        </div>
-
     </div>
-    </div>
-</body>
 
-</html>
+</div>
+
+
 
 <script>
     function toggleSidebar() {
