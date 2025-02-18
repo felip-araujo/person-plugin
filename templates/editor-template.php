@@ -262,4 +262,4 @@
 </script>
 <!-- Certifique-se de que o customizador.js está sendo carregado -->
 
-<script src="assets/js/customizador.js"></script>
+<!-- <script src="../assets/js/customizador.js"></script> -->
