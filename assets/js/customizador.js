@@ -17,7 +17,7 @@ var tempTextObject = null;
 document.addEventListener('DOMContentLoaded', function () {
     // Verifica se o elemento 'adesivo-canvas' existe
     var canvasElement = document.getElementById('adesivo-canvas');
-    if (!canvasElement) { 
+    if (!canvasElement) {
         // Se não existir, encerra a execução deste script para evitar erros
         return;
     }
@@ -38,8 +38,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // Se pluginData.stickerUrl existir, carregar o adesivo
     if (typeof pluginData !== 'undefined' && pluginData.stickerUrl) {
         carregarAdesivo(pluginData.stickerUrl);
-        //else {
-        //    console.error('pluginData.stickerUrl não definido');
     }
     // Continuar execução mesmo que pluginData.stickerUrl não esteja definido
 
@@ -193,6 +191,67 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // -----------------
+    //  FUNÇÃO DE EDIÇÃO DE TEXTO
+    // -----------------
+    // Ao dar duplo clique em um objeto de texto, um textarea é posicionado sobre ele para permitir a edição.
+    function enableTextEditing(textNode) {
+        textNode.on('dblclick', function () {
+            // Esconde o objeto de texto durante a edição
+            textNode.hide();
+            layer.draw();
+
+            // Posição absoluta do texto no stage
+            var textPosition = textNode.getAbsolutePosition();
+            var stageBox = stage.container().getBoundingClientRect();
+
+            // Cria o elemento textarea para edição
+            var area = document.createElement('textarea');
+            document.body.appendChild(area);
+            area.value = textNode.text();
+
+            // Ajusta o estilo para que fique posicionado corretamente sobre o canvas
+            area.style.position = 'absolute';
+            area.style.top = stageBox.top + textPosition.y + 'px';
+            area.style.left = stageBox.left + textPosition.x + 'px';
+            area.style.fontSize = textNode.fontSize() + 'px';
+            area.style.fontFamily = textNode.fontFamily();
+            area.style.color = textNode.fill();
+            area.style.border = 'none';
+            area.style.padding = '0px';
+            area.style.margin = '0px';
+            area.style.overflow = 'hidden';
+            area.style.background = 'none';
+            area.style.outline = 'none';
+            area.style.resize = 'none';
+            area.style.transform = 'rotate(' + textNode.rotation() + 'deg)';
+            area.style.lineHeight = textNode.lineHeight();
+            area.style.minWidth = '50px';
+
+            area.focus();
+
+            // Atualiza o texto ao pressionar Enter
+            area.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    textNode.text(area.value);
+                    textNode.show();
+                    layer.draw();
+                    document.body.removeChild(area);
+                    saveHistory();
+                }
+            });
+
+            // Atualiza o texto quando o textarea perde o foco
+            area.addEventListener('blur', function () {
+                textNode.text(area.value);
+                textNode.show();
+                layer.draw();
+                document.body.removeChild(area);
+                saveHistory();
+            });
+        });
+    }
+
+    // -----------------
     //  EVENTOS PRINCIPAIS
     // -----------------
 
@@ -234,6 +293,9 @@ document.addEventListener('DOMContentLoaded', function () {
         layer.add(newTextObject);
         layer.draw();
 
+        // Aplica a funcionalidade de edição via duplo clique
+        enableTextEditing(newTextObject);
+
         document.getElementById('texto').value = '';
         if (tempTextObject) {
             tempTextObject.destroy();
@@ -242,7 +304,7 @@ document.addEventListener('DOMContentLoaded', function () {
         saveHistory();
     });
 
-    // 3. Atualização prévia do texto no canvas (se quiser “preview”)
+    // 3. Atualização prévia do texto no canvas (preview enquanto digita)
     document.getElementById('texto').addEventListener('input', atualizarTextoNoCanvas);
     document.getElementById('tamanho-fonte').addEventListener('input', atualizarTextoNoCanvas);
     document.getElementById('fontPicker').addEventListener('change', atualizarTextoNoCanvas);
@@ -256,8 +318,14 @@ document.addEventListener('DOMContentLoaded', function () {
         atualizarTextoNoCanvas();
     });
 
+    // Variável global para armazenar o objeto de texto temporário no canvas
+    // Variável global para armazenar o objeto de texto temporário (preview)
+    var tempTextObject = null;
+
+    // Função que atualiza o preview do texto no canvas conforme os campos são alterados
     function atualizarTextoNoCanvas() {
         var textContent = document.getElementById('texto').value;
+        // Se o usuário não digitou nada, remove o preview se existir
         if (!textContent.trim()) {
             if (tempTextObject) {
                 tempTextObject.destroy();
@@ -267,28 +335,90 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Lê os valores dos outros campos
+        var fontSize = parseInt(document.getElementById('tamanho-fonte').value) || 16;
+        var fontFamily = document.getElementById('fontPicker').value || 'Arial';
+        var fillColor = document.getElementById('cor-texto').value || '#000';
+        var rotation = parseFloat(document.getElementById('rotacao-texto').value) || 0;
+
         if (!tempTextObject) {
+            // Cria o objeto de preview se ele ainda não existir
             tempTextObject = new Konva.Text({
                 x: stage.width() / 2,
                 y: stage.height() / 2,
                 text: textContent,
-                fontSize: parseInt(document.getElementById('tamanho-fonte').value),
-                fontFamily: document.getElementById('fontPicker').value,
-                fill: document.getElementById('cor-texto').value,
+                fontSize: fontSize,
+                fontFamily: fontFamily,
+                fill: fillColor,
                 draggable: true,
-                rotation: parseFloat(document.getElementById('rotacao-texto').value),
+                rotation: rotation
             });
             tempTextObject.on('dragend', saveHistory);
             layer.add(tempTextObject);
         } else {
+            // Atualiza as propriedades do objeto de preview
             tempTextObject.text(textContent);
-            tempTextObject.fontSize(parseInt(document.getElementById('tamanho-fonte').value));
-            tempTextObject.fontFamily(document.getElementById('fontPicker').value);
-            tempTextObject.fill(document.getElementById('cor-texto').value);
-            tempTextObject.rotation(parseFloat(document.getElementById('rotacao-texto').value));
+            tempTextObject.fontSize(fontSize);
+            tempTextObject.fontFamily(fontFamily);
+            tempTextObject.fill(fillColor);
+            tempTextObject.rotation(rotation);
         }
+        tempTextObject.moveToTop(); // Garante que o preview fique visível
         layer.draw();
     }
+
+    // Evento para atualizar o preview conforme o usuário digita ou altera os parâmetros
+    document.getElementById('texto').addEventListener('input', atualizarTextoNoCanvas);
+    document.getElementById('tamanho-fonte').addEventListener('input', atualizarTextoNoCanvas);
+    document.getElementById('fontPicker').addEventListener('change', atualizarTextoNoCanvas);
+    document.getElementById('cor-texto').addEventListener('input', atualizarTextoNoCanvas);
+    document.getElementById('rotacao-texto').addEventListener('input', atualizarTextoNoCanvas);
+
+    // (Opcional) Sincroniza um campo de número com o range de rotação, se você os estiver usando juntos:
+    document.getElementById('rotacao-texto').addEventListener('input', function () {
+        document.getElementById('rotacao-texto-valor').value = this.value;
+    });
+    document.getElementById('rotacao-texto-valor').addEventListener('input', function () {
+        document.getElementById('rotacao-texto').value = this.value;
+        atualizarTextoNoCanvas();
+    });
+
+    // Evento para confirmar e adicionar o texto definitivamente ao canvas
+    document.getElementById('adicionar-texto-botao').addEventListener('click', function () {
+        var textContent = document.getElementById('texto').value.trim();
+        if (!textContent) return; // Não faz nada se o campo estiver vazio
+
+        // Lê os parâmetros atualizados
+        var fontSize = parseInt(document.getElementById('tamanho-fonte').value) || 16;
+        var fontFamily = document.getElementById('fontPicker').value || 'Arial';
+        var fillColor = document.getElementById('cor-texto').value || '#000';
+        var rotation = parseFloat(document.getElementById('rotacao-texto').value) || 0;
+
+        // Cria um novo objeto de texto definitivo
+        var newTextObject = new Konva.Text({
+            x: stage.width() / 2,
+            y: stage.height() / 2,
+            text: textContent,
+            fontSize: fontSize,
+            fontFamily: fontFamily,
+            fill: fillColor,
+            draggable: true,
+            rotation: rotation
+        });
+        newTextObject.on('dragend', saveHistory);
+        layer.add(newTextObject);
+        layer.draw();
+
+        // Remove o objeto de preview, se existir, e limpa o campo de texto
+        if (tempTextObject) {
+            tempTextObject.destroy();
+            tempTextObject = null;
+        }
+        document.getElementById('texto').value = '';
+        saveHistory();
+    });
+
+
 
     // Salvar histórico quando campos de texto perdem o foco
     document.getElementById('texto').addEventListener('blur', saveHistory);
@@ -458,25 +588,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 adesivo_url: adesivoData
             })
         })
-        .then(response => response.json())
-        .then(data => {
-            console.log("Resposta do servidor:", data);
+            .then(response => response.json())
+            .then(data => {
+                console.log("Resposta do servidor:", data);
 
-            if (data.success) {
-                // Redireciona para o carrinho
-                window.location.href = data.data.cart_url;
-            } else {
-                alert("Erro: " + data.data.message);
-            }
-        })
-        .catch(error => console.error("Erro no AJAX:", error));
+                if (data.success) {
+                    // Redireciona para o carrinho
+                    window.location.href = data.data.cart_url;
+                } else {
+                    alert("Erro: " + data.data.message);
+                }
+            })
+            .catch(error => console.error("Erro no AJAX:", error));
     });
 
 });
 
-jQuery(document).ready(function($) {
-    setTimeout(function() {
-        $('td.product-thumbnail img').each(function() {
+jQuery(document).ready(function ($) {
+    setTimeout(function () {
+        $('td.product-thumbnail img').each(function () {
             var imgSrc = $(this).attr('src');
             if (imgSrc.includes('placeholder')) {
                 $(this).attr('src', $(this).closest('tr').find('.product-name img').attr('src'));
