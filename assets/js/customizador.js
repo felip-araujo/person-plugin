@@ -42,13 +42,103 @@ document.addEventListener('DOMContentLoaded', function () {
     // Continuar execução mesmo que pluginData.stickerUrl não esteja definido
 
     // -------------------
-    //  FUNÇÕES PRINCIPAIS
+    //  FUNÇÕES AUXILIARES
     // -------------------
 
+    // Função getRandomColor() foi mantida caso seja necessária em outro momento
     function getRandomColor() {
         return '#' + ('000000' + Math.floor(Math.random() * 16777215).toString(16)).slice(-6);
     }
 
+    /**
+     * Converte as regras CSS definidas no <style> do SVG em atributos inline.
+     * Atualmente, aplica somente a propriedade "fill".
+     */
+    function converterEstilosInline(svgText) {
+        // Parse o SVG
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgText, 'image/svg+xml');
+
+        // Extrai todo o conteúdo dos <style>
+        const styleElements = doc.querySelectorAll('style');
+        let cssText = '';
+        styleElements.forEach(styleEl => {
+            cssText += styleEl.textContent;
+        });
+
+        // Cria um objeto com as regras: nome_da_classe => { propriedade: valor, ... }
+        const regras = {};
+        // Expressão regular simples para capturar regras do tipo: .nome { ... }
+        cssText.replace(/\.([^ \n{]+)\s*\{([^}]+)\}/g, (match, className, declarations) => {
+            const props = {};
+            declarations.split(';').forEach(decl => {
+                if (decl.trim()) {
+                    const parts = decl.split(':');
+                    if (parts.length === 2) {
+                        const prop = parts[0].trim();
+                        const value = parts[1].trim();
+                        props[prop] = value;
+                    }
+                }
+            });
+            regras[className] = props;
+            return '';
+        });
+
+        // Para cada elemento que possui atributo class, aplica os estilos inline (neste caso, o fill)
+        const elemsComClasse = doc.querySelectorAll('[class]');
+        elemsComClasse.forEach(elem => {
+            const classes = elem.getAttribute('class').split(/\s+/);
+            classes.forEach(cls => {
+                if (regras[cls] && regras[cls].fill) {
+                    // Se já existir um atributo inline fill, pode decidir sobrescrever ou não
+                    elem.setAttribute('fill', regras[cls].fill);
+                }
+            });
+        });
+
+        // Opcional: remover o elemento <style> se não for mais necessário
+        styleElements.forEach(el => el.parentNode.removeChild(el));
+
+        return new XMLSerializer().serializeToString(doc);
+    }
+
+    /**
+     * Tenta obter o valor efetivo do fill de um elemento SVG.
+     * Primeiro verifica o atributo inline, depois o style e, por fim,
+     * o estilo computado (caso o SVG esteja anexado ao DOM).
+     */
+    function getEffectiveFill(elem) {
+        // Tenta o atributo 'fill' inline
+        let fill = elem.getAttribute('fill');
+        if (fill && fill.trim() !== '' && fill.toLowerCase() !== 'none') {
+            return fill;
+        }
+
+        // Tenta extrair do atributo 'style'
+        const styleAttr = elem.getAttribute('style');
+        if (styleAttr) {
+            const match = styleAttr.match(/fill\s*:\s*([^;]+)/i);
+            if (match && match[1] && match[1].trim() !== '' && match[1].trim().toLowerCase() !== 'none') {
+                return match[1].trim();
+            }
+        }
+
+        // Tenta obter o estilo computado (caso o SVG esteja no DOM)
+        if (document.body.contains(elem)) {
+            const computed = window.getComputedStyle(elem);
+            if (computed && computed.fill && computed.fill !== 'none') {
+                return computed.fill;
+            }
+        }
+
+        // Se nada for encontrado, retorna um padrão (preto)
+        return '#000000';
+    }
+
+    // -------------------
+    //  FUNÇÃO CARREGAR ADESIVO (SVG)
+    // -------------------
     function carregarAdesivo(stickerUrl) {
         fetch(stickerUrl)
             .then((response) => {
@@ -56,8 +146,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 return response.text();
             })
             .then((svgText) => {
+                // Converte os estilos CSS do SVG em atributos inline
+                const svgComInline = converterEstilosInline(svgText);
+
                 var parser = new DOMParser();
-                var svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
+                var svgDoc = parser.parseFromString(svgComInline, 'image/svg+xml');
 
                 layer.destroyChildren(); // Limpa os elementos anteriores
 
@@ -65,11 +158,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 Array.from(svgDoc.querySelectorAll('path, rect, circle, ellipse, polygon, polyline, line')).forEach(
                     (elem, index) => {
                         var pathData = elem.getAttribute('d') || '';
-                        var fillColor = elem.getAttribute('fill');
-
-                        if (!fillColor || fillColor === 'black' || fillColor === '#000') {
-                            fillColor = getRandomColor();
-                        }
+                        // Usa a função para obter a cor efetiva (deve estar inline agora)
+                        var fillColor = getEffectiveFill(elem);
 
                         if (pathData) {
                             var path = new Konva.Path({
@@ -92,6 +182,9 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch((error) => console.error('Erro ao carregar o adesivo:', error));
     }
 
+    // -------------------
+    //  FUNÇÃO AJUSTAR TAMANHO E POSIÇÃO DO ADESIVO
+    // -------------------
     function ajustarTamanhoEPosicaoDoAdesivo() {
         if (!stickerGroup) return;
 
@@ -121,26 +214,65 @@ document.addEventListener('DOMContentLoaded', function () {
         initialStickerPosition = { x: stickerGroup.x(), y: stickerGroup.y() };
     }
 
+    // -------------------
+    //  FUNÇÃO PREENCHE SELETOR DE CAMADAS
+    // -------------------
     function preencherSeletorDeCamadas() {
+        // Dicionário para nomes amigáveis das cores
+        const colorNames = {
+            '#000': 'Preto',
+            '#000000': 'Preto',
+            '#fff': 'Branco',
+            '#ffffff': 'Branco',
+            '#ff0000': 'Vermelho',
+            '#00ff00': 'Verde',
+            '#0000ff': 'Azul',
+            '#ffff00': 'Amarelo',
+            '#00ffff': 'Ciano',
+            '#ff00ff': 'Magenta',
+            '#eee': 'Cinza claro',
+            '#eeeeee': 'Cinza claro'
+        };
+
         var layerSelect = document.getElementById('layer-select');
         layerSelect.innerHTML = '';
 
-        if (!stickerGroup) return;
-
+        // Opção para editar todas as camadas
         var allLayersOption = document.createElement('option');
         allLayersOption.value = 'all';
         allLayersOption.textContent = 'Todas as Camadas';
         layerSelect.appendChild(allLayersOption);
 
-        stickerGroup.getChildren().forEach((child, index) => {
-            var option = document.createElement('option');
-            option.value = child.id();
-            option.textContent = `Camada ${index + 1}`;
-            layerSelect.appendChild(option);
+        if (!stickerGroup) return;
+
+        // Agrupa as camadas pelo valor do fill
+        var groups = {};
+        stickerGroup.getChildren().forEach((child) => {
+            var fillColor = child.fill();
+            if (!fillColor) {
+                fillColor = '#000000';
+            }
+            fillColor = fillColor.toLowerCase();
+            if (!groups[fillColor]) {
+                groups[fillColor] = [];
+            }
+            groups[fillColor].push(child);
         });
+
+        // Cria uma opção para cada grupo de cor
+        for (var fillColor in groups) {
+            var count = groups[fillColor].length;
+            var option = document.createElement('option');
+            option.value = fillColor;
+            var friendlyName = colorNames[fillColor] || fillColor;
+            option.textContent = `Cor ${friendlyName} (${count} camada${count > 1 ? 's' : ''})`;
+            layerSelect.appendChild(option);
+        }
     }
 
-    // Salvar histórico
+    // -------------------
+    //  FUNÇÕES DE HISTÓRICO (UNDO/REDO)
+    // -------------------
     function saveHistory() {
         if (historyStates.length > 50) {
             historyStates.shift();
@@ -190,26 +322,21 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('redo-button').disabled = (historyIndex >= historyStates.length - 1);
     }
 
-    // -----------------
+    // -------------------
     //  FUNÇÃO DE EDIÇÃO DE TEXTO
-    // -----------------
-    // Ao dar duplo clique em um objeto de texto, um textarea é posicionado sobre ele para permitir a edição.
+    // -------------------
     function enableTextEditing(textNode) {
         textNode.on('dblclick', function () {
-            // Esconde o objeto de texto durante a edição
             textNode.hide();
             layer.draw();
 
-            // Posição absoluta do texto no stage
             var textPosition = textNode.getAbsolutePosition();
             var stageBox = stage.container().getBoundingClientRect();
 
-            // Cria o elemento textarea para edição
             var area = document.createElement('textarea');
             document.body.appendChild(area);
             area.value = textNode.text();
 
-            // Ajusta o estilo para que fique posicionado corretamente sobre o canvas
             area.style.position = 'absolute';
             area.style.top = stageBox.top + textPosition.y + 'px';
             area.style.left = stageBox.left + textPosition.x + 'px';
@@ -229,7 +356,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
             area.focus();
 
-            // Atualiza o texto ao pressionar Enter
             area.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter') {
                     textNode.text(area.value);
@@ -240,7 +366,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
 
-            // Atualiza o texto quando o textarea perde o foco
             area.addEventListener('blur', function () {
                 textNode.text(area.value);
                 textNode.show();
@@ -251,29 +376,36 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // -----------------
+    // -------------------
     //  EVENTOS PRINCIPAIS
-    // -----------------
+    // -------------------
 
-    // 1. Alterar cor das camadas
+    // Alterar cor das camadas
     document.getElementById('cor').addEventListener('input', function (event) {
-        var selectedColor = event.target.value;
+        var newColor = event.target.value;
         var layerSelect = document.getElementById('layer-select');
-        var selectedLayerId = layerSelect.value;
+        var selectedGroup = layerSelect.value;
 
         if (!stickerGroup) return;
 
-        if (selectedLayerId === 'all') {
-            stickerGroup.getChildren().forEach((child) => child.fill(selectedColor));
+        if (selectedGroup === 'all') {
+            stickerGroup.getChildren().forEach(child => child.fill(newColor));
         } else {
-            var selectedLayer = stickerGroup.findOne(`#${selectedLayerId}`);
-            if (selectedLayer) selectedLayer.fill(selectedColor);
+            stickerGroup.getChildren().forEach(child => {
+                if (child.fill() === selectedGroup) {
+                    child.fill(newColor);
+                }
+            });
         }
         layer.draw();
     });
-    document.getElementById('cor').addEventListener('change', saveHistory);
 
-    // 2. Adicionar texto
+    document.getElementById('cor').addEventListener('change', function () {
+        saveHistory();
+        preencherSeletorDeCamadas();
+    });
+
+    // Adicionar texto
     document.getElementById('adicionar-texto-botao').addEventListener('click', function () {
         var textContent = document.getElementById('texto').value.trim();
         if (!textContent) return;
@@ -293,7 +425,6 @@ document.addEventListener('DOMContentLoaded', function () {
         layer.add(newTextObject);
         layer.draw();
 
-        // Aplica a funcionalidade de edição via duplo clique
         enableTextEditing(newTextObject);
 
         document.getElementById('texto').value = '';
@@ -304,7 +435,7 @@ document.addEventListener('DOMContentLoaded', function () {
         saveHistory();
     });
 
-    // 3. Atualização prévia do texto no canvas (preview enquanto digita)
+    // Atualização prévia do texto (preview)
     document.getElementById('texto').addEventListener('input', atualizarTextoNoCanvas);
     document.getElementById('tamanho-fonte').addEventListener('input', atualizarTextoNoCanvas);
     document.getElementById('fontPicker').addEventListener('change', atualizarTextoNoCanvas);
@@ -318,14 +449,9 @@ document.addEventListener('DOMContentLoaded', function () {
         atualizarTextoNoCanvas();
     });
 
-    // Variável global para armazenar o objeto de texto temporário no canvas
-    // Variável global para armazenar o objeto de texto temporário (preview)
     var tempTextObject = null;
-
-    // Função que atualiza o preview do texto no canvas conforme os campos são alterados
     function atualizarTextoNoCanvas() {
         var textContent = document.getElementById('texto').value;
-        // Se o usuário não digitou nada, remove o preview se existir
         if (!textContent.trim()) {
             if (tempTextObject) {
                 tempTextObject.destroy();
@@ -335,14 +461,12 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // Lê os valores dos outros campos
         var fontSize = parseInt(document.getElementById('tamanho-fonte').value) || 16;
         var fontFamily = document.getElementById('fontPicker').value || 'Arial';
         var fillColor = document.getElementById('cor-texto').value || '#000';
         var rotation = parseFloat(document.getElementById('rotacao-texto').value) || 0;
 
         if (!tempTextObject) {
-            // Cria o objeto de preview se ele ainda não existir
             tempTextObject = new Konva.Text({
                 x: stage.width() / 2,
                 y: stage.height() / 2,
@@ -356,25 +480,22 @@ document.addEventListener('DOMContentLoaded', function () {
             tempTextObject.on('dragend', saveHistory);
             layer.add(tempTextObject);
         } else {
-            // Atualiza as propriedades do objeto de preview
             tempTextObject.text(textContent);
             tempTextObject.fontSize(fontSize);
             tempTextObject.fontFamily(fontFamily);
             tempTextObject.fill(fillColor);
             tempTextObject.rotation(rotation);
         }
-        tempTextObject.moveToTop(); // Garante que o preview fique visível
+        tempTextObject.moveToTop();
         layer.draw();
     }
 
-    // Evento para atualizar o preview conforme o usuário digita ou altera os parâmetros
     document.getElementById('texto').addEventListener('input', atualizarTextoNoCanvas);
     document.getElementById('tamanho-fonte').addEventListener('input', atualizarTextoNoCanvas);
     document.getElementById('fontPicker').addEventListener('change', atualizarTextoNoCanvas);
     document.getElementById('cor-texto').addEventListener('input', atualizarTextoNoCanvas);
     document.getElementById('rotacao-texto').addEventListener('input', atualizarTextoNoCanvas);
 
-    // (Opcional) Sincroniza um campo de número com o range de rotação, se você os estiver usando juntos:
     document.getElementById('rotacao-texto').addEventListener('input', function () {
         document.getElementById('rotacao-texto-valor').value = this.value;
     });
@@ -383,18 +504,15 @@ document.addEventListener('DOMContentLoaded', function () {
         atualizarTextoNoCanvas();
     });
 
-    // Evento para confirmar e adicionar o texto definitivamente ao canvas
     document.getElementById('adicionar-texto-botao').addEventListener('click', function () {
         var textContent = document.getElementById('texto').value.trim();
-        if (!textContent) return; // Não faz nada se o campo estiver vazio
+        if (!textContent) return;
 
-        // Lê os parâmetros atualizados
         var fontSize = parseInt(document.getElementById('tamanho-fonte').value) || 16;
         var fontFamily = document.getElementById('fontPicker').value || 'Arial';
         var fillColor = document.getElementById('cor-texto').value || '#000';
         var rotation = parseFloat(document.getElementById('rotacao-texto').value) || 0;
 
-        // Cria um novo objeto de texto definitivo
         var newTextObject = new Konva.Text({
             x: stage.width() / 2,
             y: stage.height() / 2,
@@ -409,7 +527,6 @@ document.addEventListener('DOMContentLoaded', function () {
         layer.add(newTextObject);
         layer.draw();
 
-        // Remove o objeto de preview, se existir, e limpa o campo de texto
         if (tempTextObject) {
             tempTextObject.destroy();
             tempTextObject = null;
@@ -418,9 +535,6 @@ document.addEventListener('DOMContentLoaded', function () {
         saveHistory();
     });
 
-
-
-    // Salvar histórico quando campos de texto perdem o foco
     document.getElementById('texto').addEventListener('blur', saveHistory);
     document.getElementById('tamanho-fonte').addEventListener('blur', saveHistory);
     document.getElementById('fontPicker').addEventListener('blur', saveHistory);
@@ -428,7 +542,6 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('rotacao-texto').addEventListener('mouseup', saveHistory);
     document.getElementById('rotacao-texto-valor').addEventListener('blur', saveHistory);
 
-    // Botão Salvar Modelo
     document.getElementById('salvar-modelo-botao').addEventListener('click', function () {
         if (tempTextObject) {
             tempTextObject.draggable(false);
@@ -539,9 +652,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Limpar Tela (remove TUDO)
+    // Limpar Tela
     document.getElementById('limpar-tela-botao').addEventListener('click', function () {
-        layer.destroyChildren();  // Apaga todo o conteúdo
+        layer.destroyChildren();
         stickerGroup = null;
         insertedImage = null;
         tempTextObject = null;
@@ -578,21 +691,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
         let checkbox = document.getElementById("aceito-termos");
 
-        // Verifica se o checkbox está marcado
         if (!checkbox.checked) {
             let confirmacao = confirm("Você precisa aceitar os termos antes de continuar. Deseja aceitar agora?");
-
             if (confirmacao) {
-                checkbox.checked = true; // Marca o checkbox automaticamente
+                checkbox.checked = true;
             } else {
-                return; // Se o usuário não aceitar, interrompe a execução
+                return;
             }
         }
 
-        // Captura a imagem do canvas como base64
         const adesivoData = stage.toDataURL({ mimeType: "image/png" });
 
-        // Envia a imagem para o servidor via AJAX
         fetch(personPlugin.ajax_url, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -604,9 +713,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(response => response.json())
             .then(data => {
                 console.log("Resposta do servidor:", data);
-
                 if (data.success) {
-                    // Redireciona para o carrinho
                     window.location.href = data.data.cart_url;
                 } else {
                     alert("Erro: " + data.data.message);
@@ -625,5 +732,4 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }, 500);
     });
-
 });
