@@ -258,8 +258,6 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
 
 </div>
 
-
-
 <script>
     function toggleSidebar() {
         var sidebar = document.getElementById('sidebar');
