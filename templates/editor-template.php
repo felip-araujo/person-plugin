@@ -229,6 +229,7 @@
                             <p id="alert" class="alert alert-info alert-dismissible fade show d-flex align-items-center" role="alert" style="font-size: .8rem; text-align: left;">
                                 <button type="button" class="btn-close ms-auto  d-flex align-items-center" data-bs-dismiss="alert" aria-label="Close"></button>
                                 <span> Ao utilizar nosso serviço de edição de adesivos, você concorda com os nossos <a href="https://palevioletred-parrot-583208.hostingersite.com/"> Termos de Uso. </a> </span>
+                                <input type="checkbox" name="aceito-termos" id="aceito-termos">
                             </p>
 
                         </form>

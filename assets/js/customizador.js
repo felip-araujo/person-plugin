@@ -576,6 +576,19 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById("salvar-adesivo-botao").addEventListener("click", function (e) {
         e.preventDefault();
 
+        let checkbox = document.getElementById("aceito-termos");
+
+        // Verifica se o checkbox está marcado
+        if (!checkbox.checked) {
+            let confirmacao = confirm("Você precisa aceitar os termos antes de continuar. Deseja aceitar agora?");
+
+            if (confirmacao) {
+                checkbox.checked = true; // Marca o checkbox automaticamente
+            } else {
+                return; // Se o usuário não aceitar, interrompe a execução
+            }
+        }
+
         // Captura a imagem do canvas como base64
         const adesivoData = stage.toDataURL({ mimeType: "image/png" });
 
@@ -602,15 +615,15 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(error => console.error("Erro no AJAX:", error));
     });
 
-});
+    jQuery(document).ready(function ($) {
+        setTimeout(function () {
+            $('td.product-thumbnail img').each(function () {
+                var imgSrc = $(this).attr('src');
+                if (imgSrc.includes('placeholder')) {
+                    $(this).attr('src', $(this).closest('tr').find('.product-name img').attr('src'));
+                }
+            });
+        }, 500);
+    });
 
-jQuery(document).ready(function ($) {
-    setTimeout(function () {
-        $('td.product-thumbnail img').each(function () {
-            var imgSrc = $(this).attr('src');
-            if (imgSrc.includes('placeholder')) {
-                $(this).attr('src', $(this).closest('tr').find('.product-name img').attr('src'));
-            }
-        });
-    }, 500);
 });
