@@ -207,7 +207,9 @@
                             <div class="mb-3">
                                 <!-- <label for="layer-select" class="form-label">Escolha a Camada:</label> -->
                                 <!-- <select id="layer-select" class="form-control"></select> -->
-                                <div id="layer-colors-container"></div>
+                                <div id="layer-colors-container">
+                                    <a href="" id="cor"></a>
+                                </div>
                                 <!-- <input type="text" id="colorPicker"> -->
 
                                 
