@@ -1,24 +1,65 @@
-// Variáveis globais de posição do adesivo na caixa de preview 
-var initialStageScale = { x: 1, y: 1 };
-var initialStagePosition = { x: 0, y: 0 };
-var initialStickerScale = { x: 1, y: 1 };
-var initialStickerPosition = { x: 0, y: 0 };
-
-// Variável para armazenar a imagem PNG adicionada
-var insertedImage = null;
-
-// Variáveis globais para o histórico
-var historyStates = [];
-var historyIndex = -1;
-
-// Objeto de texto temporário
-var tempTextObject = null;
-
 document.addEventListener('DOMContentLoaded', function () {
-    // Verifica se o elemento 'adesivo-canvas' existe
+    // Variáveis globais de posição do adesivo na caixa de preview 
+    var initialStageScale = { x: 1, y: 1 };
+    var initialStagePosition = { x: 0, y: 0 };
+    var initialStickerScale = { x: 1, y: 1 };
+    var initialStickerPosition = { x: 0, y: 0 };
+
+    // Variável para armazenar a imagem PNG adicionada
+    var insertedImage = null;
+
+    // Variáveis globais para o histórico
+    var historyStates = [];
+    var historyIndex = -1;
+
+    // Objeto de texto temporário
+    var tempTextObject = null;
+
+    // >>> NOVO: Variável para armazenar o caminho (camada) selecionado via clique
+    var selectedPath = null;
+    // >>> NOVO: Criação do seletor de cor inline para edição direta
+    var inlineColorPicker = document.createElement('input');
+    inlineColorPicker.type = 'color';
+    inlineColorPicker.style.position = 'absolute';
+    inlineColorPicker.style.display = 'none';
+    document.body.appendChild(inlineColorPicker);
+
+    // >>> NOVO: Função auxiliar para converter cor RGB para Hex
+    function rgbToHex(rgb) {
+        if (rgb.startsWith('#')) return rgb;
+        var result = /^rgba?\((\d+),\s*(\d+),\s*(\d+)/i.exec(rgb);
+        if (result) {
+            var r = parseInt(result[1]).toString(16).padStart(2, '0');
+            var g = parseInt(result[2]).toString(16).padStart(2, '0');
+            var b = parseInt(result[3]).toString(16).padStart(2, '0');
+            return '#' + r + g + b;
+        }
+        return '#000000';
+    }
+
+    // >>> NOVO: Atualiza a cor do objeto selecionado em tempo real e salva o histórico
+    inlineColorPicker.addEventListener('input', function (e) {
+        if (selectedPath) {
+            selectedPath.fill(e.target.value);
+            layer.draw();
+        }
+    });
+    inlineColorPicker.addEventListener('change', function (e) {
+        if (selectedPath) {
+            selectedPath.fill(e.target.value);
+            layer.draw();
+            saveHistory();
+            inlineColorPicker.style.display = 'none';
+            selectedPath = null;
+        }
+    });
+    inlineColorPicker.addEventListener('blur', function (e) {
+        inlineColorPicker.style.display = 'none';
+        selectedPath = null;
+    });
+
     var canvasElement = document.getElementById('adesivo-canvas');
     if (!canvasElement) {
-        // Se não existir, encerra a execução deste script para evitar erros
         return;
     }
 
@@ -45,7 +86,6 @@ document.addEventListener('DOMContentLoaded', function () {
     //  FUNÇÕES AUXILIARES
     // -------------------
 
-    // Função getRandomColor() foi mantida caso seja necessária em outro momento
     function getRandomColor() {
         return '#' + ('000000' + Math.floor(Math.random() * 16777215).toString(16)).slice(-6);
     }
@@ -167,6 +207,19 @@ document.addEventListener('DOMContentLoaded', function () {
                                 fill: fillColor,
                                 draggable: false,
                                 id: `layer-${index}`,
+                            });
+                            // >>> NOVO: Adiciona evento de clique para edição direta da cor
+                            path.on('click', function (e) {
+                                e.cancelBubble = true;
+                                selectedPath = this;
+                                inlineColorPicker.value = rgbToHex(selectedPath.fill());
+                                inlineColorPicker.style.display = 'block';
+                                var pointerPosition = stage.getPointerPosition();
+                                if (pointerPosition) {
+                                    inlineColorPicker.style.left = pointerPosition.x + 'px';
+                                    inlineColorPicker.style.top = pointerPosition.y + 'px';
+                                }
+                                inlineColorPicker.focus();
                             });
                             stickerGroup.add(path);
                         }
@@ -380,7 +433,7 @@ document.addEventListener('DOMContentLoaded', function () {
     //  EVENTOS PRINCIPAIS
     // -------------------
 
-    // Alterar cor das camadas
+    // Alterar cor das camadas (via input "cor" e seletor de camadas permanece inalterado)
     document.getElementById('cor').addEventListener('input', function (event) {
         var newColor = event.target.value;
         var layerSelect = document.getElementById('layer-select');
