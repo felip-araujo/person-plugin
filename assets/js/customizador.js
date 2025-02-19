@@ -733,3 +733,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 500);
     });
 });
+
+
+// codigo antes da implementação de uma bibliota que lida apenas com SVG ponto de rollback
