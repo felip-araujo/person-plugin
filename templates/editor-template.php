@@ -3,6 +3,10 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://kit.fontawesome.com/d4755c66d3.js" crossorigin="anonymous"></script>
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.8.1/spectrum.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.8.1/spectrum.min.js"></script>
+
 
 <style>
     /* Ajustes para tornar o layout responsivo */
@@ -37,10 +41,10 @@
     #titulo {
         font-size: 1.4rem;
         font-family: 'Montserrat', sans-serif;
-        font-weight: 400 ;
+        font-weight: 400;
         text-align: left;
     }
-   
+
 
     /* Responsividade para mobile */
     @media (max-width: 768px) {
@@ -151,6 +155,7 @@
                     <li class="nav-item col-6 p-0 text-center">
                         <a class="nav-link  text-dark active" id="tab-camadas" data-bs-toggle="tab" href="#camadas-tab-content">Camadas</a>
                     </li>
+                    <!-- <div id="layer-colors-container"></div> -->
                     <li class="nav-item col-6 p-0 text-center">
                         <a class="nav-link text-light" id="tab-texto" data-bs-toggle="tab" href="#texto-tab-content">Texto</a>
                     </li>
@@ -200,8 +205,10 @@
                     <div class="tab-pane fade show active" id="camadas-tab-content">
                         <form>
                             <div class="mb-3">
-                                <label for="layer-select" class="form-label">Escolha a Camada:</label>
-                                <select id="layer-select" class="form-control"></select>
+                                <!-- <label for="layer-select" class="form-label">Escolha a Camada:</label> -->
+                                <!-- <select id="layer-select" class="form-control"></select> -->
+                                <div id="layer-colors-container"></div>
+                                <input type="text" id="colorPicker">
 
                                 <label for="cor" class="form-label mt-2">Cor da Camada:</label>
                                 <input type="color" id="cor" class="form-control">
@@ -259,7 +266,13 @@
     document.getElementById('close-editor').addEventListener('click', function() {
         document.querySelector('.container').style.display = 'none';
     });
+
 </script>
+
+
+
+
+
 <!-- Certifique-se de que o customizador.js está sendo carregado -->
 
 <!-- <script src="assets/js/customizador.js"></script> -->

@@ -1,114 +1,141 @@
-document.addEventListener('DOMContentLoaded', function () {
-    // Variáveis globais de posição do adesivo na caixa de preview 
-    var initialStageScale = { x: 1, y: 1 };
-    var initialStagePosition = { x: 0, y: 0 };
-    var initialStickerScale = { x: 1, y: 1 };
-    var initialStickerPosition = { x: 0, y: 0 };
+// Variáveis globais de posição do adesivo na caixa de preview 
+var initialStageScale = { x: 1, y: 1 };
+var initialStagePosition = { x: 0, y: 0 };
+var initialStickerScale = { x: 1, y: 1 };
+var initialStickerPosition = { x: 0, y: 0 };
 
-    // Variável para armazenar a imagem PNG adicionada
-    var insertedImage = null;
+// Variável para armazenar a imagem PNG adicionada
+var insertedImage = null;
 
-    // Variáveis globais para o histórico
-    var historyStates = [];
-    var historyIndex = -1;
+// Variáveis globais para o histórico
+var historyStates = [];
+var historyIndex = -1;
 
-    // Objeto de texto temporário
-    var tempTextObject = null;
+// Objeto de texto temporário
+var tempTextObject = null;
 
-    // >>> NOVO: Variável para armazenar o caminho (camada) selecionado via clique
-    var selectedPath = null;
-    // >>> NOVO: Criação do seletor de cor inline para edição direta
-    var inlineColorPicker = document.createElement('input');
-    inlineColorPicker.type = 'color';
-    inlineColorPicker.style.position = 'absolute';
-    inlineColorPicker.style.display = 'none';
-    document.body.appendChild(inlineColorPicker);
+// >>> NOVO: Variáveis para edição direta individual e em grupo
+var selectedPath = null;
+var selectedGroup = null;
 
-    // >>> NOVO: Função auxiliar para converter cor RGB para Hex
-    function rgbToHex(rgb) {
-        if (rgb.startsWith('#')) return rgb;
-        var result = /^rgba?\((\d+),\s*(\d+),\s*(\d+)/i.exec(rgb);
-        if (result) {
-            var r = parseInt(result[1]).toString(16).padStart(2, '0');
-            var g = parseInt(result[2]).toString(16).padStart(2, '0');
-            var b = parseInt(result[3]).toString(16).padStart(2, '0');
-            return '#' + r + g + b;
-        }
-        return '#000000';
+// >>> NOVO: Criação do seletor de cor inline para edição direta
+// Use tipo "text" para evitar o comportamento nativo do input color
+var inlineColorPicker = document.createElement('input');
+inlineColorPicker.type = 'text';
+inlineColorPicker.style.position = 'absolute';
+inlineColorPicker.style.display = 'none';
+document.body.appendChild(inlineColorPicker);
+
+// Declaração global para que os callbacks tenham acesso
+var stage, layer, stickerGroup = null;
+
+// >>> NOVO: Função auxiliar para converter cor RGB para Hex
+function rgbToHex(rgb) {
+    if (rgb.startsWith('#')) return rgb;
+    var result = /^rgba?\((\d+),\s*(\d+),\s*(\d+)/i.exec(rgb);
+    if (result) {
+        var r = parseInt(result[1]).toString(16).padStart(2, '0');
+        var g = parseInt(result[2]).toString(16).padStart(2, '0');
+        var b = parseInt(result[3]).toString(16).padStart(2, '0');
+        return '#' + r + g + b;
     }
+    return '#000000';
+}
 
-    // >>> NOVO: Atualiza a cor do objeto selecionado em tempo real e salva o histórico
-    inlineColorPicker.addEventListener('input', function (e) {
-        if (selectedPath) {
-            selectedPath.fill(e.target.value);
+// >>> NOVO: Inicialização do Spectrum no inlineColorPicker
+// Certifique-se de já ter incluído jQuery e Spectrum (CSS e JS) na página.
+$(inlineColorPicker).spectrum({
+    showInput: true,
+    showInitial: true,
+    preferredFormat: "hex",
+    showPalette: true,
+    palette: [],
+    appendTo: 'body',
+    beforeShow: function () {
+        // Reposiciona a paleta de acordo com o input
+        var offset = $(inlineColorPicker).offset();
+        $('.sp-container').css({
+            top: offset.top,
+            left: offset.left
+        });
+    },
+    move: function (color) {
+        // Se for grupo, atualiza cada elemento do array
+        if (Array.isArray(selectedGroup) && stickerGroup && layer) {
+            selectedGroup.forEach(child => {
+                child.fill(color.toHexString());
+            });
+            layer.draw();
+        } else if (selectedPath && layer) {
+            selectedPath.fill(color.toHexString());
             layer.draw();
         }
-    });
-    inlineColorPicker.addEventListener('change', function (e) {
-        if (selectedPath) {
-            selectedPath.fill(e.target.value);
+    },
+    change: function (color) {
+        // Confirma a mudança quando o usuário finaliza a seleção
+        if (Array.isArray(selectedGroup) && stickerGroup && layer) {
+            selectedGroup.forEach(child => {
+                child.fill(color.toHexString());
+            });
             layer.draw();
             saveHistory();
-            inlineColorPicker.style.display = 'none';
+            selectedGroup = null;
+            $(inlineColorPicker).spectrum("hide");
+            preencherSelecaoDeCores();
+        } else if (selectedPath && layer) {
+            selectedPath.fill(color.toHexString());
+            layer.draw();
+            saveHistory();
             selectedPath = null;
+            $(inlineColorPicker).spectrum("hide");
         }
-    });
-    inlineColorPicker.addEventListener('blur', function (e) {
-        inlineColorPicker.style.display = 'none';
+    },
+    hide: function () {
+        selectedGroup = null;
         selectedPath = null;
-    });
+    }
+});
 
+document.addEventListener('DOMContentLoaded', function () {
     var canvasElement = document.getElementById('adesivo-canvas');
     if (!canvasElement) {
         return;
     }
 
-    var stage = new Konva.Stage({
+    // Inicializa as variáveis globais aqui
+    stage = new Konva.Stage({
         container: 'adesivo-canvas',
         width: canvasElement.offsetWidth,
         height: canvasElement.offsetHeight,
-        draggable: false, // Canvas fixo inicialmente
+        draggable: false,
     });
 
-    var layer = new Konva.Layer();
+    layer = new Konva.Layer();
     stage.add(layer);
 
-    var stickerGroup = null; // Grupo para os elementos do adesivo (SVG)
-    var scaleBy = 1.05; // Fator de zoom
+    stickerGroup = null;
+    var scaleBy = 1.05;
 
-    // Se pluginData.stickerUrl existir, carregar o adesivo
     if (typeof pluginData !== 'undefined' && pluginData.stickerUrl) {
         carregarAdesivo(pluginData.stickerUrl);
     }
-    // Continuar execução mesmo que pluginData.stickerUrl não esteja definido
 
     // -------------------
     //  FUNÇÕES AUXILIARES
     // -------------------
-
     function getRandomColor() {
         return '#' + ('000000' + Math.floor(Math.random() * 16777215).toString(16)).slice(-6);
     }
 
-    /**
-     * Converte as regras CSS definidas no <style> do SVG em atributos inline.
-     * Atualmente, aplica somente a propriedade "fill".
-     */
     function converterEstilosInline(svgText) {
-        // Parse o SVG
         const parser = new DOMParser();
         const doc = parser.parseFromString(svgText, 'image/svg+xml');
-
-        // Extrai todo o conteúdo dos <style>
         const styleElements = doc.querySelectorAll('style');
         let cssText = '';
         styleElements.forEach(styleEl => {
             cssText += styleEl.textContent;
         });
-
-        // Cria um objeto com as regras: nome_da_classe => { propriedade: valor, ... }
         const regras = {};
-        // Expressão regular simples para capturar regras do tipo: .nome { ... }
         cssText.replace(/\.([^ \n{]+)\s*\{([^}]+)\}/g, (match, className, declarations) => {
             const props = {};
             declarations.split(';').forEach(decl => {
@@ -124,38 +151,24 @@ document.addEventListener('DOMContentLoaded', function () {
             regras[className] = props;
             return '';
         });
-
-        // Para cada elemento que possui atributo class, aplica os estilos inline (neste caso, o fill)
         const elemsComClasse = doc.querySelectorAll('[class]');
         elemsComClasse.forEach(elem => {
             const classes = elem.getAttribute('class').split(/\s+/);
             classes.forEach(cls => {
                 if (regras[cls] && regras[cls].fill) {
-                    // Se já existir um atributo inline fill, pode decidir sobrescrever ou não
                     elem.setAttribute('fill', regras[cls].fill);
                 }
             });
         });
-
-        // Opcional: remover o elemento <style> se não for mais necessário
         styleElements.forEach(el => el.parentNode.removeChild(el));
-
         return new XMLSerializer().serializeToString(doc);
     }
 
-    /**
-     * Tenta obter o valor efetivo do fill de um elemento SVG.
-     * Primeiro verifica o atributo inline, depois o style e, por fim,
-     * o estilo computado (caso o SVG esteja anexado ao DOM).
-     */
     function getEffectiveFill(elem) {
-        // Tenta o atributo 'fill' inline
         let fill = elem.getAttribute('fill');
         if (fill && fill.trim() !== '' && fill.toLowerCase() !== 'none') {
             return fill;
         }
-
-        // Tenta extrair do atributo 'style'
         const styleAttr = elem.getAttribute('style');
         if (styleAttr) {
             const match = styleAttr.match(/fill\s*:\s*([^;]+)/i);
@@ -163,16 +176,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 return match[1].trim();
             }
         }
-
-        // Tenta obter o estilo computado (caso o SVG esteja no DOM)
         if (document.body.contains(elem)) {
             const computed = window.getComputedStyle(elem);
             if (computed && computed.fill && computed.fill !== 'none') {
                 return computed.fill;
             }
         }
-
-        // Se nada for encontrado, retorna um padrão (preto)
         return '#000000';
     }
 
@@ -186,21 +195,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 return response.text();
             })
             .then((svgText) => {
-                // Converte os estilos CSS do SVG em atributos inline
                 const svgComInline = converterEstilosInline(svgText);
-
                 var parser = new DOMParser();
                 var svgDoc = parser.parseFromString(svgComInline, 'image/svg+xml');
-
-                layer.destroyChildren(); // Limpa os elementos anteriores
-
+                layer.destroyChildren();
                 stickerGroup = new Konva.Group({ draggable: false });
                 Array.from(svgDoc.querySelectorAll('path, rect, circle, ellipse, polygon, polyline, line')).forEach(
                     (elem, index) => {
                         var pathData = elem.getAttribute('d') || '';
-                        // Usa a função para obter a cor efetiva (deve estar inline agora)
                         var fillColor = getEffectiveFill(elem);
-
                         if (pathData) {
                             var path = new Konva.Path({
                                 data: pathData,
@@ -208,27 +211,27 @@ document.addEventListener('DOMContentLoaded', function () {
                                 draggable: false,
                                 id: `layer-${index}`,
                             });
-                            // >>> NOVO: Adiciona evento de clique para edição direta da cor
+                            // Evento de clique para edição individual com Spectrum
                             path.on('click', function (e) {
                                 e.cancelBubble = true;
                                 selectedPath = this;
-                                inlineColorPicker.value = rgbToHex(selectedPath.fill());
-                                inlineColorPicker.style.display = 'block';
+                                $(inlineColorPicker).spectrum("set", rgbToHex(selectedPath.fill()));
                                 var pointerPosition = stage.getPointerPosition();
                                 if (pointerPosition) {
-                                    inlineColorPicker.style.left = pointerPosition.x + 'px';
-                                    inlineColorPicker.style.top = pointerPosition.y + 'px';
+                                    $(inlineColorPicker).css({
+                                        left: pointerPosition.x,
+                                        top: pointerPosition.y
+                                    });
                                 }
-                                inlineColorPicker.focus();
+                                $(inlineColorPicker).spectrum("show");
                             });
                             stickerGroup.add(path);
                         }
                     }
                 );
-
                 layer.add(stickerGroup);
                 ajustarTamanhoEPosicaoDoAdesivo();
-                preencherSeletorDeCamadas();
+                preencherSelecaoDeCores();
                 layer.draw();
                 saveHistory();
             })
@@ -240,26 +243,20 @@ document.addEventListener('DOMContentLoaded', function () {
     // -------------------
     function ajustarTamanhoEPosicaoDoAdesivo() {
         if (!stickerGroup) return;
-
         stage.scale({ x: 1, y: 1 });
         stage.position({ x: 0, y: 0 });
-
         var canvasWidth = stage.width();
         var canvasHeight = stage.height();
-
         var stickerRect = stickerGroup.getClientRect();
         var scaleX = canvasWidth / stickerRect.width;
         var scaleY = canvasHeight / stickerRect.height;
-
         var scale = Math.min(scaleX, scaleY);
         stickerGroup.scale({ x: scale, y: scale });
-
         var newStickerRect = stickerGroup.getClientRect();
         stickerGroup.position({
             x: (canvasWidth - newStickerRect.width) / 2 - newStickerRect.x,
             y: (canvasHeight - newStickerRect.height) / 2 - newStickerRect.y,
         });
-
         layer.draw();
         initialStageScale = { x: stage.scaleX(), y: stage.scaleY() };
         initialStagePosition = { x: stage.x(), y: stage.y() };
@@ -268,58 +265,47 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // -------------------
-    //  FUNÇÃO PREENCHE SELETOR DE CAMADAS
+    //  NOVA FUNÇÃO: PREENCHE A SELEÇÃO DE CORES (GRUPOS) COMO CÍRCULOS
     // -------------------
-    function preencherSeletorDeCamadas() {
-        // Dicionário para nomes amigáveis das cores
-        const colorNames = {
-            '#000': 'Preto',
-            '#000000': 'Preto',
-            '#fff': 'Branco',
-            '#ffffff': 'Branco',
-            '#ff0000': 'Vermelho',
-            '#00ff00': 'Verde',
-            '#0000ff': 'Azul',
-            '#ffff00': 'Amarelo',
-            '#00ffff': 'Ciano',
-            '#ff00ff': 'Magenta',
-            '#eee': 'Cinza claro',
-            '#eeeeee': 'Cinza claro'
-        };
+    function preencherSelecaoDeCores() {
+        var container = document.getElementById('layer-colors-container');
+        if (!container) return;
+        container.innerHTML = '';
 
-        var layerSelect = document.getElementById('layer-select');
-        layerSelect.innerHTML = '';
-
-        // Opção para editar todas as camadas
-        var allLayersOption = document.createElement('option');
-        allLayersOption.value = 'all';
-        allLayersOption.textContent = 'Todas as Camadas';
-        layerSelect.appendChild(allLayersOption);
-
-        if (!stickerGroup) return;
-
-        // Agrupa as camadas pelo valor do fill
         var groups = {};
-        stickerGroup.getChildren().forEach((child) => {
-            var fillColor = child.fill();
-            if (!fillColor) {
-                fillColor = '#000000';
-            }
-            fillColor = fillColor.toLowerCase();
-            if (!groups[fillColor]) {
-                groups[fillColor] = [];
-            }
+        stickerGroup.getChildren().forEach(child => {
+            var fillColor = child.fill() || '#000000';
+            fillColor = rgbToHex(fillColor).toLowerCase();
+            if (!groups[fillColor]) groups[fillColor] = [];
             groups[fillColor].push(child);
         });
 
-        // Cria uma opção para cada grupo de cor
-        for (var fillColor in groups) {
+        // Use "let" para garantir a correta captura do valor de fillColor em cada iteração
+        for (let fillColor in groups) {
             var count = groups[fillColor].length;
-            var option = document.createElement('option');
-            option.value = fillColor;
-            var friendlyName = colorNames[fillColor] || fillColor;
-            option.textContent = `Cor ${friendlyName} (${count} camada${count > 1 ? 's' : ''})`;
-            layerSelect.appendChild(option);
+            var colorDiv = document.createElement('div');
+            colorDiv.style.display = 'inline-block';
+            colorDiv.style.width = '30px';
+            colorDiv.style.height = '30px';
+            colorDiv.style.borderRadius = '50%';
+            colorDiv.style.backgroundColor = fillColor;
+            colorDiv.style.border = '2px solid #fff';
+            colorDiv.style.margin = '5px';
+            colorDiv.style.cursor = 'pointer';
+            colorDiv.title = 'Mudar cor ' + fillColor + ' (' + count + ' camada' + (count > 1 ? 's' : '') + ')';
+
+            colorDiv.addEventListener('click', function (e) {
+                // Armazena o array de elementos pertencentes a este grupo
+                selectedGroup = groups[fillColor];
+                $(inlineColorPicker).spectrum("set", fillColor);
+                var rect = this.getBoundingClientRect();
+                $(inlineColorPicker).css({
+                    left: rect.left + rect.width / 2,
+                    top: rect.top + rect.height / 2
+                });
+                $(inlineColorPicker).spectrum("show");
+            });
+            container.appendChild(colorDiv);
         }
     }
 
@@ -348,9 +334,8 @@ document.addEventListener('DOMContentLoaded', function () {
             var restoredLayer = Konva.Node.create(previousState).getChildren();
             layer.add(...restoredLayer);
             layer.draw();
-
             stickerGroup = layer.findOne('Group');
-            preencherSeletorDeCamadas();
+            preencherSelecaoDeCores();
             updateUndoRedoButtons();
         }
     }
@@ -363,9 +348,8 @@ document.addEventListener('DOMContentLoaded', function () {
             var restoredLayer = Konva.Node.create(nextState).getChildren();
             layer.add(...restoredLayer);
             layer.draw();
-
             stickerGroup = layer.findOne('Group');
-            preencherSeletorDeCamadas();
+            preencherSelecaoDeCores();
             updateUndoRedoButtons();
         }
     }
@@ -382,14 +366,11 @@ document.addEventListener('DOMContentLoaded', function () {
         textNode.on('dblclick', function () {
             textNode.hide();
             layer.draw();
-
             var textPosition = textNode.getAbsolutePosition();
             var stageBox = stage.container().getBoundingClientRect();
-
             var area = document.createElement('textarea');
             document.body.appendChild(area);
             area.value = textNode.text();
-
             area.style.position = 'absolute';
             area.style.top = stageBox.top + textPosition.y + 'px';
             area.style.left = stageBox.left + textPosition.x + 'px';
@@ -406,9 +387,7 @@ document.addEventListener('DOMContentLoaded', function () {
             area.style.transform = 'rotate(' + textNode.rotation() + 'deg)';
             area.style.lineHeight = textNode.lineHeight();
             area.style.minWidth = '50px';
-
             area.focus();
-
             area.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter') {
                     textNode.text(area.value);
@@ -418,7 +397,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     saveHistory();
                 }
             });
-
             area.addEventListener('blur', function () {
                 textNode.text(area.value);
                 textNode.show();
@@ -432,37 +410,20 @@ document.addEventListener('DOMContentLoaded', function () {
     // -------------------
     //  EVENTOS PRINCIPAIS
     // -------------------
-
-    // Alterar cor das camadas (via input "cor" e seletor de camadas permanece inalterado)
     document.getElementById('cor').addEventListener('input', function (event) {
         var newColor = event.target.value;
-        var layerSelect = document.getElementById('layer-select');
-        var selectedGroup = layerSelect.value;
-
         if (!stickerGroup) return;
-
-        if (selectedGroup === 'all') {
-            stickerGroup.getChildren().forEach(child => child.fill(newColor));
-        } else {
-            stickerGroup.getChildren().forEach(child => {
-                if (child.fill() === selectedGroup) {
-                    child.fill(newColor);
-                }
-            });
-        }
+        stickerGroup.getChildren().forEach(child => child.fill(newColor));
         layer.draw();
     });
-
     document.getElementById('cor').addEventListener('change', function () {
         saveHistory();
-        preencherSeletorDeCamadas();
+        preencherSelecaoDeCores();
     });
 
-    // Adicionar texto
     document.getElementById('adicionar-texto-botao').addEventListener('click', function () {
         var textContent = document.getElementById('texto').value.trim();
         if (!textContent) return;
-
         var newTextObject = new Konva.Text({
             x: stage.width() / 2,
             y: stage.height() / 2,
@@ -473,13 +434,10 @@ document.addEventListener('DOMContentLoaded', function () {
             draggable: true,
             rotation: parseFloat(document.getElementById('rotacao-texto').value),
         });
-
         newTextObject.on('dragend', saveHistory);
         layer.add(newTextObject);
         layer.draw();
-
         enableTextEditing(newTextObject);
-
         document.getElementById('texto').value = '';
         if (tempTextObject) {
             tempTextObject.destroy();
@@ -488,7 +446,6 @@ document.addEventListener('DOMContentLoaded', function () {
         saveHistory();
     });
 
-    // Atualização prévia do texto (preview)
     document.getElementById('texto').addEventListener('input', atualizarTextoNoCanvas);
     document.getElementById('tamanho-fonte').addEventListener('input', atualizarTextoNoCanvas);
     document.getElementById('fontPicker').addEventListener('change', atualizarTextoNoCanvas);
@@ -513,12 +470,10 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             return;
         }
-
         var fontSize = parseInt(document.getElementById('tamanho-fonte').value) || 16;
         var fontFamily = document.getElementById('fontPicker').value || 'Arial';
         var fillColor = document.getElementById('cor-texto').value || '#000';
         var rotation = parseFloat(document.getElementById('rotacao-texto').value) || 0;
-
         if (!tempTextObject) {
             tempTextObject = new Konva.Text({
                 x: stage.width() / 2,
@@ -560,12 +515,10 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('adicionar-texto-botao').addEventListener('click', function () {
         var textContent = document.getElementById('texto').value.trim();
         if (!textContent) return;
-
         var fontSize = parseInt(document.getElementById('tamanho-fonte').value) || 16;
         var fontFamily = document.getElementById('fontPicker').value || 'Arial';
         var fillColor = document.getElementById('cor-texto').value || '#000';
         var rotation = parseFloat(document.getElementById('rotacao-texto').value) || 0;
-
         var newTextObject = new Konva.Text({
             x: stage.width() / 2,
             y: stage.height() / 2,
@@ -579,7 +532,6 @@ document.addEventListener('DOMContentLoaded', function () {
         newTextObject.on('dragend', saveHistory);
         layer.add(newTextObject);
         layer.draw();
-
         if (tempTextObject) {
             tempTextObject.destroy();
             tempTextObject = null;
@@ -607,15 +559,12 @@ document.addEventListener('DOMContentLoaded', function () {
     function aplicarZoom(direction) {
         var oldScale = stage.scaleX();
         var pointer = { x: stage.width() / 2, y: stage.height() / 2 };
-
         var mousePointTo = {
             x: (pointer.x - stage.x()) / oldScale,
             y: (pointer.y - stage.y()) / oldScale,
         };
-
         var newScale = (direction === 'in') ? (oldScale * scaleBy) : (oldScale / scaleBy);
         newScale = Math.max(0.5, Math.min(newScale, 3));
-
         stage.scale({ x: newScale, y: newScale });
         var newPos = {
             x: pointer.x - mousePointTo.x * newScale,
@@ -728,22 +677,18 @@ document.addEventListener('DOMContentLoaded', function () {
     loadingOverlay.style.alignItems = 'center';
     loadingOverlay.style.zIndex = '9999';
     loadingOverlay.style.visibility = 'hidden';
-
     const loadingText = document.createElement('div');
     loadingText.textContent = 'Enviando Email';
     loadingText.style.color = '#fff';
     loadingText.style.fontSize = '3rem';
     loadingText.style.fontFamily = 'Arial, sans-serif';
     loadingText.style.textAlign = 'center';
-
     loadingOverlay.appendChild(loadingText);
     document.body.appendChild(loadingOverlay);
 
     document.getElementById("salvar-adesivo-botao").addEventListener("click", function (e) {
         e.preventDefault();
-
         let checkbox = document.getElementById("aceito-termos");
-
         if (!checkbox.checked) {
             let confirmacao = confirm("Você precisa aceitar os termos antes de continuar. Deseja aceitar agora?");
             if (confirmacao) {
@@ -752,9 +697,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
         }
-
         const adesivoData = stage.toDataURL({ mimeType: "image/png" });
-
         fetch(personPlugin.ajax_url, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
