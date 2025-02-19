@@ -46,9 +46,9 @@ function person_plugin_enqueue_frontend_scripts()
     if (is_page('custom-sticker')) {
         wp_enqueue_style('bootstrap-css', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css');
         wp_enqueue_style('person-plugin-customizer-css', plugin_dir_url(__FILE__) . 'assets/css/customizador.css');
-        wp_enqueue_script('bootstrap-js', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js', array('jquery'), null, true);
-        wp_enqueue_script('konva-js', 'https://cdn.jsdelivr.net/npm/konva@8.4.2/konva.min.js', array(), null, true);
-        wp_enqueue_script('person-plugin-customizer-js', plugin_dir_url(__FILE__) . 'assets/js/customizador.js', array('jquery', 'konva-js'), null, true);
+        wp_enqueue_script('bootstrap-js', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js', array('jquery'), time(), true);
+        wp_enqueue_script('konva-js', 'https://cdn.jsdelivr.net/npm/konva@8.4.2/konva.min.js', array(), time(), true);
+        wp_enqueue_script('person-plugin-customizer-js', plugin_dir_url(__FILE__) . 'assets/js/customizador.js', array('jquery', 'konva-js'), time(), true);
         wp_enqueue_media();
     }
 }
@@ -56,13 +56,14 @@ add_action('wp_enqueue_scripts', 'person_plugin_enqueue_frontend_scripts', 20);
 
 function person_plugin_enqueue_scripts()
 {
-    wp_enqueue_script('person-plugin-js', plugins_url('assets/js/customizador.js', __FILE__), ['jquery'], null, true);
+    wp_enqueue_script('person-plugin-js', plugins_url('assets/js/customizador.js', __FILE__), array('jquery'), time(), true);
 
     wp_localize_script('person-plugin-js', 'personPlugin', [
         'ajax_url' => admin_url('admin-ajax.php'),
     ]);
 }
 add_action('wp_enqueue_scripts', 'person_plugin_enqueue_scripts');
+
 
 function meu_plugin_carregar_fontawesome_kit()
 {
@@ -273,7 +274,8 @@ function salvar_imagem_personalizada($base64_image)
 }
 
 // 2️⃣ Adicionar o adesivo ao carrinho do WooCommerce corretamente
-function adicionar_adesivo_ao_carrinho() {
+function adicionar_adesivo_ao_carrinho()
+{
     if (!isset($_POST['adesivo_url'])) {
         error_log('❌ Nenhuma imagem foi enviada.');
         wp_send_json_error(['message' => 'Nenhuma imagem foi enviada.']);
@@ -299,7 +301,7 @@ function adicionar_adesivo_ao_carrinho() {
     $cart_item_data = [
         'adesivo_url'         => $adesivo_url,
         'unique_key'          => md5(microtime() . rand()),
-        'custom_sticker_price'=> $custom_price,
+        'custom_sticker_price' => $custom_price,
     ];
 
     $cart_item_key = WC()->cart->add_to_cart($produto_id, 1, 0, [], $cart_item_data);
@@ -321,10 +323,13 @@ add_action('wp_ajax_nopriv_adicionar_adesivo_ao_carrinho', 'adicionar_adesivo_ao
 
 
 add_action('admin_post_update_sticker_price', 'save_sticker_price');
-function save_sticker_price() {
+function save_sticker_price()
+{
     // Verificar se o formulário foi enviado e se o nonce é válido
-    if (!isset($_POST['update_sticker_price_nonce_field']) || 
-        !wp_verify_nonce($_POST['update_sticker_price_nonce_field'], 'update_sticker_price_nonce')) {
+    if (
+        !isset($_POST['update_sticker_price_nonce_field']) ||
+        !wp_verify_nonce($_POST['update_sticker_price_nonce_field'], 'update_sticker_price_nonce')
+    ) {
         wp_die('Erro de validação. Acesso não autorizado!');
     }
 
@@ -332,10 +337,10 @@ function save_sticker_price() {
     if (isset($_POST['sticker_price']) && isset($_POST['sticker_id'])) {
         $sticker_id = intval($_POST['sticker_id']);
         $new_price = sanitize_text_field($_POST['sticker_price']);
-        
+
         // Atualiza o meta do post (adesivo) com a chave '_sticker_price'
         update_post_meta($sticker_id, '_sticker_price', $new_price);
-        
+
         // Redireciona para a página de administração com uma mensagem de sucesso
         wp_redirect(admin_url('admin.php?page=plugin-adesivos&status=success'));
         exit;
@@ -347,20 +352,21 @@ function save_sticker_price() {
 }
 
 
-function custom_dynamic_price( $cart ) {
+function custom_dynamic_price($cart)
+{
     // Evita a execução em áreas administrativas fora de AJAX
-    if ( is_admin() && ! defined( 'DOING_AJAX' ) )
+    if (is_admin() && !defined('DOING_AJAX'))
         return;
 
     // Percorre os itens do carrinho
-    foreach ( $cart->get_cart() as $cart_item_key => $cart_item ) {
-        if ( isset( $cart_item['custom_sticker_price'] ) && is_numeric( $cart_item['custom_sticker_price'] ) ) {
+    foreach ($cart->get_cart() as $cart_item_key => $cart_item) {
+        if (isset($cart_item['custom_sticker_price']) && is_numeric($cart_item['custom_sticker_price'])) {
             // Atualiza o preço do item com o valor customizado
-            $cart_item['data']->set_price( floatval( $cart_item['custom_sticker_price'] ) );
+            $cart_item['data']->set_price(floatval($cart_item['custom_sticker_price']));
         }
     }
 }
-add_action( 'woocommerce_before_calculate_totals', 'custom_dynamic_price', 10, 1 );
+add_action('woocommerce_before_calculate_totals', 'custom_dynamic_price', 10, 1);
 
 
 
