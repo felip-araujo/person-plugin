@@ -208,10 +208,9 @@
                                 <!-- <label for="layer-select" class="form-label">Escolha a Camada:</label> -->
                                 <!-- <select id="layer-select" class="form-control"></select> -->
                                 <div id="layer-colors-container"></div>
-                                <input type="text" id="colorPicker">
+                                <!-- <input type="text" id="colorPicker"> -->
 
-                                <label for="cor" class="form-label mt-2">Cor da Camada:</label>
-                                <input type="color" id="cor" class="form-control">
+                                
 
                                 <!-- Botão para inserir um PNG -->
                                 <button id="inserir-imagem-botao" type="button" class="btn btn-primary w-100 mt-3">
