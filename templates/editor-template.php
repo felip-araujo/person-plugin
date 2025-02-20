@@ -45,6 +45,27 @@
         text-align: left;
     }
 
+    .nav-tabs .nav-link {
+        background-color: #f8f9fa;
+        /* Cor de fundo das abas inativas */
+        color: #212529;
+        /* Cor do texto das abas inativas */
+        border: 1px solid #dee2e6;
+        /* Borda sutil */
+    }
+
+    .nav-tabs .nav-link.active {
+        background-color: #ffffff;
+        /* Fundo branco para a aba ativa */
+        color: #000000;
+        /* Texto preto na aba ativa */
+        font-weight: bold;
+        /* Deixa a aba ativa mais destacada */
+        border-bottom: 2px solid #007bff;
+        /* Realce com uma borda azul */
+    }
+
+
 
     /* Responsividade para mobile */
     @media (max-width: 768px) {
@@ -157,7 +178,7 @@
                     </li>
                     <!-- <div id="layer-colors-container"></div> -->
                     <li class="nav-item col-6 p-0 text-center">
-                        <a class="nav-link text-light" id="tab-texto" data-bs-toggle="tab" href="#texto-tab-content">Texto</a>
+                        <a class="nav-link text-dark" id="tab-texto" data-bs-toggle="tab" href="#texto-tab-content">Texto</a>
                     </li>
                 </ul>
 
@@ -212,7 +233,7 @@
                                 </div>
                                 <!-- <input type="text" id="colorPicker"> -->
 
-                                
+
 
                                 <!-- Botão para inserir um PNG -->
                                 <button id="inserir-imagem-botao" type="button" class="btn btn-primary w-100 mt-3">
@@ -267,7 +288,6 @@
     document.getElementById('close-editor').addEventListener('click', function() {
         document.querySelector('.container').style.display = 'none';
     });
-
 </script>
 
 
