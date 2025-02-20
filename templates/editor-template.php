@@ -11,6 +11,11 @@
 <style>
     /* Ajustes para tornar o layout responsivo */
 
+    .sp-container {
+        position: absolute !important;
+        z-index: 10000 !important;
+    }
+
     body {
         font-family: 'Montserrat', sans-serif;
     }
@@ -236,10 +241,13 @@ $preco_dinamico = $produto_id ? get_post_meta($produto_id, '_price', true) : '';
                             <div class="mb-3">
                                 <!-- <label for="layer-select" class="form-label">Escolha a Camada:</label> -->
                                 <!-- <select id="layer-select" class="form-control"></select> -->
-                                <div id="layer-colors-container">
+                                <div id="layer-colors-container" style="display: flex; flex-wrap: wrap;">
                                     <a href="" id="cor"></a>
                                 </div>
-                                <!-- <input type="text" id="colorPicker"> -->
+
+
+                                
+
 
 
 

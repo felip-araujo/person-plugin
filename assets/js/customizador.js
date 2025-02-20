@@ -14,22 +14,21 @@ var historyIndex = -1;
 // Objeto de texto temporário
 var tempTextObject = null;
 
-// >>> NOVO: Variáveis para edição direta individual e em grupo
+// Variáveis para edição direta individual e em grupo
 var selectedPath = null;
 var selectedGroup = null;
 
-// >>> NOVO: Criação do seletor de cor inline para edição direta
-// Use tipo "text" para evitar o comportamento nativo do input color
+// Criação do seletor de cor inline para edição direta
 var inlineColorPicker = document.createElement('input');
 inlineColorPicker.type = 'text';
-inlineColorPicker.style.position = 'absolute';
+inlineColorPicker.style.position = 'fixed'; // Usamos fixed para posicionamento relativo à viewport
 inlineColorPicker.style.display = 'none';
 document.body.appendChild(inlineColorPicker);
 
 // Declaração global para que os callbacks tenham acesso
 var stage, layer, stickerGroup = null;
 
-// >>> NOVO: Função auxiliar para converter cor RGB para Hex
+// Função auxiliar para converter cor RGB para Hex
 function rgbToHex(rgb) {
     if (rgb.startsWith('#')) return rgb;
     var result = /^rgba?\((\d+),\s*(\d+),\s*(\d+)/i.exec(rgb);
@@ -42,59 +41,40 @@ function rgbToHex(rgb) {
     return '#000000';
 }
 
-// >>> NOVO: Inicialização do Spectrum no inlineColorPicker
-// Certifique-se de já ter incluído jQuery e Spectrum (CSS e JS) na página.
-$(inlineColorPicker).spectrum({
-    showInput: true,
-    showInitial: true,
-    preferredFormat: "hex",
-    showPalette: true,
-    palette: [],
-    appendTo: 'body',
-    beforeShow: function () {
-        // Reposiciona a paleta de acordo com o input
-        var offset = $(inlineColorPicker).offset();
-        $('.sp-container').css({
-            top: offset.top,
-            left: offset.left
-        });
-    },
-    move: function (color) {
-        // Se for grupo, atualiza cada elemento do array
-        if (Array.isArray(selectedGroup) && stickerGroup && layer) {
-            selectedGroup.forEach(child => {
-                child.fill(color.toHexString());
-            });
-            layer.draw();
-        } else if (selectedPath && layer) {
-            selectedPath.fill(color.toHexString());
-            layer.draw();
-        }
-    },
-    change: function (color) {
-        // Confirma a mudança quando o usuário finaliza a seleção
-        if (Array.isArray(selectedGroup) && stickerGroup && layer) {
-            selectedGroup.forEach(child => {
-                child.fill(color.toHexString());
-            });
-            layer.draw();
-            saveHistory();
-            selectedGroup = null;
-            $(inlineColorPicker).spectrum("hide");
-            preencherSelecaoDeCores();
-        } else if (selectedPath && layer) {
-            selectedPath.fill(color.toHexString());
-            layer.draw();
-            saveHistory();
-            selectedPath = null;
-            $(inlineColorPicker).spectrum("hide");
-        }
-    },
-    hide: function () {
-        selectedGroup = null;
-        selectedPath = null;
-    }
-});
+// Inicialização do Spectrum no inlineColorPicker
+// $(inlineColorPicker).spectrum({
+//     showInput: true,
+//     showInitial: true,
+//     preferredFormat: "hex",
+//     showPalette: true,
+//     palette: [],
+//     // Não vamos usar o preview interno (você pode ocultá-lo com CSS se necessário)
+//     move: function (color) {
+//         // Atualiza a cor em tempo real no grupo selecionado
+//         if (Array.isArray(selectedGroup) && stickerGroup && layer) {
+//             selectedGroup.forEach(child => {
+//                 child.fill(color.toHexString());
+//             });
+//             layer.draw();
+//         }
+//     },
+//     change: function (color) {
+//         // Aplica a cor final no grupo selecionado
+//         if (Array.isArray(selectedGroup) && stickerGroup && layer) {
+//             selectedGroup.forEach(child => {
+//                 child.fill(color.toHexString());
+//             });
+//             layer.draw();
+//             saveHistory();
+//             selectedGroup = null;
+//             $(inlineColorPicker).spectrum("hide");
+//             preencherSelecaoDeCores(); // Atualiza as bolinhas, se necessário
+//         }
+//     },
+//     hide: function () {
+//         selectedGroup = null;
+//     }
+// });
 
 document.addEventListener('DOMContentLoaded', function () {
     var canvasElement = document.getElementById('adesivo-canvas');
@@ -102,17 +82,15 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
-    // Inicializa as variáveis globais aqui
+    // Inicializa o stage e layer do Konva
     stage = new Konva.Stage({
         container: 'adesivo-canvas',
         width: canvasElement.offsetWidth,
         height: canvasElement.offsetHeight,
         draggable: false,
     });
-
     layer = new Konva.Layer();
     stage.add(layer);
-
     stickerGroup = null;
     var scaleBy = 1.05;
 
@@ -120,13 +98,7 @@ document.addEventListener('DOMContentLoaded', function () {
         carregarAdesivo(pluginData.stickerUrl);
     }
 
-    // -------------------
-    //  FUNÇÕES AUXILIARES
-    // -------------------
-    function getRandomColor() {
-        return '#' + ('000000' + Math.floor(Math.random() * 16777215).toString(16)).slice(-6);
-    }
-
+    // Função para converter estilos inline no SVG
     function converterEstilosInline(svgText) {
         const parser = new DOMParser();
         const doc = parser.parseFromString(svgText, 'image/svg+xml');
@@ -185,9 +157,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return '#000000';
     }
 
-    // -------------------
-    //  FUNÇÃO CARREGAR ADESIVO (SVG)
-    // -------------------
+    // Função para carregar o adesivo (SVG)
     function carregarAdesivo(stickerUrl) {
         fetch(stickerUrl)
             .then((response) => {
@@ -200,35 +170,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 var svgDoc = parser.parseFromString(svgComInline, 'image/svg+xml');
                 layer.destroyChildren();
                 stickerGroup = new Konva.Group({ draggable: false });
-                Array.from(svgDoc.querySelectorAll('path, rect, circle, ellipse, polygon, polyline, line')).forEach(
-                    (elem, index) => {
-                        var pathData = elem.getAttribute('d') || '';
-                        var fillColor = getEffectiveFill(elem);
-                        if (pathData) {
-                            var path = new Konva.Path({
-                                data: pathData,
-                                fill: fillColor,
-                                draggable: false,
-                                id: `layer-${index}`,
-                            });
-                            // Evento de clique para edição individual com Spectrum
-                            path.on('click', function (e) {
-                                e.cancelBubble = true;
-                                selectedPath = this;
-                                $(inlineColorPicker).spectrum("set", rgbToHex(selectedPath.fill()));
-                                var pointerPosition = stage.getPointerPosition();
-                                if (pointerPosition) {
-                                    $(inlineColorPicker).css({
-                                        left: pointerPosition.x,
-                                        top: pointerPosition.y
-                                    });
-                                }
-                                $(inlineColorPicker).spectrum("show");
-                            });
-                            stickerGroup.add(path);
-                        }
+                Array.from(svgDoc.querySelectorAll('path, rect, circle, ellipse, polygon, polyline, line')).forEach((elem, index) => {
+                    var pathData = elem.getAttribute('d') || '';
+                    var fillColor = getEffectiveFill(elem);
+                    if (pathData) {
+                        var path = new Konva.Path({
+                            data: pathData,
+                            fill: fillColor,
+                            draggable: false,
+                            id: `layer-${index}`,
+                        });
+                        stickerGroup.add(path);
                     }
-                );
+                });
                 layer.add(stickerGroup);
                 ajustarTamanhoEPosicaoDoAdesivo();
                 preencherSelecaoDeCores();
@@ -238,9 +192,6 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch((error) => console.error('Erro ao carregar o adesivo:', error));
     }
 
-    // -------------------
-    //  FUNÇÃO AJUSTAR TAMANHO E POSIÇÃO DO ADESIVO
-    // -------------------
     function ajustarTamanhoEPosicaoDoAdesivo() {
         if (!stickerGroup) return;
         stage.scale({ x: 1, y: 1 });
@@ -264,54 +215,73 @@ document.addEventListener('DOMContentLoaded', function () {
         initialStickerPosition = { x: stickerGroup.x(), y: stickerGroup.y() };
     }
 
-    // -------------------
-    //  NOVA FUNÇÃO: PREENCHE A SELEÇÃO DE CORES (GRUPOS) COMO CÍRCULOS
-    // -------------------
+    // Função para preencher a seleção de cores como bolinhas na aba lateral
     function preencherSelecaoDeCores() {
         var container = document.getElementById('layer-colors-container');
         if (!container) return;
-        container.innerHTML = '';
-
+        container.innerHTML = ''; // Limpa o container
+    
         var groups = {};
+        // Agrupa os elementos por cor (em formato hex)
         stickerGroup.getChildren().forEach(child => {
             var fillColor = child.fill() || '#000000';
             fillColor = rgbToHex(fillColor).toLowerCase();
             if (!groups[fillColor]) groups[fillColor] = [];
             groups[fillColor].push(child);
         });
-
-        // Use "let" para garantir a correta captura do valor de fillColor em cada iteração
-        for (let fillColor in groups) {
+    
+        // Para cada cor, cria uma bolinha
+        Object.keys(groups).forEach(function(fillColor) {
             var count = groups[fillColor].length;
             var colorDiv = document.createElement('div');
-            colorDiv.style.display = 'inline-block';
-            colorDiv.style.width = '30px';
-            colorDiv.style.height = '30px';
-            colorDiv.style.borderRadius = '50%';
-            colorDiv.style.backgroundColor = fillColor;
-            colorDiv.style.border = '2px solid #fff';
-            colorDiv.style.margin = '5px';
-            colorDiv.style.cursor = 'pointer';
+            colorDiv.style.cssText = "display:inline-block;width:30px;height:30px;border-radius:50%;background-color:" + fillColor + ";border:2px solid #fff;margin:5px;cursor:pointer;";
             colorDiv.title = 'Mudar cor ' + fillColor + ' (' + count + ' camada' + (count > 1 ? 's' : '') + ')';
-
-            colorDiv.addEventListener('click', function (e) {
-                // Armazena o array de elementos pertencentes a este grupo
+    
+            colorDiv.addEventListener('click', function () {
+                // Define o grupo selecionado
                 selectedGroup = groups[fillColor];
-                $(inlineColorPicker).spectrum("set", fillColor);
-                var rect = this.getBoundingClientRect();
-                $(inlineColorPicker).css({
-                    left: rect.left + rect.width / 2,
-                    top: rect.top + rect.height / 2
+    
+                // Cria um input do tipo color
+                var colorInput = document.createElement('input');
+                colorInput.type = 'color';
+                colorInput.value = fillColor;
+                colorInput.style.position = 'fixed';
+                colorInput.style.zIndex = 10000;
+    
+                // Posiciona o input ao lado da bolinha usando jQuery offset
+                var offset = $(colorDiv).offset();
+                var width = $(colorDiv).outerWidth();
+                $(colorInput).css({
+                    left: (offset.left + width + 10) + 'px', // 10px à direita
+                    top: offset.top + 'px'
                 });
-                $(inlineColorPicker).spectrum("show");
+    
+                // Ao mudar a cor, atualiza o grupo em tempo real
+                colorInput.addEventListener('input', function(e) {
+                    var newColor = e.target.value;
+                    selectedGroup.forEach(child => {
+                        child.fill(newColor);
+                    });
+                    layer.draw();
+                });
+    
+                // Remove o input quando perder o foco
+                colorInput.addEventListener('blur', function() {
+                    colorInput.remove();
+                    // Opcional: Atualiza as bolinhas caso a cor tenha mudado
+                    preencherSelecaoDeCores();
+                });
+    
+                document.body.appendChild(colorInput);
+                colorInput.focus();
             });
+    
             container.appendChild(colorDiv);
-        }
+        });
     }
+    
 
-    // -------------------
-    //  FUNÇÕES DE HISTÓRICO (UNDO/REDO)
-    // -------------------
+    // Funções de histórico (undo/redo)
     function saveHistory() {
         if (historyStates.length > 50) {
             historyStates.shift();
@@ -359,9 +329,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('redo-button').disabled = (historyIndex >= historyStates.length - 1);
     }
 
-    // -------------------
-    //  FUNÇÃO DE EDIÇÃO DE TEXTO
-    // -------------------
+    // Função de edição de texto
     function enableTextEditing(textNode) {
         textNode.on('dblclick', function () {
             textNode.hide();
@@ -407,9 +375,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // -------------------
-    //  EVENTOS PRINCIPAIS
-    // -------------------
+    // Eventos principais
     document.getElementById('cor').addEventListener('input', function (event) {
         var newColor = event.target.value;
         if (!stickerGroup) return;
@@ -718,8 +684,6 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(error => console.error("Erro no AJAX:", error));
     });
-
-
 
     jQuery(document).ready(function ($) {
         setTimeout(function () {
