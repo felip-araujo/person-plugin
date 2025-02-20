@@ -240,3 +240,5 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
         });
     });
 </script>
+
+<!-- ponto de rollback -->
