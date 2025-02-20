@@ -18,52 +18,6 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
         z-index: 9999;
     }
 
-    /* desabilita a seleção no body */
-    body {
-        -webkit-touch-callout: none;
-        /* iOS Safari */
-        -webkit-user-select: none;
-        /* Chrome/Safari/Opera */
-        -khtml-user-select: none;
-        /* Konqueror */
-        -moz-user-select: none;
-        /* Firefox */
-        -ms-user-select: none;
-        /* Internet Explorer/Edge */
-        user-select: none;
-    }
-
-    /* habilita a seleção nos campos editáveis */
-    input,
-    textarea {
-        -webkit-touch-callout: initial;
-        /* iOS Safari */
-        -webkit-user-select: text;
-        /* Chrome/Safari/Opera */
-        -khtml-user-select: text;
-        /* Konqueror */
-        -moz-user-select: text;
-        /* Firefox */
-        -ms-user-select: text;
-        /* Internet Explorer/Edge */
-        user-select: text;
-    }
-
-    /* habilita a seleção nos campos com o atributo contenteditable */
-    [contenteditable=true] {
-        -webkit-touch-callout: initial;
-        /* iOS Safari */
-        -webkit-user-select: all;
-        /* Chrome/Safari/Opera */
-        -khtml-user-select: all;
-        /* Konqueror */
-        -moz-user-select: all;
-        /* Firefox */
-        -ms-user-select: all;
-        /* Internet Explorer/Edge */
-        user-select: all;
-    }
-
     body {
         margin: 0;
         padding: 0;
@@ -78,7 +32,6 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
         overflow: hidden;
     }
 
-    /* O editor agora ocupa o restante do espaço à direita da barra lateral */
     .editor-container {
         margin-left: 300px;
         width: 20vh;
@@ -175,15 +128,11 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
 
 <div class="container-fluid">
     <div class="editor-container" id="editor-container">
-        <?php
-        echo person_plugin_display_customizer($selected_sticker);
-        ?>
+        <?php echo person_plugin_display_customizer($selected_sticker); ?>
     </div>
 
     <input type="hidden" id="produto_id" value="77">
-    <input type="hidden" id="dynamic_price" value="<?php echo esc_attr( get_option('preco_adesivo_personalizado', '21') ); ?>">
-
-
+    <input type="hidden" id="dynamic_price" value="<?php echo esc_attr(get_option('preco_adesivo_personalizado', '21')); ?>">
 
     <!-- Sidebar de adesivos -->
     <button class="btn d-md-none hamburger-btn" onclick="toggleSidebar()">
@@ -191,16 +140,12 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
     </button>
 
     <div class="p-4 bg-white ml-4 border-right shadow-sm overflow-auto side-bar d-md-block hidden" id="sidebar">
-        <p class="alert alert-info text-center" >Selecione um Adesivo</p>
+        <p class="alert alert-info text-center">Selecione um Adesivo</p>
         <input type="text" id="searchSticker" class="form-control mb-3" placeholder="Buscar adesivo...">
-        <div class="d-flex flex-wrap justify-content-center">
-            <?php
-            // Recupera o ID do produto configurado na área administrativa
-            $produto_id = get_option('manual_product_id');
-            $product = wc_get_product($produto_id);
 
-            // Neste template, exibiremos o preço personalizado definido para cada adesivo
-            // Recupera todos os adesivos (imagens SVG)
+        <div id="stickerAccordion" class="accordion">
+            <?php
+            // Recupera todos os adesivos (imagens SVG) e agrupa por primeira letra do nome
             $args = array(
                 'post_type'      => 'attachment',
                 'post_mime_type' => 'image/svg+xml',
@@ -210,34 +155,55 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
             );
             $stickers = get_posts($args);
 
+            $groups = [];
             if ($stickers) :
-                foreach ($stickers as $sticker) :
-                    $sticker_url  = wp_get_attachment_url($sticker->ID);
-                    $link         = esc_url(add_query_arg('sticker', urlencode($sticker_url)));
+                foreach ($stickers as $sticker) {
+                    $sticker_url = wp_get_attachment_url($sticker->ID);
                     $sticker_name = pathinfo($sticker_url, PATHINFO_FILENAME);
-                    // Recupera o preço personalizado do adesivo (meta _sticker_price)
-                    $sticker_price = get_post_meta($sticker->ID, '_sticker_price', true);
-                    $formatted_price = $sticker_price ? wc_price($sticker_price) : '';
-            ?>
-                    <a href="<?php echo $link; ?>" class="sticker-item text-center m-2">
-                        <img src="<?php echo esc_url($sticker_url); ?>" class="img-fluid rounded border p-2 bg-light" alt="<?php echo esc_attr($sticker_name); ?>" style="width: 80px; height: 80px;">
-                        <span class="d-block small mt-1 sticker-name"><?php echo esc_html($sticker_name); ?></span>
-                        <?php if (!empty($formatted_price)) : ?>
-                            <span class="d-block small sticker-price"><?php echo $formatted_price; ?></span>
-                        <?php endif; ?>
-                    </a>
-            <?php
-                endforeach;
+                    $letter = strtoupper(substr($sticker_name, 0, 1));
+
+                    if (!isset($groups[$letter])) {
+                        $groups[$letter] = [];
+                    }
+
+                    $groups[$letter][] = [
+                        'url'   => $sticker_url,
+                        'name'  => $sticker_name,
+                        'price' => get_post_meta($sticker->ID, '_sticker_price', true)
+                    ];
+                }
+
+                foreach ($groups as $letter => $sticker_group) : ?>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading-<?php echo $letter; ?>">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-<?php echo $letter; ?>" aria-expanded="true" aria-controls="collapse-<?php echo $letter; ?>">
+                                <?php echo $letter; ?> (<?php echo count($sticker_group); ?> adesivos)
+                            </button>
+                        </h2>
+                        <div id="collapse-<?php echo $letter; ?>" class="accordion-collapse collapse" aria-labelledby="heading-<?php echo $letter; ?>" data-bs-parent="#stickerAccordion">
+                            <div class="accordion-body">
+                                <div class="sticker-grid">
+                                    <?php foreach ($sticker_group as $sticker) : ?>
+                                        <a href="<?php echo esc_url(add_query_arg('sticker', urlencode($sticker['url']))); ?>" class="sticker-item text-center m-2">
+                                            <img src="<?php echo esc_url($sticker['url']); ?>" class="img-fluid rounded border p-2 bg-light" alt="<?php echo esc_attr($sticker['name']); ?>">
+                                            <span class="d-block small mt-1 sticker-name"><?php echo esc_html($sticker['name']); ?></span>
+                                            <?php if (!empty($sticker['price'])) : ?>
+                                                <span class="d-block small sticker-price"><?php echo wc_price($sticker['price']); ?></span>
+                                            <?php endif; ?>
+                                        </a>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach;
             else :
                 echo '<p class="text-center text-muted">Nenhum adesivo encontrado.</p>';
             endif;
             ?>
         </div>
     </div>
-
 </div>
-
-
 
 <script>
     function toggleSidebar() {
@@ -247,36 +213,12 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
         editorContainer.classList.toggle('open');
     }
 
-    // Função para bloquear Ctrl+S e Ctrl+U
-    if (document.addEventListener) {
-        document.addEventListener("keydown", bloquearSource);
-    } else {
-        document.attachEvent("onkeydown", bloquearSource);
-    }
-
-    function bloquearSource(e) {
-        e = e || window.event;
-        var code = e.which || e.keyCode;
-        if (e.ctrlKey && (code == 83 || code == 85)) {
-            if (e.preventDefault) {
-                e.preventDefault();
-            } else {
-                e.returnValue = false;
-            }
-            return false;
-        }
-    }
-
     document.getElementById('searchSticker').addEventListener('keyup', function() {
         let filter = this.value.toLowerCase();
         let stickers = document.querySelectorAll('.sticker-item');
         stickers.forEach(function(sticker) {
             let name = sticker.querySelector('.sticker-name').textContent.toLowerCase();
-            if (name.includes(filter)) {
-                sticker.style.display = 'flex';
-            } else {
-                sticker.style.display = 'none';
-            }
+            sticker.style.display = name.includes(filter) ? 'flex' : 'none';
         });
     });
 </script>
