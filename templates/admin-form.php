@@ -83,55 +83,66 @@ $query = new WP_Query($args_attachments);
 
 // Renderiza a tabela de adesivos
 if ($query->have_posts()) {
-    echo '<table id="form-table" class="table table-dark">';
-    echo '<thead>';
-    echo '<tr style="background-color: #eee; border-bottom: 2px solid #dee2e6;">';
-    echo '<th>Visualização</th>';
-    echo '<th>Nome do Adesivo</th>';
-    echo '<th>Preço Personalizado</th>'; // Nova coluna para o preço personalizado
-    echo '<th>Gerenciar</th>';
-    echo '</tr>';
-    echo '</thead>';
+    echo '<table id="form-table" style="" class="table table-dark">';
+    echo '<thead><tr><th>Visualização</th><th>Nome do Adesivo</th><th>Gerenciar</th></tr></thead>';
     echo '<tbody>';
     while ($query->have_posts()) {
         $query->the_post();
         $attachment_id = get_the_ID();
         $url_svg = wp_get_attachment_url($attachment_id);
         $nome_arquivo = basename($url_svg);
-        
-        // Recupera o preço atual (se houver) salvo no meta do adesivo
-        $sticker_price = get_post_meta($attachment_id, '_sticker_price', true);
-        
+
         echo '<tr>';
-        echo '<td style="width: 50px;"><img src="' . esc_url($url_svg) . '" alt="' . esc_attr($nome_arquivo) . '" style="width: 80px; border-radius: .7rem; background-color: #eee; height: auto;"></td>';
+        echo '<td style="width: 50px;"><img src="' . esc_url($url_svg) . '" alt="' . esc_attr($nome_arquivo) . '" style="width: 80px; border-radius:.7rem; background-color:#eee; height: auto;"></td>';
         echo '<td>' . esc_html($nome_arquivo) . '</td>';
-        
-        // Coluna para inserir/atualizar o preço personalizado do adesivo
+
+        // Recuperar o produto associado a este adesivo
+        $associated_product_id = null;
+        $products_with_this_sticker = get_posts(array(
+            'post_type' => 'product',
+            'posts_per_page' => -1,
+            'post_status' => 'publish',
+            'meta_query' => array(
+                array(
+                    'key' => '_associated_sticker',
+                    'value' => $attachment_id,
+                    'compare' => '=',
+                ),
+            ),
+        ));
+        if (!empty($products_with_this_sticker)) {
+            $associated_product_id = $products_with_this_sticker[0]->ID;
+        }
+        // Botão de exclusão
         echo '<td>';
-            echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="display:inline-block;">';
-                // Define o nonce e a ação para atualização do preço
-                wp_nonce_field('update_sticker_price_nonce', 'update_sticker_price_nonce_field');
-                echo '<input type="hidden" name="action" value="update_sticker_price">';
-                echo '<input type="hidden" name="sticker_id" value="' . esc_attr($attachment_id) . '">';
-                echo '<input type="number" name="sticker_price" class="form-control" style="width: 100px; display:inline-block;" step="0.01" placeholder="Preço" value="' . esc_attr($sticker_price) . '">';
-                echo '<button type="submit" name="save_sticker_price" class="btn btn-success" style="margin-left: .5rem;">Salvar</button>';
-            echo '</form>';
-        echo '</td>';
-        
-        // Coluna para gerenciamento (botão de apagar)
-        echo '<td>';
-            echo '<form method="post" style="display:inline;">';
-                wp_nonce_field('delete_attachment_nonce', 'delete_attachment_nonce_field');
-                echo '<button type="submit" name="delete_attachment" value="' . esc_attr($attachment_id) . '" class="btn btn-danger">Apagar</button>';
-            echo '</form>';
+        echo '<form method="post" style="display:inline;">';
+        wp_nonce_field('delete_attachment_nonce', 'delete_attachment_nonce_field');
+        echo '<button type="submit" name="delete_attachment" value="' . esc_attr($attachment_id) . '" class="btn btn-danger">Apagar</button>';
+        echo '</form>';
         echo '</td>';
         echo '</tr>';
     }
     echo '</tbody>';
     echo '</table>';
-    
-    // (A paginação permanece igual)
-    
+
+    // Renderiza a paginação
+    $total_pages = $query->max_num_pages;
+    if ($total_pages > 1) {
+        echo '<nav aria-label="Paginação">';
+        echo '<ul class="pagination justify-content-center">';
+        if ($current_page > 1) {
+            echo '<li class="page-item"><a class="page-link" href="?page=plugin-adesivos&paged=' . ($current_page - 1) . '&search_sticker=' . esc_attr($_GET['search_sticker'] ?? '') . '">Anterior</a></li>';
+        }
+        for ($i = 1; $i <= $total_pages; $i++) {
+            echo '<li class="page-item ' . ($i == $current_page ? 'active' : '') . '"><a class="page-link" href="?page=plugin-adesivos&paged=' . $i . '&search_sticker=' . esc_attr($_GET['search_sticker'] ?? '') . '">' . $i . '</a></li>';
+        }
+        if ($current_page < $total_pages) {
+            echo '<li class="page-item"><a class="page-link" href="?page=plugin-adesivos&paged=' . ($current_page + 1) . '&search_sticker=' . esc_attr($_GET['search_sticker'] ?? '') . '">Próximo</a></li>';
+        }
+        echo '</ul>';
+        echo '</nav>';
+    }
+
     wp_reset_postdata();
 } else {
     echo '<p>Nenhum adesivo encontrado.</p>';
@@ -191,10 +202,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_attachment']))
 }
 
 // Seção de Configurações
+// echo '<h3 >Configurações</h3>';
 echo '
 <div class=" d-flex align-items-center" role="alert">
     <i class="fas fa-gear me-2"></i>
-    <h4 style="margin-top: .4rem; margin-left: .5rem; font-size: 1.2rem;" class="mb-6"> Configurações </h4>
+    <h4 style="margin-top: .4rem;margin-left: .5rem; font-size: 1.2rem"; class="mb-6"> Configurações </h4>
 </div>';
 
 // Campo para inserir ID do produto manualmente
@@ -208,6 +220,7 @@ echo '<button type="submit" name="save_manual_id" class="btn btn-info" style="ma
 echo '</div>'; // Fecha input-group
 echo '</form>';
 echo '</td>';
+
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_manual_id'])) {
     if (!isset($_POST['manual_id_nonce_field']) || !wp_verify_nonce($_POST['manual_id_nonce_field'], 'manual_product_id_nonce')) {
@@ -227,6 +240,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_manual_id'])) {
         echo '<div class="notice notice-error"><p>Erro ao salvar o ID do produto. Verifique o valor inserido.</p></div>';
     }
 }
+
 
 $recognize_sticker_setting = get_option('person_plugin_recognize_sticker', 'yes');
 $admin_email = get_option('person_plugin_admin_email', '');
@@ -281,19 +295,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_plugin_settings'
     }
 }
 
-// Scripts e funções JS para interatividade
+// Scripts
 echo "
 <script>
     jQuery(document).ready(function($) {
         $('a[href^=\"#\"]').on('click', function(e) {
             e.preventDefault();
             var target = this.hash;
-            var \$target = $(target);
+            var $target = $(target);
             $('html, body').animate({
-                scrollTop: \$target.offset().top - 50 // Ajusta a posição para não cobrir o cabeçalho
+                scrollTop: $target.offset().top - 50 // Ajusta a posição para não cobrir o cabeçalho
             }, 800); // 800ms de animação
         });
     });
+
+
+    
 </script>
 ";
 
@@ -302,13 +319,15 @@ echo '
 function copiarTag(event) {
     event.preventDefault(); // Prevenir comportamento padrão do link
     const tagInput = document.getElementById("tagInput");
+
     // Seleciona o valor do input escondido
     tagInput.select();
     tagInput.setSelectionRange(0, 99999); // Para compatibilidade com dispositivos móveis
+
     // Copia o texto para a área de transferência
     document.execCommand("copy");
+
     // Exibe uma mensagem de confirmação (opcional)
     alert("Tag copiada para a área de transferência!");
 }
 </script>';
-?>
