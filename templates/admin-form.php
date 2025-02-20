@@ -81,7 +81,6 @@ if (!empty($_GET['search_sticker'])) {
 
 $query = new WP_Query($args_attachments);
 
-
 // Renderiza a tabela de adesivos
 if ($query->have_posts()) {
     echo '<table id="form-table" class="table table-dark">';
@@ -89,7 +88,7 @@ if ($query->have_posts()) {
     echo '<tr style="background-color: #eee; border-bottom: 2px solid #dee2e6;">';
     echo '<th>Visualização</th>';
     echo '<th>Nome do Adesivo</th>';
-    echo '<th>Preço</th>'; // Nova coluna para o preço
+    echo '<th>Preço Personalizado</th>'; // Nova coluna para o preço personalizado
     echo '<th>Gerenciar</th>';
     echo '</tr>';
     echo '</thead>';
@@ -107,10 +106,10 @@ if ($query->have_posts()) {
         echo '<td style="width: 50px;"><img src="' . esc_url($url_svg) . '" alt="' . esc_attr($nome_arquivo) . '" style="width: 80px; border-radius: .7rem; background-color: #eee; height: auto;"></td>';
         echo '<td>' . esc_html($nome_arquivo) . '</td>';
         
-        // Coluna para inserir/atualizar o preço
+        // Coluna para inserir/atualizar o preço personalizado do adesivo
         echo '<td>';
             echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="display:inline-block;">';
-                // Define o nonce e a ação
+                // Define o nonce e a ação para atualização do preço
                 wp_nonce_field('update_sticker_price_nonce', 'update_sticker_price_nonce_field');
                 echo '<input type="hidden" name="action" value="update_sticker_price">';
                 echo '<input type="hidden" name="sticker_id" value="' . esc_attr($attachment_id) . '">';
@@ -137,7 +136,6 @@ if ($query->have_posts()) {
 } else {
     echo '<p>Nenhum adesivo encontrado.</p>';
 }
-
 
 // Processar habilitação do editor ao salvar
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_association'])) {
@@ -193,11 +191,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_attachment']))
 }
 
 // Seção de Configurações
-// echo '<h3 >Configurações</h3>';
 echo '
 <div class=" d-flex align-items-center" role="alert">
     <i class="fas fa-gear me-2"></i>
-    <h4 style="margin-top: .4rem;margin-left: .5rem; font-size: 1.2rem"; class="mb-6"> Configurações </h4>
+    <h4 style="margin-top: .4rem; margin-left: .5rem; font-size: 1.2rem;" class="mb-6"> Configurações </h4>
 </div>';
 
 // Campo para inserir ID do produto manualmente
@@ -211,7 +208,6 @@ echo '<button type="submit" name="save_manual_id" class="btn btn-info" style="ma
 echo '</div>'; // Fecha input-group
 echo '</form>';
 echo '</td>';
-
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_manual_id'])) {
     if (!isset($_POST['manual_id_nonce_field']) || !wp_verify_nonce($_POST['manual_id_nonce_field'], 'manual_product_id_nonce')) {
@@ -231,7 +227,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_manual_id'])) {
         echo '<div class="notice notice-error"><p>Erro ao salvar o ID do produto. Verifique o valor inserido.</p></div>';
     }
 }
-
 
 $recognize_sticker_setting = get_option('person_plugin_recognize_sticker', 'yes');
 $admin_email = get_option('person_plugin_admin_email', '');
@@ -286,22 +281,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_plugin_settings'
     }
 }
 
-// Scripts
+// Scripts e funções JS para interatividade
 echo "
 <script>
     jQuery(document).ready(function($) {
         $('a[href^=\"#\"]').on('click', function(e) {
             e.preventDefault();
             var target = this.hash;
-            var $target = $(target);
+            var \$target = $(target);
             $('html, body').animate({
-                scrollTop: $target.offset().top - 50 // Ajusta a posição para não cobrir o cabeçalho
+                scrollTop: \$target.offset().top - 50 // Ajusta a posição para não cobrir o cabeçalho
             }, 800); // 800ms de animação
         });
     });
-
-
-    
 </script>
 ";
 
@@ -310,15 +302,13 @@ echo '
 function copiarTag(event) {
     event.preventDefault(); // Prevenir comportamento padrão do link
     const tagInput = document.getElementById("tagInput");
-
     // Seleciona o valor do input escondido
     tagInput.select();
     tagInput.setSelectionRange(0, 99999); // Para compatibilidade com dispositivos móveis
-
     // Copia o texto para a área de transferência
     document.execCommand("copy");
-
     // Exibe uma mensagem de confirmação (opcional)
     alert("Tag copiada para a área de transferência!");
 }
 </script>';
+?>

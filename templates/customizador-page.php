@@ -18,7 +18,7 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
         z-index: 9999;
     }
 
-    /*desabilita a seleção no body*/
+    /* desabilita a seleção no body */
     body {
         -webkit-touch-callout: none;
         /* iOS Safari */
@@ -33,7 +33,7 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
         user-select: none;
     }
 
-    /*habilita a seleção nos campos editaveis*/
+    /* habilita a seleção nos campos editáveis */
     input,
     textarea {
         -webkit-touch-callout: initial;
@@ -49,7 +49,7 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
         user-select: text;
     }
 
-    /*habilita a seleção nos campos com o atributo contenteditable*/
+    /* habilita a seleção nos campos com o atributo contenteditable */
     [contenteditable=true] {
         -webkit-touch-callout: initial;
         /* iOS Safari */
@@ -64,19 +64,16 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
         user-select: all;
     }
 
-
     body {
         margin: 0;
         padding: 0;
         height: 100vh;
         display: flex;
         font-family: 'Montserrat', sans-serif;
-        /* Flexbox para organizar o layout */
     }
 
     .container-fluid {
         height: 100vh;
-        /* Ocupa toda a altura da tela */
         display: contents;
         overflow: hidden;
     }
@@ -86,25 +83,20 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
         margin-left: 300px;
         width: 20vh;
         height: 100%;
-        /* Espaço para a side-bar */
         transition: margin-left 0.3s ease-in-out;
-        /* Suaviza a transição */
     }
 
     .editor-container.open {
         margin-left: 0;
-        /* Quando a side-bar estiver visível no mobile, o editor ocupa o espaço */
     }
 
     @media (max-width: 991px) {
         .editor-container {
             margin-left: 0;
-            /* No mobile, o editor ocupa toda a largura */
         }
 
         .editor-container.open {
             margin-left: 300px;
-            /* Espaço para a side-bar quando estiver aberta */
         }
     }
 
@@ -137,32 +129,24 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
 
     .sticker-name {
         font-size: 15px;
-        font-weight: 800px;
         margin-top: 5px;
         text-transform: uppercase;
         text-decoration: none;
         font-weight: 500;
-
     }
 
     .side-bar {
         width: 290px;
-        /* Largura fixa da barra lateral */
         position: fixed;
-        /* Fixa a barra lateral à esquerda */
         top: 0;
         left: 0;
         height: 100vh;
-        /* Altura da barra lateral igual à altura da tela */
         z-index: 1;
-        /* Garante que a side-bar fique sobre outros elementos */
         transition: transform 0.3s ease-in-out;
     }
 
-    /* Quando a side-bar estiver escondida */
     .side-bar.hidden {
         transform: translateX(-100%);
-        /* Move a side-bar para fora da tela */
     }
 
     @media (max-width: 768px) {
@@ -174,31 +158,32 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
         }
     }
 
-    /* Exibe a side-bar no desktop */
     @media (min-width: 992px) {
         .side-bar {
             transform: translateX(0);
-            /* Barra lateral visível no desktop */
         }
 
         .side-bar.hidden {
             transform: translateX(0);
-            /* Impede que a side-bar seja escondida no desktop */
         }
 
-        /* Garante que o botão de hambúrguer não apareça no desktop */
         .hamburger-btn {
             display: none;
         }
     }
 </style>
 
-<div class="container-fluid" back>
+<div class="container-fluid">
     <div class="editor-container" id="editor-container">
         <?php
         echo person_plugin_display_customizer($selected_sticker);
         ?>
     </div>
+
+    <input type="hidden" id="produto_id" value="77">
+    <input type="hidden" id="dynamic_price" value="<?php echo esc_attr( get_option('preco_adesivo_personalizado', '21') ); ?>">
+
+
 
     <!-- Sidebar de adesivos -->
     <button class="btn d-md-none hamburger-btn" onclick="toggleSidebar()">
@@ -206,7 +191,7 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
     </button>
 
     <div class="p-4 bg-white ml-4 border-right shadow-sm overflow-auto side-bar d-md-block hidden" id="sidebar">
-        <p class="alert alert-info text-center">Selecione um Adesivo</p>
+        <p class="alert alert-info text-center" >Selecione um Adesivo</p>
         <input type="text" id="searchSticker" class="form-control mb-3" placeholder="Buscar adesivo...">
         <div class="d-flex flex-wrap justify-content-center">
             <?php
@@ -214,16 +199,7 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
             $produto_id = get_option('manual_product_id');
             $product = wc_get_product($produto_id);
 
-            // Se o produto for recuperado, obtemos os dados
-            if ($product) {
-                $product_name  = $product->get_name();
-                $product_price = wc_price($product->get_price());
-            } else {
-                // Caso o produto não esteja configurado ou não exista
-                $product_name  = '';
-                $product_price = '';
-            }
-
+            // Neste template, exibiremos o preço personalizado definido para cada adesivo
             // Recupera todos os adesivos (imagens SVG)
             $args = array(
                 'post_type'      => 'attachment',
@@ -239,12 +215,15 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
                     $sticker_url  = wp_get_attachment_url($sticker->ID);
                     $link         = esc_url(add_query_arg('sticker', urlencode($sticker_url)));
                     $sticker_name = pathinfo($sticker_url, PATHINFO_FILENAME);
+                    // Recupera o preço personalizado do adesivo (meta _sticker_price)
+                    $sticker_price = get_post_meta($sticker->ID, '_sticker_price', true);
+                    $formatted_price = $sticker_price ? wc_price($sticker_price) : '';
             ?>
                     <a href="<?php echo $link; ?>" class="sticker-item text-center m-2">
                         <img src="<?php echo esc_url($sticker_url); ?>" class="img-fluid rounded border p-2 bg-light" alt="<?php echo esc_attr($sticker_name); ?>" style="width: 80px; height: 80px;">
                         <span class="d-block small mt-1 sticker-name"><?php echo esc_html($sticker_name); ?></span>
-                        <?php if (!empty($product_price)) : ?>
-                            <span class="d-block small sticker-price"><?php echo $product_price; ?></span>
+                        <?php if (!empty($formatted_price)) : ?>
+                            <span class="d-block small sticker-price"><?php echo $formatted_price; ?></span>
                         <?php endif; ?>
                     </a>
             <?php
@@ -258,6 +237,8 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
 
 </div>
 
+
+
 <script>
     function toggleSidebar() {
         var sidebar = document.getElementById('sidebar');
@@ -266,42 +247,22 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
         editorContainer.classList.toggle('open');
     }
 
-    // // funcao para bloquear botao direito no navegador 
-    // if (document.addEventListener) {
-    //     document.addEventListener("contextmenu", function(e) {
-    //         e.preventDefault();
-    //         return false;
-    //     });
-    // } else { //Versões antigas do IE 
-    //     document.attachEvent("oncontextmenu", function(e) {
-    //         e = e || window.event;
-    //         e.returnValue = false;
-    //         return false;
-    //     });
-    // }
-
-    // funcao para bloquear ctrl+u e ctrl+s no naveegador
+    // Função para bloquear Ctrl+S e Ctrl+U
     if (document.addEventListener) {
         document.addEventListener("keydown", bloquearSource);
-    } else { //Versões antigas do IE 
+    } else {
         document.attachEvent("onkeydown", bloquearSource);
     }
 
     function bloquearSource(e) {
         e = e || window.event;
-
         var code = e.which || e.keyCode;
-
-        if (
-            e.ctrlKey &&
-            (code == 83 || code == 85) //83 = S, 85 = U 
-        ) {
+        if (e.ctrlKey && (code == 83 || code == 85)) {
             if (e.preventDefault) {
                 e.preventDefault();
             } else {
                 e.returnValue = false;
             }
-
             return false;
         }
     }
@@ -309,7 +270,6 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
     document.getElementById('searchSticker').addEventListener('keyup', function() {
         let filter = this.value.toLowerCase();
         let stickers = document.querySelectorAll('.sticker-item');
-
         stickers.forEach(function(sticker) {
             let name = sticker.querySelector('.sticker-name').textContent.toLowerCase();
             if (name.includes(filter)) {

@@ -688,27 +688,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById("salvar-adesivo-botao").addEventListener("click", function (e) {
         e.preventDefault();
-        let checkbox = document.getElementById("aceito-termos");
-        if (!checkbox.checked) {
-            let confirmacao = confirm("Você precisa aceitar os termos antes de continuar. Deseja aceitar agora?");
-            if (confirmacao) {
-                checkbox.checked = true;
-            } else {
-                return;
-            }
-        }
+        const produtoId = document.getElementById("produto_id").value;
+        const dynamicPrice = document.getElementById("dynamic_price").value;
         const adesivoData = stage.toDataURL({ mimeType: "image/png" });
+        console.log("Produto ID:", produtoId);
+        console.log("Preço Dinâmico:", dynamicPrice);
+        console.log("Adesivo Data:", adesivoData);
+        if (!produtoId || !dynamicPrice || !adesivoData) {
+            alert("Erro: Produto, preço ou adesivo não configurado corretamente.");
+            return;
+        }
         fetch(personPlugin.ajax_url, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: new URLSearchParams({
                 action: "adicionar_adesivo_ao_carrinho",
+                produto_id: produtoId,
+                preco: dynamicPrice,
                 adesivo_url: adesivoData
             })
         })
             .then(response => response.json())
             .then(data => {
-                console.log("Resposta do servidor:", data);
                 if (data.success) {
                     window.location.href = data.data.cart_url;
                 } else {
@@ -717,6 +718,8 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(error => console.error("Erro no AJAX:", error));
     });
+
+
 
     jQuery(document).ready(function ($) {
         setTimeout(function () {
