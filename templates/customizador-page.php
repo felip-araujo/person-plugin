@@ -12,6 +12,8 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
     $selected_sticker = urldecode($_GET['sticker']);
 }
 ?>
+
+
 <style>
     .person-customizer header {
         position: absolute;
@@ -53,6 +55,13 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
         }
     }
 
+    .accordion-button {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 16px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
     .sticker-grid {
         display: flex;
         flex-wrap: wrap;
@@ -67,6 +76,7 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
         flex-direction: column;
         align-items: center;
         color: #333;
+        font-family: 'Montserrat', sans-serif;
     }
 
     .sticker-item img {
@@ -145,7 +155,7 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
 
         <div id="stickerAccordion" class="accordion">
             <?php
-            // Recupera todos os adesivos (imagens SVG) e agrupa por primeira letra do nome
+            // Agrupando adesivos por letra inicial do nome
             $args = array(
                 'post_type'      => 'attachment',
                 'post_mime_type' => 'image/svg+xml',
@@ -213,12 +223,20 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
         editorContainer.classList.toggle('open');
     }
 
-    document.getElementById('searchSticker').addEventListener('keyup', function() {
+    document.getElementById('searchSticker').addEventListener('keyup', function () {
         let filter = this.value.toLowerCase();
         let stickers = document.querySelectorAll('.sticker-item');
-        stickers.forEach(function(sticker) {
+        let groups = document.querySelectorAll('.accordion-item');
+
+        stickers.forEach(function (sticker) {
             let name = sticker.querySelector('.sticker-name').textContent.toLowerCase();
             sticker.style.display = name.includes(filter) ? 'flex' : 'none';
+        });
+
+        groups.forEach(function (group) {
+            let groupVisible = Array.from(group.querySelectorAll('.sticker-item'))
+                .some(sticker => sticker.style.display === 'flex');
+            group.style.display = groupVisible ? 'block' : 'none';
         });
     });
 </script>
