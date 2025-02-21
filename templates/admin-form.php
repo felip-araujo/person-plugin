@@ -1,4 +1,16 @@
 <?php
+// Processa o salvamento do preço do adesivo para cada item
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_sticker_price'])) {
+    if (!isset($_POST['sticker_price_nonce']) || !wp_verify_nonce($_POST['sticker_price_nonce'], 'save_sticker_price_nonce')) {
+        echo '<p class="alert alert-danger">Nonce inválido!</p>';
+    } else {
+        $sticker_id = intval($_POST['sticker_id']);
+        $sticker_price = floatval($_POST['sticker_price']);
+        update_post_meta($sticker_id, '_sticker_price', $sticker_price);
+        echo '<div class="notice notice-success"><p>Preço do adesivo atualizado com sucesso!</p></div>';
+    }
+}
+
 // Formulário de envio de adesivos e busca
 echo '<div class="row align-items-center mb-3">';
 echo '<div class="col-md-6">';
@@ -81,10 +93,13 @@ if (!empty($_GET['search_sticker'])) {
 
 $query = new WP_Query($args_attachments);
 
+// Inicializa o array para armazenar os preços dos adesivos
+$sticker_prices = array();
+
 // Renderiza a tabela de adesivos
 if ($query->have_posts()) {
     echo '<table id="form-table" style="" class="table table-dark">';
-    echo '<thead><tr><th>Visualização</th><th>Nome do Adesivo</th><th>Gerenciar</th></tr></thead>';
+    echo '<thead><tr><th>Visualização</th><th>Nome do Adesivo</th><th>Preço</th><th>Gerenciar</th></tr></thead>';
     echo '<tbody>';
     while ($query->have_posts()) {
         $query->the_post();
@@ -92,27 +107,24 @@ if ($query->have_posts()) {
         $url_svg = wp_get_attachment_url($attachment_id);
         $nome_arquivo = basename($url_svg);
 
+        // Armazena o preço do adesivo (se existir) para envio ao frontend
+        $sticker_prices[$attachment_id] = get_post_meta($attachment_id, '_sticker_price', true);
+
         echo '<tr>';
         echo '<td style="width: 50px;"><img src="' . esc_url($url_svg) . '" alt="' . esc_attr($nome_arquivo) . '" style="width: 80px; border-radius:.7rem; background-color:#eee; height: auto;"></td>';
         echo '<td>' . esc_html($nome_arquivo) . '</td>';
 
-        // Recuperar o produto associado a este adesivo
-        $associated_product_id = null;
-        $products_with_this_sticker = get_posts(array(
-            'post_type' => 'product',
-            'posts_per_page' => -1,
-            'post_status' => 'publish',
-            'meta_query' => array(
-                array(
-                    'key' => '_associated_sticker',
-                    'value' => $attachment_id,
-                    'compare' => '=',
-                ),
-            ),
-        ));
-        if (!empty($products_with_this_sticker)) {
-            $associated_product_id = $products_with_this_sticker[0]->ID;
-        }
+        // Campo para salvar o preço do adesivo
+        echo '<td>';
+        echo '<form method="post" style="display:inline;">';
+        wp_nonce_field('save_sticker_price_nonce', 'sticker_price_nonce');
+        echo '<input type="hidden" name="sticker_id" value="' . esc_attr($attachment_id) . '">';
+        $current_price = get_post_meta($attachment_id, '_sticker_price', true);
+        echo '<input type="number" step="0.01" name="sticker_price" value="' . esc_attr($current_price) . '" style="width:80px;">';
+        echo '<button type="submit" name="save_sticker_price" class="btn btn-success btn-sm" style="margin-left:5px;">Salvar Preço</button>';
+        echo '</form>';
+        echo '</td>';
+
         // Botão de exclusão
         echo '<td>';
         echo '<form method="post" style="display:inline;">';
@@ -147,6 +159,11 @@ if ($query->have_posts()) {
 } else {
     echo '<p>Nenhum adesivo encontrado.</p>';
 }
+
+// Envio dos preços dos adesivos para o frontend
+echo '<script>';
+echo 'var stickerPrices = ' . json_encode($sticker_prices) . ';';
+echo '</script>';
 
 // Processar habilitação do editor ao salvar
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_association'])) {
@@ -209,19 +226,6 @@ echo '
     <h4 style="margin-top: .4rem;margin-left: .5rem; font-size: 1.2rem"; class="mb-6"> Configurações </h4>
 </div>';
 
-// Campo para inserir ID do produto manualmente
-echo '<td>';
-echo '<form method="post">';
-wp_nonce_field('manual_product_id_nonce', 'manual_id_nonce_field');
-echo '<input type="hidden" name="sticker_id" value="' . esc_attr($attachment_id) . '">';
-echo '<div class="input-group">';
-echo '<input type="number" name="manual_product_id" class="form-control" placeholder="ID do Produto" required>';
-echo '<button type="submit" name="save_manual_id" class="btn btn-info" style="margin-left: 0.5rem;">Salvar</button>';
-echo '</div>'; // Fecha input-group
-echo '</form>';
-echo '</td>';
-
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_manual_id'])) {
     if (!isset($_POST['manual_id_nonce_field']) || !wp_verify_nonce($_POST['manual_id_nonce_field'], 'manual_product_id_nonce')) {
         die('Ação não autorizada.');
@@ -240,7 +244,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_manual_id'])) {
         echo '<div class="notice notice-error"><p>Erro ao salvar o ID do produto. Verifique o valor inserido.</p></div>';
     }
 }
-
 
 $recognize_sticker_setting = get_option('person_plugin_recognize_sticker', 'yes');
 $admin_email = get_option('person_plugin_admin_email', '');
@@ -308,9 +311,6 @@ echo "
             }, 800); // 800ms de animação
         });
     });
-
-
-    
 </script>
 ";
 
@@ -331,3 +331,4 @@ function copiarTag(event) {
     alert("Tag copiada para a área de transferência!");
 }
 </script>';
+?>

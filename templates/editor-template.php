@@ -165,13 +165,6 @@
     }
 </style>
 
-<?php
-
-$produto_id = get_option('manual_product_id');
-$preco_dinamico = $produto_id ? get_post_meta($produto_id, '_price', true) : '';
-
-?>
-
 
 
 

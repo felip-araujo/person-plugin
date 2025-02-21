@@ -141,9 +141,6 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
         <?php echo person_plugin_display_customizer($selected_sticker); ?>
     </div>
 
-    <input type="hidden" id="produto_id" value="77">
-    <input type="hidden" id="dynamic_price" value="<?php echo esc_attr(get_option('preco_adesivo_personalizado', '21')); ?>">
-
     <!-- Sidebar de adesivos -->
     <button class="btn d-md-none hamburger-btn" onclick="toggleSidebar()">
         <i class="fas fa-bars"></i> Adesivos
