@@ -710,16 +710,33 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById("salvar-adesivo-botao").addEventListener("click", function (e) {
         e.preventDefault();
+    
+        // Verifica se o usuário aceitou os termos
+        const aceitoTermos = document.getElementById("aceito-termos").checked;
+        if (!aceitoTermos) {
+            // Exibe alerta personalizado
+            if (confirm("Você precisa aceitar os termos para continuar. Deseja aceitar agora?")) {
+                document.getElementById("aceito-termos").checked = true; // Marca o checkbox
+            } else {
+                return; // Interrompe a execução se o usuário não aceitar
+            }
+        }
+    
+        // Recupera os valores necessários
         const produtoId = document.getElementById("produto_id").value;
         const dynamicPrice = document.getElementById("dynamic_price").value;
         const adesivoData = stage.toDataURL({ mimeType: "image/png" });
+    
         console.log("Produto ID:", produtoId);
         console.log("Preço Dinâmico:", dynamicPrice);
         console.log("Adesivo Data:", adesivoData);
+    
         if (!produtoId || !dynamicPrice || !adesivoData) {
             alert("Erro: Produto, preço ou adesivo não configurado corretamente.");
             return;
         }
+    
+        // Faz a requisição para adicionar o adesivo ao carrinho
         fetch(personPlugin.ajax_url, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -740,6 +757,7 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(error => console.error("Erro no AJAX:", error));
     });
+    
 
     jQuery(document).ready(function ($) {
         setTimeout(function () {
