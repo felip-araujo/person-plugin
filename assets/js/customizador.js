@@ -170,19 +170,97 @@ document.addEventListener('DOMContentLoaded', function () {
                 var svgDoc = parser.parseFromString(svgComInline, 'image/svg+xml');
                 layer.destroyChildren();
                 stickerGroup = new Konva.Group({ draggable: false });
+
+                // Seleciona todos os elementos relevantes
                 Array.from(svgDoc.querySelectorAll('path, rect, circle, ellipse, polygon, polyline, line')).forEach((elem, index) => {
-                    var pathData = elem.getAttribute('d') || '';
                     var fillColor = getEffectiveFill(elem);
-                    if (pathData) {
-                        var path = new Konva.Path({
-                            data: pathData,
+                    var tagName = elem.tagName.toLowerCase();
+
+                    if (tagName === 'path') {
+                        var pathData = elem.getAttribute('d');
+                        if (pathData) {
+                            var path = new Konva.Path({
+                                data: pathData,
+                                fill: fillColor,
+                                draggable: false,
+                                id: `layer-${index}`,
+                            });
+                            stickerGroup.add(path);
+                        }
+                    } else if (tagName === 'circle') {
+                        var cx = parseFloat(elem.getAttribute('cx')) || 0;
+                        var cy = parseFloat(elem.getAttribute('cy')) || 0;
+                        var r = parseFloat(elem.getAttribute('r')) || 0;
+                        var circle = new Konva.Circle({
+                            x: cx,
+                            y: cy,
+                            radius: r,
                             fill: fillColor,
                             draggable: false,
                             id: `layer-${index}`,
                         });
-                        stickerGroup.add(path);
+                        stickerGroup.add(circle);
+                    } else if (tagName === 'rect') {
+                        var x = parseFloat(elem.getAttribute('x')) || 0;
+                        var y = parseFloat(elem.getAttribute('y')) || 0;
+                        var width = parseFloat(elem.getAttribute('width')) || 0;
+                        var height = parseFloat(elem.getAttribute('height')) || 0;
+                        var rect = new Konva.Rect({
+                            x: x,
+                            y: y,
+                            width: width,
+                            height: height,
+                            fill: fillColor,
+                            draggable: false,
+                            id: `layer-${index}`,
+                        });
+                        stickerGroup.add(rect);
+                    } else if (tagName === 'ellipse') {
+                        var cx = parseFloat(elem.getAttribute('cx')) || 0;
+                        var cy = parseFloat(elem.getAttribute('cy')) || 0;
+                        var rx = parseFloat(elem.getAttribute('rx')) || 0;
+                        var ry = parseFloat(elem.getAttribute('ry')) || 0;
+                        var ellipse = new Konva.Ellipse({
+                            x: cx,
+                            y: cy,
+                            radiusX: rx,
+                            radiusY: ry,
+                            fill: fillColor,
+                            draggable: false,
+                            id: `layer-${index}`,
+                        });
+                        stickerGroup.add(ellipse);
+                    } else if (tagName === 'line') {
+                        // Para linhas, você pode buscar os atributos x1, y1, x2, y2 e criar um array de pontos
+                        var x1 = parseFloat(elem.getAttribute('x1')) || 0;
+                        var y1 = parseFloat(elem.getAttribute('y1')) || 0;
+                        var x2 = parseFloat(elem.getAttribute('x2')) || 0;
+                        var y2 = parseFloat(elem.getAttribute('y2')) || 0;
+                        var line = new Konva.Line({
+                            points: [x1, y1, x2, y2],
+                            stroke: fillColor,
+                            draggable: false,
+                            id: `layer-${index}`,
+                        });
+                        stickerGroup.add(line);
+                    }
+                    // Para polygon e polyline, você pode converter os pontos para um array numérico
+                    else if (tagName === 'polygon' || tagName === 'polyline') {
+                        var pointsString = elem.getAttribute('points');
+                        if (pointsString) {
+                            var points = pointsString.trim().split(/[\s,]+/).map(parseFloat);
+                            var shape = new Konva.Line({
+                                points: points,
+                                fill: fillColor,
+                                closed: (tagName === 'polygon'),
+                                draggable: false,
+                                id: `layer-${index}`,
+                            });
+                            stickerGroup.add(shape);
+                        }
                     }
                 });
+
                 layer.add(stickerGroup);
                 ajustarTamanhoEPosicaoDoAdesivo();
                 preencherSelecaoDeCores();
@@ -191,6 +269,7 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch((error) => console.error('Erro ao carregar o adesivo:', error));
     }
+
 
     function ajustarTamanhoEPosicaoDoAdesivo() {
         if (!stickerGroup) return;
@@ -220,7 +299,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var container = document.getElementById('layer-colors-container');
         if (!container) return;
         container.innerHTML = ''; // Limpa o container
-    
+
         var groups = {};
         // Agrupa os elementos por cor (em formato hex)
         stickerGroup.getChildren().forEach(child => {
@@ -229,25 +308,25 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!groups[fillColor]) groups[fillColor] = [];
             groups[fillColor].push(child);
         });
-    
+
         // Para cada cor, cria uma bolinha
-        Object.keys(groups).forEach(function(fillColor) {
+        Object.keys(groups).forEach(function (fillColor) {
             var count = groups[fillColor].length;
             var colorDiv = document.createElement('div');
             colorDiv.style.cssText = "display:inline-block;width:30px;height:30px;border-radius:50%;background-color:" + fillColor + ";border:2px solid #fff;margin:5px;cursor:pointer;";
             colorDiv.title = 'Mudar cor ' + fillColor + ' (' + count + ' camada' + (count > 1 ? 's' : '') + ')';
-    
+
             colorDiv.addEventListener('click', function () {
                 // Define o grupo selecionado
                 selectedGroup = groups[fillColor];
-    
+
                 // Cria um input do tipo color
                 var colorInput = document.createElement('input');
                 colorInput.type = 'color';
                 colorInput.value = fillColor;
                 colorInput.style.position = 'fixed';
                 colorInput.style.zIndex = 10000;
-    
+
                 // Posiciona o input ao lado da bolinha usando jQuery offset
                 var offset = $(colorDiv).offset();
                 var width = $(colorDiv).outerWidth();
@@ -255,31 +334,31 @@ document.addEventListener('DOMContentLoaded', function () {
                     left: (offset.left + width + 10) + 'px', // 10px à direita
                     top: offset.top + 'px'
                 });
-    
+
                 // Ao mudar a cor, atualiza o grupo em tempo real
-                colorInput.addEventListener('input', function(e) {
+                colorInput.addEventListener('input', function (e) {
                     var newColor = e.target.value;
                     selectedGroup.forEach(child => {
                         child.fill(newColor);
                     });
                     layer.draw();
                 });
-    
+
                 // Remove o input quando perder o foco
-                colorInput.addEventListener('blur', function() {
+                colorInput.addEventListener('blur', function () {
                     colorInput.remove();
                     // Opcional: Atualiza as bolinhas caso a cor tenha mudado
                     preencherSelecaoDeCores();
                 });
-    
+
                 document.body.appendChild(colorInput);
                 colorInput.focus();
             });
-    
+
             container.appendChild(colorDiv);
         });
     }
-    
+
 
     // Funções de histórico (undo/redo)
     function saveHistory() {
