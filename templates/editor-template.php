@@ -201,6 +201,7 @@ $preco_dinamico = $produto_id ? get_post_meta($produto_id, '_price', true) : '';
                     <div class="tab-pane fade" id="texto-tab-content">
                         <div>
                             <label for="texto" class="form-label">Texto do Adesivo:</label>
+                            <button class=" btn btn-info" id="adicionat-texto-botao">Texto</button>
                             <input type="text" id="texto" class="form-control" placeholder="Digite o texto do adesivo">
 
                             <label for="cor-texto" class="form-label mt-2">Cor do Texto:</label>
