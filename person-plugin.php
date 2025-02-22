@@ -289,7 +289,7 @@ function adicionar_adesivo_ao_carrinho()
 
     // ID do produto no WooCommerce
     // Substitua $produto_id = 77; pelo seguinte:
-    $produto_id = get_option('manual_product_id'); // '77' é um valor padrão caso a configuração ainda não tenha sido definida
+    $produto_id = get_option('manual_product_id', '77'); // '77' é um valor padrão caso a configuração ainda não tenha sido definida
 
 
     // Garantir que o WooCommerce reconheça o dado personalizado

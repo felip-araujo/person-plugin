@@ -165,7 +165,8 @@
     }
 </style>
 
-
+<input type="hidden" id="dynamic_price" value="<?php echo esc_attr(get_option('preco_adesivo_personalizado', '21')); ?>">
+<?php echo $sticker_price ?>
 
 
 <div class="container-fluid" style="overflow-y: auto;">
