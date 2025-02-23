@@ -254,7 +254,8 @@ function salvar_imagem_personalizada($base64_image)
 add_action('wp_ajax_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
 add_action('wp_ajax_nopriv_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
 
-function salvar_adesivo_servidor() {
+function salvar_adesivo_servidor()
+{
     // Verifica se os dados necessários foram enviados
     if (!isset($_POST['adesivo_base64']) || !isset($_POST['price'])) {
         wp_send_json_error(array('message' => 'Dados incompletos.'));
@@ -404,7 +405,7 @@ function adicionar_link_adesivo_email($order, $sent_to_admin, $plain_text, $emai
 {
     $output = '';
     foreach ($order->get_items() as $item_id => $item) {
-        // Recupera a URL usando a meta padronizada
+        // Recupera a URL usando a meta key correta
         $adesivo_url = $item->get_meta('_adesivo_url');
         if ($adesivo_url) {
             if ($plain_text) {
@@ -424,6 +425,7 @@ function adicionar_link_adesivo_email($order, $sent_to_admin, $plain_text, $emai
     }
 }
 add_action('woocommerce_email_after_order_table', 'adicionar_link_adesivo_email', 10, 4);
+
 
 // Remova qualquer duplicata do hook "woocommerce_checkout_create_order_line_item" que adicione o meta "_adesivo_url" (se houver) para evitar conflitos.
 
@@ -469,26 +471,11 @@ function desativar_limpeza_produtos_personalizados()
 }
 register_deactivation_hook(__FILE__, 'desativar_limpeza_produtos_personalizados');
 
-// // Substituir a thumbnail do produto no carrinho pelo adesivo personalizado
-// add_filter('woocommerce_cart_item_thumbnail', function ($product_image, $cart_item, $cart_item_key) {
-//     if (isset($cart_item['adesivo_url'])) {
-//         return '<img src="' . esc_url($cart_item['adesivo_url']) . '" alt="Adesivo Personalizado" style="max-width: 50px; height: auto;">';
-//     }
-//     return $product_image;
-// }, 10, 3);
 
-// // Substituir a imagem do produto no e-mail do WooCommerce
-// add_filter('woocommerce_order_item_thumbnail', function ($product_image, $item) {
-//     $adesivo_url = wc_get_order_item_meta($item->get_id(), '_adesivo_url', true);
-//     if (!empty($adesivo_url)) {
-//         return '<img src="' . esc_url($adesivo_url) . '" alt="Adesivo Personalizado" style="max-width: 50px; height: auto;">';
-//     }
-//     return $product_image;
-// }, 10, 2);
-
-// // Salvar a URL da imagem no pedido WooCommerce
-// add_action('woocommerce_checkout_create_order_line_item', function ($item, $cart_item_key, $values, $order) {
-//     if (isset($values['adesivo_url'])) {
-//         $item->add_meta_data('_adesivo_url', $values['adesivo_url'], true);
-//     }
-// }, 10, 4);
+add_filter('woocommerce_order_item_thumbnail', function ($product_image, $item) {
+    $adesivo_url = $item->get_meta('_adesivo_url');
+    if (!empty($adesivo_url)) {
+        return '<img src="' . esc_url($adesivo_url) . '" alt="Adesivo Personalizado" style="max-width: 50px; height: auto;">';
+    }
+    return $product_image;
+}, 10, 2);
