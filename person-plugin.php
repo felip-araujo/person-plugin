@@ -272,48 +272,70 @@ function salvar_imagem_personalizada($base64_image)
     return $upload_url;
 }
 
-// 2️⃣ Adicionar o adesivo ao carrinho do WooCommerce corretamente
-function adicionar_adesivo_ao_carrinho()
-{
-    if (!isset($_POST['adesivo_url'])) {
-        error_log('❌ Nenhuma imagem foi enviada.');
-        wp_send_json_error(['message' => 'Nenhuma imagem foi enviada.']);
+// Função para criar um produto temporário para o adesivo e adicioná-lo ao carrinho
+function criar_produto_temporario_adesivo() {
+    // Verifica se os dados necessários foram enviados
+    if ( ! isset( $_POST['adesivo_url'] ) || ! isset( $_POST['price'] ) ) {
+        wp_send_json_error( [ 'message' => 'Dados insuficientes.' ] );
+        return;
     }
+    
+    // Recebe e sanitiza os dados
+    $adesivo_url = esc_url_raw( $_POST['adesivo_url'] );
+    $price       = floatval( $_POST['price'] );
+    error_log("📌 Preço recebido no PHP: " . $price); // 🔍 Log para depuração
 
-    // Salvar imagem e obter a URL
-    $adesivo_url = salvar_imagem_personalizada($_POST['adesivo_url']);
-    if (!$adesivo_url) {
-        error_log('❌ Erro ao salvar a imagem.');
-        wp_send_json_error(['message' => 'Erro ao salvar a imagem.']);
+    
+    // Cria um título único para o produto temporário
+    $post_title = 'Adesivo Personalizado - ' . current_time('Y-m-d H:i:s');
+    
+    // Insere o produto (post) no banco
+    $temp_product = array(
+         'post_title'  => $post_title,
+         'post_status' => 'publish',
+         'post_type'   => 'product',
+         'post_author' => get_current_user_id(),
+    );
+    $product_id = wp_insert_post( $temp_product );
+    if ( ! $product_id ) {
+         wp_send_json_error( [ 'message' => 'Erro ao criar o produto temporário.' ] );
+         return;
     }
-
-    // ID do produto no WooCommerce
-    // Substitua $produto_id = 77; pelo seguinte:
-    $produto_id = get_option('manual_product_id', '77'); // '77' é um valor padrão caso a configuração ainda não tenha sido definida
-
-
-    // Garantir que o WooCommerce reconheça o dado personalizado
-    $cart_item_data = [
-        'adesivo_url' => $adesivo_url,
-        'unique_key' => md5(microtime() . rand()) // Garante que o item não se agrupe no carrinho
-    ];
-
-    $cart_item_key = WC()->cart->add_to_cart($produto_id, 1, 0, [], $cart_item_data);
-
-    if ($cart_item_key) {
-        error_log('✅ Produto adicionado ao carrinho com imagem: ' . $adesivo_url);
-        wp_send_json_success([
-            'message' => 'Produto adicionado ao carrinho!',
-            'cart_url' => wc_get_cart_url()
-        ]);
+    
+    // Define o tipo de produto (simples)
+    wp_set_object_terms( $product_id, 'simple', 'product_type' );
+    
+    // Atualiza os metadados de preço e outras configurações importantes
+    update_post_meta( $product_id, '_regular_price', $price );
+    update_post_meta( $product_id, '_price', $price );
+    update_post_meta( $product_id, '_virtual', 'yes' );
+    
+    // Salva a URL do adesivo para uso posterior (por exemplo, para exibição no carrinho)
+    update_post_meta( $product_id, '_adesivo_url', $adesivo_url );
+    
+    // Dados adicionais para o item do carrinho
+    $cart_item_data = array(
+         'temp_product' => true, // flag para identificar que é temporário
+         'adesivo_url'  => $adesivo_url,
+         'custom_price' => $price,
+         'unique_key'   => md5( microtime() . rand() )
+    );
+    
+    // Adiciona o produto criado ao carrinho
+    $cart_item_key = WC()->cart->add_to_cart( $product_id, 1, 0, array(), $cart_item_data );
+    
+    if ( $cart_item_key ) {
+         wp_send_json_success( [
+              'message'  => 'Produto temporário criado e adicionado ao carrinho!',
+              'cart_url' => wc_get_cart_url()
+         ] );
     } else {
-        error_log('❌ Erro ao adicionar o produto ao carrinho.');
-        error_log($produto_id);
-        wp_send_json_error(['message' => 'Erro ao adicionar o produto ao carrinho.']);
+         wp_send_json_error( [ 'message' => 'Erro ao adicionar o produto ao carrinho.' ] );
     }
 }
-add_action('wp_ajax_adicionar_adesivo_ao_carrinho', 'adicionar_adesivo_ao_carrinho');
-add_action('wp_ajax_nopriv_adicionar_adesivo_ao_carrinho', 'adicionar_adesivo_ao_carrinho');
+add_action( 'wp_ajax_criar_produto_temporario_adesivo', 'criar_produto_temporario_adesivo' );
+add_action( 'wp_ajax_nopriv_criar_produto_temporario_adesivo', 'criar_produto_temporario_adesivo' );
+
 
 // 3️⃣ Recuperar a URL da imagem ao recarregar o carrinho
 function recuperar_dados_personalizados_carrinho($cart_item, $cart_item_key)

@@ -136,6 +136,10 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
     }
 </style>
 
+
+<input type="hidden" id="adesivoUrl" name="adesivoUrl" value="<?php echo esc_url($url_do_adesivo); ?>">
+
+
 <div class="container-fluid">
     <div class="editor-container" id="editor-container">
         <?php echo person_plugin_display_customizer($selected_sticker); ?>
@@ -181,6 +185,7 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
                 }
 
                 foreach ($groups as $letter => $sticker_group) : ?>
+
                     <div class="accordion-item">
                         <h2 class="accordion-header" id="heading-<?php echo $letter; ?>">
                             <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-<?php echo $letter; ?>" aria-expanded="true" aria-controls="collapse-<?php echo $letter; ?>">
@@ -191,19 +196,22 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
                             <div class="accordion-body">
                                 <div class="sticker-grid">
                                     <?php foreach ($sticker_group as $sticker) : ?>
-                                        <a href="<?php echo esc_url(add_query_arg('sticker', urlencode($sticker['url']))); ?>" class="sticker-item text-center m-2">
-                                            <img src="<?php echo esc_url($sticker['url']); ?>" class="img-fluid rounded border p-2 bg-light" alt="<?php echo esc_attr($sticker['name']); ?>">
+                                        <a href="<?php echo esc_url(add_query_arg('sticker', urlencode($sticker['url']))); ?>" class="sticker-item text-center m-2" data-price="<?php echo esc_attr($sticker['price']); ?>">
+
+                                            <img id="img-adesivo" src="<?php echo esc_url($sticker['url']); ?>" class="img-fluid rounded border p-2 bg-light" alt="<?php echo esc_attr($sticker['name']); ?>">
                                             <span class="d-block small mt-1 sticker-name"><?php echo esc_html($sticker['name']); ?></span>
                                             <?php if (!empty($sticker['price'])) : ?>
-                                                <span class="d-block small sticker-price"><?php echo wc_price($sticker['price']); ?></span>
+                                                <span class="d-block small sticker-price" id="preco-exibido"><?php echo wc_price($sticker['price']); ?></span>
                                             <?php endif; ?>
                                         </a>
                                     <?php endforeach; ?>
+
+                                    <input type="hidden" id="stickerPrice" name="stickerPrice" value="0.1">
                                 </div>
                             </div>
                         </div>
                     </div>
-                <?php endforeach;
+            <?php endforeach;
             else :
                 echo '<p class="text-center text-muted">Nenhum adesivo encontrado.</p>';
             endif;
@@ -213,6 +221,7 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
 </div>
 
 <script>
+    // Função para alternar a sidebar
     function toggleSidebar() {
         var sidebar = document.getElementById('sidebar');
         var editorContainer = document.getElementById('editor-container');
@@ -220,22 +229,54 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
         editorContainer.classList.toggle('open');
     }
 
-    document.getElementById('searchSticker').addEventListener('keyup', function () {
+    // Filtro dos stickers via input de busca
+    document.getElementById('searchSticker').addEventListener('keyup', function() {
         let filter = this.value.toLowerCase();
         let stickers = document.querySelectorAll('.sticker-item');
         let groups = document.querySelectorAll('.accordion-item');
 
-        stickers.forEach(function (sticker) {
+        stickers.forEach(function(sticker) {
             let name = sticker.querySelector('.sticker-name').textContent.toLowerCase();
             sticker.style.display = name.includes(filter) ? 'flex' : 'none';
         });
 
-        groups.forEach(function (group) {
+        groups.forEach(function(group) {
             let groupVisible = Array.from(group.querySelectorAll('.sticker-item'))
                 .some(sticker => sticker.style.display === 'flex');
             group.style.display = groupVisible ? 'block' : 'none';
         });
     });
+
+    // Ao pressionar o mouse (antes do clique completo) salva o preço no sessionStorage
+    document.querySelectorAll('.sticker-item').forEach(item => {
+        item.addEventListener('mousedown', function(e) {
+            var price = this.getAttribute('data-price');
+            console.log('Mousedown: armazenando preço no sessionStorage:', price);
+            sessionStorage.setItem('stickerPrice', price);
+        });
+    });
+
+    // Evento click para processar outras funções (como carregar o adesivo na página)
+    document.querySelectorAll('.sticker-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            // Aqui você mantém o comportamento normal do link que carrega o adesivo na página
+            console.log('Click: adesivo clicado.');
+            // Outras funções já existentes podem ser adicionadas aqui se necessário.
+        });
+    });
+
+    // Ao carregar a página, atualiza o input hidden com o preço armazenado, se houver
+    document.addEventListener('DOMContentLoaded', function() {
+        var storedPrice = sessionStorage.getItem('stickerPrice');
+        if (storedPrice) {
+            console.log('Atualizando input hidden com o preço armazenado:', storedPrice);
+            document.getElementById('stickerPrice').value = storedPrice;
+            // Se preferir, pode limpar o valor armazenado depois:
+            // sessionStorage.removeItem('stickerPrice');
+        }
+    });
 </script>
+
+
 
 <!-- ponto de rollback -->

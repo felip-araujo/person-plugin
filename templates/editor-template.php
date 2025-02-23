@@ -1,3 +1,7 @@
+
+
+
+
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -165,8 +169,17 @@
     }
 </style>
 
-<input type="hidden" id="dynamic_price" value="<?php echo esc_attr(get_option('preco_adesivo_personalizado', '21')); ?>">
-<?php echo $sticker_price ?>
+<?php 
+
+$sticker_id = isset($_GET['sticker_id']) ? intval($_GET['sticker_id']) : 0;
+
+
+?> 
+
+<!-- Campo para o preço do adesivo, obtido da opção ou variável do admin -->
+
+
+
 
 
 <div class="container-fluid" style="overflow-y: auto;">
@@ -240,7 +253,7 @@
                                 </div>
 
 
-                                
+
 
 
 

@@ -8,6 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_sticker_price'])
         $sticker_price = floatval($_POST['sticker_price']);
         update_post_meta($sticker_id, '_sticker_price', $sticker_price);
         echo '<div class="notice notice-success"><p>Preço do adesivo atualizado com sucesso!</p></div>';
+        // echo get_post_meta($sticker_id, '_sticker_price', true);
     }
 }
 
