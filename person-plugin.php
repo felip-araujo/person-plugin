@@ -445,7 +445,8 @@ function limpar_produtos_personalizados_antigos()
     }
 }
 
-function agendar_limpeza_produtos_personalizados() {
+function agendar_limpeza_produtos_personalizados()
+{
     if (!wp_next_scheduled('evento_limpar_produtos_personalizados')) {
         wp_schedule_event(time(), 'daily', 'evento_limpar_produtos_personalizados');
     }
@@ -456,10 +457,44 @@ add_action('wp', 'agendar_limpeza_produtos_personalizados');
 add_action('evento_limpar_produtos_personalizados', 'limpar_produtos_personalizados_antigos');
 
 
-function desativar_limpeza_produtos_personalizados() {
+function desativar_limpeza_produtos_personalizados()
+{
     $timestamp = wp_next_scheduled('evento_limpar_produtos_personalizados');
     if ($timestamp) {
         wp_unschedule_event($timestamp, 'evento_limpar_produtos_personalizados');
     }
 }
 register_deactivation_hook(__FILE__, 'desativar_limpeza_produtos_personalizados');
+
+
+// Adiciona o link do adesivo (imagem de alta qualidade) nos e-mails do pedido
+function adicionar_link_adesivo_email($order, $sent_to_admin, $plain_text, $email)
+{
+    // Inicialmente, verifica se existe algum item com o meta "Imagem Personalizada"
+    $existe_adesivo = false;
+    foreach ($order->get_items() as $item_id => $item) {
+        if ($item->get_meta('Imagem Personalizada')) {
+            $existe_adesivo = true;
+            break;
+        }
+    }
+
+    if (!$existe_adesivo) {
+        return;
+    }
+
+    // Exibe uma seção de cabeçalho para o adesivo personalizado
+    echo '<h2>' . __('Adesivo Personalizado', 'woocommerce') . '</h2>';
+
+    // Para cada item do pedido, exibe o link caso exista a URL do adesivo
+    foreach ($order->get_items() as $item_id => $item) {
+        $adesivo_url = $item->get_meta('Imagem Personalizada');
+        if ($adesivo_url) {
+            // Exibe o link com um texto amigável
+            echo '<p>' . __('Download do Adesivo (alta qualidade):', 'woocommerce') . ' <a href="' . esc_url($adesivo_url) . '" target="_blank">' . __('Clique aqui para baixar', 'woocommerce') . '</a></p>';
+            // Caso prefira exibir a própria imagem, descomente a linha abaixo:
+            // echo '<p><img src="' . esc_url( $adesivo_url ) . '" alt="' . __('Adesivo Personalizado', 'woocommerce') . '" style="max-width:300px;height:auto;"></p>';
+        }
+    }
+}
+add_action('woocommerce_email_after_order_table', 'adicionar_link_adesivo_email', 10, 4);
