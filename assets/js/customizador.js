@@ -711,32 +711,40 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#salvar-adesivo-botao').on('click', function (e) {
         e.preventDefault();
 
-        var adesivoUrl = $('#adesivoUrl').val();
-        var price = $('#stickerPrice').val();
-        var aceitoTermos = $('#aceito-termos').prop('checked'); // Verifica se o checkbox está marcado
+        // Garante que o stage esteja definido (o Konva Stage é criado no seu editor)
+        if (!stage) {
+            console.error('Stage não definido!');
+            alert('Erro: O editor de adesivos não está carregado corretamente.');
+            return;
+        }
 
-        console.log('Preço enviado:', price);
+        // Captura a imagem do stage renderizado (alta qualidade com pixelRatio 3)
+        var adesivoBase64 = stage.toDataURL({ pixelRatio: 3 });
+        console.log('Imagem capturada:', adesivoBase64);
+
+        var price = $('#stickerPrice').val();
+        var aceitoTermos = $('#aceito-termos').prop('checked');
 
         if (!price || isNaN(price) || price <= 0) {
             alert('Erro: Preço inválido!');
             return;
         }
 
-        // Verifica se o usuário aceitou os termos
         if (!aceitoTermos) {
             if (confirm('Você precisa aceitar os termos para continuar. Deseja aceitar agora?')) {
-                $('#aceito-termos').prop('checked', true); // Marca o checkbox automaticamente
+                $('#aceito-termos').prop('checked', true);
             } else {
-                return; // Se o usuário não aceitar, interrompe a execução
+                return;
             }
         }
 
         $.ajax({
             url: personPlugin.ajax_url,
             method: 'POST',
+            dataType: 'json',
             data: {
-                action: 'criar_produto_temporario_adesivo',
-                adesivo_url: adesivoUrl,
+                action: 'salvar_adesivo_servidor',
+                adesivo_base64: adesivoBase64,
                 price: price
             },
             success: function (response) {
@@ -747,11 +755,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     alert(response.data.message);
                 }
             },
-            error: function () {
+            error: function (jqXHR, textStatus, errorThrown) {
+                console.error('Erro AJAX:', textStatus, errorThrown, jqXHR.responseText);
                 alert('Erro na requisição.');
             }
         });
     });
+
+
 
 
     jQuery(document).ready(function ($) {
