@@ -1,7 +1,3 @@
-
-
-
-
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -169,12 +165,12 @@
     }
 </style>
 
-<?php 
+<?php
 
 $sticker_id = isset($_GET['sticker_id']) ? intval($_GET['sticker_id']) : 0;
 
 
-?> 
+?>
 
 <!-- Campo para o preço do adesivo, obtido da opção ou variável do admin -->
 
@@ -210,6 +206,8 @@ $sticker_id = isset($_GET['sticker_id']) ? intval($_GET['sticker_id']) : 0;
                             <label for="texto" class="form-label">Texto do Adesivo:</label>
                             <input type="text" id="texto" class="form-control" placeholder="Digite o texto do adesivo">
 
+                            <button id="adicionar-texto-botao" class="btn btn-primary w-100 mt-2">Adicionar Texto</button>
+
                             <label for="cor-texto" class="form-label mt-2">Cor do Texto:</label>
                             <input type="color" id="cor-texto" class="form-control" value="#000000">
 
@@ -238,7 +236,7 @@ $sticker_id = isset($_GET['sticker_id']) ? intval($_GET['sticker_id']) : 0;
                             <input type="range" id="rotacao-texto" class="form-range" min="-180" max="180" step="0.1" value="0">
                             <input type="number" id="rotacao-texto-valor" class="form-control mt-1" min="-180" max="180" step="0.4" value="0">
 
-                            <button id="adicionar-texto-botao" class="btn btn-primary w-100 mt-2">Adicionar Texto</button>
+
                         </div>
                     </div>
 
