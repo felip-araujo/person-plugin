@@ -139,6 +139,8 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
 
 <input type="hidden" id="adesivoUrl" name="adesivoUrl" value="<?php echo esc_url($url_do_adesivo); ?>">
 
+<!-- Botão para iniciar o tour interativo -->
+
 
 <div class="container-fluid">
     <div class="editor-container" id="editor-container">
@@ -152,9 +154,11 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
 
     <div class="p-4 bg-white ml-4 border-right shadow-sm overflow-auto side-bar d-md-block hidden" id="sidebar">
         <p class="alert alert-info text-center">Selecione um Adesivo</p>
-        <input type="text" id="searchSticker" class="form-control mb-3" placeholder="Buscar adesivo...">
+        <button id="iniciar-tour" class="btn btn-info">Como editar?</button>
+        <p></p>
+        <input data-intro="Você também pode encontrar um adesivo digitando o nome na busca." data-step="2" type="text" id="searchSticker" class="form-control mb-3" placeholder="Buscar adesivo...">
 
-        <div id="stickerAccordion" class="accordion">
+        <div data-intro="Aqui você pode selecionar os adesivos disponíveis para customização." data-step="1" id="stickerAccordion" class="accordion">
             <?php
             // Agrupando adesivos por letra inicial do nome
             $args = array(
@@ -273,6 +277,57 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
             document.getElementById('stickerPrice').value = storedPrice;
             // Se preferir, pode limpar o valor armazenado depois:
             // sessionStorage.removeItem('stickerPrice');
+        }
+    });
+
+
+    document.addEventListener("DOMContentLoaded", function() {
+        document.getElementById("iniciar-tour").addEventListener("click", function() {
+            introJs().start();
+        });
+    });
+
+
+
+
+
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const startTourBtn = document.getElementById("startTour");
+
+        if (startTourBtn) {
+            startTourBtn.addEventListener("click", function() {
+                sessionStorage.setItem("tourStep", "1"); // Começa o tour do passo 1
+                iniciarTour();
+            });
+        }
+
+        function iniciarTour() {
+            const tour = new Shepherd.Tour({
+                useModalOverlay: true,
+                defaultStepOptions: {
+                    classes: 'shadow-md bg-purple-dark',
+                    scrollTo: true
+                }
+            });
+
+            tour.addStep({
+                title: "Passo 1",
+                text: "Selecione um adesivo nesta área.",
+                attachTo: {
+                    element: ".side-bar",
+                    on: "right"
+                },
+                buttons: [{
+                    text: "Próximo",
+                    action: function() {
+                        sessionStorage.setItem("tourStep", "2"); // Define o próximo passo
+                        window.location.href = "editor-template.php"; // Redireciona para a outra página
+                    }
+                }]
+            });
+
+            tour.start();
         }
     });
 </script>
