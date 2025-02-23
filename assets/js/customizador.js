@@ -713,12 +713,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
         var adesivoUrl = $('#adesivoUrl').val();
         var price = $('#stickerPrice').val();
+        var aceitoTermos = $('#aceito-termos').prop('checked'); // Verifica se o checkbox está marcado
 
         console.log('Preço enviado:', price);
 
         if (!price || isNaN(price) || price <= 0) {
             alert('Erro: Preço inválido!');
             return;
+        }
+
+        // Verifica se o usuário aceitou os termos
+        if (!aceitoTermos) {
+            if (confirm('Você precisa aceitar os termos para continuar. Deseja aceitar agora?')) {
+                $('#aceito-termos').prop('checked', true); // Marca o checkbox automaticamente
+            } else {
+                return; // Se o usuário não aceitar, interrompe a execução
+            }
         }
 
         $.ajax({

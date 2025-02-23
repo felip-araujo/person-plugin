@@ -41,7 +41,7 @@ function carregar_bootstrap_no_admin($hook_suffix)
 }
 add_action('admin_enqueue_scripts', 'carregar_bootstrap_no_admin');
 
-function person_plugin_enqueue_frontend_scripts() 
+function person_plugin_enqueue_frontend_scripts()
 {
     if (is_page('custom-sticker')) {
         wp_enqueue_style('bootstrap-css', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css');
@@ -273,68 +273,69 @@ function salvar_imagem_personalizada($base64_image)
 }
 
 // Função para criar um produto temporário para o adesivo e adicioná-lo ao carrinho
-function criar_produto_temporario_adesivo() {
+function criar_produto_temporario_adesivo()
+{
     // Verifica se os dados necessários foram enviados
-    if ( ! isset( $_POST['adesivo_url'] ) || ! isset( $_POST['price'] ) ) {
-        wp_send_json_error( [ 'message' => 'Dados insuficientes.' ] );
+    if (!isset($_POST['adesivo_url']) || !isset($_POST['price'])) {
+        wp_send_json_error(['message' => 'Dados insuficientes.']);
         return;
     }
-    
+
     // Recebe e sanitiza os dados
-    $adesivo_url = esc_url_raw( $_POST['adesivo_url'] );
-    $price       = floatval( $_POST['price'] );
+    $adesivo_url = esc_url_raw($_POST['adesivo_url']);
+    $price       = floatval($_POST['price']);
     error_log("📌 Preço recebido no PHP: " . $price); // 🔍 Log para depuração
 
-    
+
     // Cria um título único para o produto temporário
     $post_title = 'Adesivo Personalizado - ' . current_time('Y-m-d H:i:s');
-    
+
     // Insere o produto (post) no banco
     $temp_product = array(
-         'post_title'  => $post_title,
-         'post_status' => 'publish',
-         'post_type'   => 'product',
-         'post_author' => get_current_user_id(),
+        'post_title'  => $post_title,
+        'post_status' => 'publish',
+        'post_type'   => 'product',
+        'post_author' => get_current_user_id(),
     );
-    $product_id = wp_insert_post( $temp_product );
-    if ( ! $product_id ) {
-         wp_send_json_error( [ 'message' => 'Erro ao criar o produto temporário.' ] );
-         return;
+    $product_id = wp_insert_post($temp_product);
+    if (!$product_id) {
+        wp_send_json_error(['message' => 'Erro ao criar o produto temporário.']);
+        return;
     }
-    
+
     // Define o tipo de produto (simples)
-    wp_set_object_terms( $product_id, 'simple', 'product_type' );
-    
+    wp_set_object_terms($product_id, 'simple', 'product_type');
+
     // Atualiza os metadados de preço e outras configurações importantes
-    update_post_meta( $product_id, '_regular_price', $price );
-    update_post_meta( $product_id, '_price', $price );
-    update_post_meta( $product_id, '_virtual', 'yes' );
-    
+    update_post_meta($product_id, '_regular_price', $price);
+    update_post_meta($product_id, '_price', $price);
+    update_post_meta($product_id, '_virtual', 'yes');
+
     // Salva a URL do adesivo para uso posterior (por exemplo, para exibição no carrinho)
-    update_post_meta( $product_id, '_adesivo_url', $adesivo_url );
-    
+    update_post_meta($product_id, '_adesivo_url', $adesivo_url);
+
     // Dados adicionais para o item do carrinho
     $cart_item_data = array(
-         'temp_product' => true, // flag para identificar que é temporário
-         'adesivo_url'  => $adesivo_url,
-         'custom_price' => $price,
-         'unique_key'   => md5( microtime() . rand() )
+        'temp_product' => true, // flag para identificar que é temporário
+        'adesivo_url'  => $adesivo_url,
+        'custom_price' => $price,
+        'unique_key'   => md5(microtime() . rand())
     );
-    
+
     // Adiciona o produto criado ao carrinho
-    $cart_item_key = WC()->cart->add_to_cart( $product_id, 1, 0, array(), $cart_item_data );
-    
-    if ( $cart_item_key ) {
-         wp_send_json_success( [
-              'message'  => 'Produto temporário criado e adicionado ao carrinho!',
-              'cart_url' => wc_get_cart_url()
-         ] );
+    $cart_item_key = WC()->cart->add_to_cart($product_id, 1, 0, array(), $cart_item_data);
+
+    if ($cart_item_key) {
+        wp_send_json_success([
+            'message'  => 'Produto temporário criado e adicionado ao carrinho!',
+            'cart_url' => wc_get_cart_url()
+        ]);
     } else {
-         wp_send_json_error( [ 'message' => 'Erro ao adicionar o produto ao carrinho.' ] );
+        wp_send_json_error(['message' => 'Erro ao adicionar o produto ao carrinho.']);
     }
 }
-add_action( 'wp_ajax_criar_produto_temporario_adesivo', 'criar_produto_temporario_adesivo' );
-add_action( 'wp_ajax_nopriv_criar_produto_temporario_adesivo', 'criar_produto_temporario_adesivo' );
+add_action('wp_ajax_criar_produto_temporario_adesivo', 'criar_produto_temporario_adesivo');
+add_action('wp_ajax_nopriv_criar_produto_temporario_adesivo', 'criar_produto_temporario_adesivo');
 
 
 // 3️⃣ Recuperar a URL da imagem ao recarregar o carrinho
@@ -418,3 +419,47 @@ function mp_carregar_template_personalizado($template)
     }
     return $template;
 }
+
+function limpar_produtos_personalizados_antigos()
+{
+    global $wpdb;
+
+    // Define o tempo limite (24 horas atrás)
+    $tempo_limite = strtotime('-24 hours');
+
+    // Busca produtos personalizados criados antes desse tempo
+    $query = $wpdb->prepare("
+        SELECT ID FROM {$wpdb->posts} 
+        WHERE post_type = 'product' 
+        AND post_title LIKE 'Adesivo Personalizado - %%'
+        AND post_date < %s
+    ", date('Y-m-d H:i:s', $tempo_limite));
+
+    $produtos_para_excluir = $wpdb->get_col($query);
+
+    if (!empty($produtos_para_excluir)) {
+        foreach ($produtos_para_excluir as $product_id) {
+            // Deleta o produto permanentemente
+            wp_delete_post($product_id, true);
+        }
+    }
+}
+
+function agendar_limpeza_produtos_personalizados() {
+    if (!wp_next_scheduled('evento_limpar_produtos_personalizados')) {
+        wp_schedule_event(time(), 'daily', 'evento_limpar_produtos_personalizados');
+    }
+}
+add_action('wp', 'agendar_limpeza_produtos_personalizados');
+
+// Dispara a função quando o evento do cron job rodar
+add_action('evento_limpar_produtos_personalizados', 'limpar_produtos_personalizados_antigos');
+
+
+function desativar_limpeza_produtos_personalizados() {
+    $timestamp = wp_next_scheduled('evento_limpar_produtos_personalizados');
+    if ($timestamp) {
+        wp_unschedule_event($timestamp, 'evento_limpar_produtos_personalizados');
+    }
+}
+register_deactivation_hook(__FILE__, 'desativar_limpeza_produtos_personalizados');
