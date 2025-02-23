@@ -251,6 +251,7 @@ function salvar_imagem_personalizada($base64_image)
 
 // AJAX handler para salvar a imagem, criar o produto temporário e adicioná-lo ao carrinho
 // AJAX handler para salvar a imagem, criar o produto temporário e adicioná-lo ao carrinho
+// AJAX handler para salvar a imagem, criar o produto temporário e adicioná-lo ao carrinho
 add_action('wp_ajax_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
 add_action('wp_ajax_nopriv_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
 
@@ -313,6 +314,9 @@ function salvar_adesivo_servidor()
     update_post_meta($product_id, '_price', $price);
     update_post_meta($product_id, '_virtual', 'yes');
 
+    // Ocultar o produto do catálogo
+    wp_set_object_terms($product_id, 'exclude-from-catalog', 'product_visibility');
+
     // Salva a URL do adesivo (imagem) para uso posterior – usando a meta key padronizada "_adesivo_url"
     update_post_meta($product_id, '_adesivo_url', $image_url);
 
@@ -342,7 +346,7 @@ function salvar_adesivo_servidor()
     wp_die();
 }
 
-
+wp_set_object_terms($product_id, 'exclude-from-catalog', 'product_visibility');
 // -----------------------------
 // 5. Exibição do Adesivo no Carrinho, Checkout e E-mails
 // -----------------------------
@@ -391,14 +395,23 @@ function substituir_imagem_no_carrinho($product_image, $cart_item, $cart_item_ke
 add_filter('woocommerce_cart_item_thumbnail', 'substituir_imagem_no_carrinho', 10, 3);
 
 // Salvar a URL do adesivo no pedido utilizando a chave "_adesivo_url"
+
 function salvar_imagem_personalizada_no_pedido($item, $cart_item_key, $values, $order)
 {
+    $adesivo_url = '';
     if (isset($values['adesivo_url']) && !empty($values['adesivo_url'])) {
-        // Salva com a meta key padronizada "_adesivo_url"
-        $item->add_meta_data('_adesivo_url', esc_url($values['adesivo_url']), true);
+        $adesivo_url = $values['adesivo_url'];
+    } else {
+        // Tenta recuperar a URL do adesivo a partir do meta do produto
+        $product_id = $values['data']->get_id();
+        $adesivo_url = get_post_meta($product_id, '_adesivo_url', true);
+    }
+    if (!empty($adesivo_url)) {
+        $item->add_meta_data('_adesivo_url', esc_url($adesivo_url), true);
     }
 }
 add_action('woocommerce_checkout_create_order_line_item', 'salvar_imagem_personalizada_no_pedido', 10, 4);
+
 
 // Adicionar o link do adesivo nos e-mails do pedido (usando a meta "_adesivo_url")
 function adicionar_link_adesivo_email($order, $sent_to_admin, $plain_text, $email)
