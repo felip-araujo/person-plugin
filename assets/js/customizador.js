@@ -21,7 +21,7 @@ var selectedGroup = null;
 // Criação do seletor de cor inline para edição direta
 var inlineColorPicker = document.createElement('input');
 inlineColorPicker.type = 'text';
-inlineColorPicker.style.position = 'fixed'; // Usamos fixed para posicionamento relativo à viewport
+inlineColorPicker.style.position = 'fixed';
 inlineColorPicker.style.display = 'none';
 document.body.appendChild(inlineColorPicker);
 
@@ -42,11 +42,9 @@ function rgbToHex(rgb) {
 
 document.addEventListener('DOMContentLoaded', function () {
     var canvasElement = document.getElementById('adesivo-canvas');
-    if (!canvasElement) {
-        return;
-    }
+    if (!canvasElement) return;
 
-    // Inicializa o stage e layer do Konva
+    // Inicializa o stage e a layer do Konva
     stage = new Konva.Stage({
         container: 'adesivo-canvas',
         width: canvasElement.offsetWidth,
@@ -58,12 +56,12 @@ document.addEventListener('DOMContentLoaded', function () {
     stickerGroup = null;
     var scaleBy = 1.05;
 
+    // Se houver URL do adesivo, carrega-o
     if (typeof pluginData !== 'undefined' && pluginData.stickerUrl) {
         carregarAdesivo(pluginData.stickerUrl);
     }
 
     // Função para converter estilos inline no SVG
-
     function converterEstilosInline(svgText) {
         const parser = new DOMParser();
         const doc = parser.parseFromString(svgText, 'image/svg+xml');
@@ -109,10 +107,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return result;
     }
 
-    const svgInline = converterEstilosInline(svgText);
-    console.log("SVG convertido:", svgInline);
-
-
     // Função para extrair gradientes do SVG e armazená-los
     function extrairGradientes(svgDoc) {
         const gradients = {};
@@ -123,7 +117,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const y1 = parseFloat(grad.getAttribute("y1")) || 0;
             const x2 = parseFloat(grad.getAttribute("x2")) || 1;
             const y2 = parseFloat(grad.getAttribute("y2")) || 1;
-
             const stops = [];
             grad.querySelectorAll("stop").forEach(stop => {
                 const offset = parseFloat(stop.getAttribute("offset")) || 0;
@@ -132,20 +125,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     stops.push(offset, color);
                 }
             });
-
             console.log(`Gradiente extraído: ${id}`, { x1, y1, x2, y2, stops });
-
             gradients[id] = { x1, y1, x2, y2, stops, gradientUnits };
         });
-
         return gradients;
     }
-
-
-
-    const gradientsMap = extrairGradientes(svgDoc);
-    console.log("Gradientes extraídos:", gradientsMap);
-
 
     // Retorna o fill efetivo (sólido ou referência a gradiente)
     function getEffectiveFill(elem, gradientsMap) {
@@ -163,10 +147,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.log("Gradiente não encontrado no mapa!");
             }
         }
-
         return fill;
     }
-
 
     // Função para carregar o adesivo (SVG) e converter gradientes para propriedades do Konva
     function carregarAdesivo(stickerUrl) {
@@ -184,33 +166,30 @@ document.addEventListener('DOMContentLoaded', function () {
                 layer.destroyChildren();
                 stickerGroup = new Konva.Group({ draggable: false });
 
+                // Suporte para os elementos: path, rect, circle, ellipse, polygon, polyline, line
                 Array.from(svgDoc.querySelectorAll('path, rect, circle, ellipse, polygon, polyline, line')).forEach((elem, index) => {
                     const fillValue = getEffectiveFill(elem, gradientsMap);
                     const tagName = elem.tagName.toLowerCase();
 
+                    // Cria os elementos Konva conforme o tipo
                     if (tagName === 'circle') {
-                        // Pegando atributos do círculo
                         const cx = parseFloat(elem.getAttribute('cx'));
                         const cy = parseFloat(elem.getAttribute('cy'));
                         const r = parseFloat(elem.getAttribute('r'));
-
                         let circle = new Konva.Circle({
                             x: cx,
                             y: cy,
                             radius: r,
-                            fill: null, // Define como null para garantir que o gradiente seja aplicado corretamente
+                            fill: null, // preencher depois com gradiente ou cor
                             draggable: false,
                             id: `layer-${index}`,
                         });
-
                         stickerGroup.add(circle);
 
                         if (fillValue && fillValue.isGradient) {
-                            console.log("Aplicando gradiente no círculo", { fillValue });
-
+                            // Calcula a bounding box do círculo
                             const bbox = { x: cx - r, y: cy - r, width: 2 * r, height: 2 * r };
                             let startPoint, endPoint;
-
                             if (fillValue.gradientUnits === 'objectBoundingBox') {
                                 startPoint = {
                                     x: bbox.x + fillValue.x1 * bbox.width,
@@ -224,42 +203,75 @@ document.addEventListener('DOMContentLoaded', function () {
                                 startPoint = { x: fillValue.x1, y: fillValue.y1 };
                                 endPoint = { x: fillValue.x2, y: fillValue.y2 };
                             }
-
-                            // Normaliza os pontos para ficarem dentro do círculo
+                            // Normaliza os pontos para ficarem relativos ao centro do círculo
                             startPoint.x -= cx;
                             startPoint.y -= cy;
                             endPoint.x -= cx;
                             endPoint.y -= cy;
-
-                            console.log("Circle - StartPoint:", startPoint, "EndPoint:", endPoint, "Stops:", fillValue.stops);
-
                             circle.fillLinearGradientStartPoint(startPoint);
                             circle.fillLinearGradientEndPoint(endPoint);
                             circle.fillLinearGradientColorStops(fillValue.stops);
-
-                            console.log("Gradiente aplicado com sucesso!");
                         } else {
                             circle.fill(fillValue);
-                            console.log("Nenhum gradiente encontrado para este círculo.");
                         }
+                    } else if (tagName === 'rect') {
+                        const x = parseFloat(elem.getAttribute('x')) || 0;
+                        const y = parseFloat(elem.getAttribute('y')) || 0;
+                        const width = parseFloat(elem.getAttribute('width')) || 0;
+                        const height = parseFloat(elem.getAttribute('height')) || 0;
+                        let rect = new Konva.Rect({
+                            x: x,
+                            y: y,
+                            width: width,
+                            height: height,
+                            fill: null,
+                            draggable: false,
+                            id: `layer-${index}`,
+                        });
+                        stickerGroup.add(rect);
+                        if (fillValue && fillValue.isGradient) {
+                            const bbox = { x: x, y: y, width: width, height: height };
+                            let startPoint, endPoint;
+                            if (fillValue.gradientUnits === 'objectBoundingBox') {
+                                startPoint = {
+                                    x: bbox.x + fillValue.x1 * bbox.width,
+                                    y: bbox.y + fillValue.y1 * bbox.height,
+                                };
+                                endPoint = {
+                                    x: bbox.x + fillValue.x2 * bbox.width,
+                                    y: bbox.y + fillValue.y2 * bbox.height,
+                                };
+                            } else {
+                                startPoint = { x: fillValue.x1, y: fillValue.y1 };
+                                endPoint = { x: fillValue.x2, y: fillValue.y2 };
+                            }
+                            // Ajusta os pontos relativos ao retângulo
+                            rect.fillLinearGradientStartPoint({ x: startPoint.x - x, y: startPoint.y - y });
+                            rect.fillLinearGradientEndPoint({ x: endPoint.x - x, y: endPoint.y - y });
+                            rect.fillLinearGradientColorStops(fillValue.stops);
+                        } else {
+                            rect.fill(fillValue);
+                        }
+                    } else {
+                        // Para outros elementos, utiliza um fallback com Konva.Path (gradiente não é aplicado)
+                        let pathData = elem.getAttribute('d');
+                        let path = new Konva.Path({
+                            data: pathData,
+                            draggable: false,
+                            id: `layer-${index}`,
+                            fill: fillValue && !fillValue.isGradient ? fillValue : null,
+                        });
+                        stickerGroup.add(path);
                     }
                 });
 
-                // Adicionando ao layer
                 layer.add(stickerGroup);
                 ajustarTamanhoEPosicaoDoAdesivo();
                 preencherSelecaoDeCores();
                 layer.draw();
-
-
             })
             .catch(error => console.error('Erro ao carregar o adesivo:', error));
     }
-
-    console.log('fill value é:'.fillValue)
-    console.log('start é:'.startPoint)
-    console.log('end é:'.endPoint)
-    console.log(gradientsMap)
 
     function ajustarTamanhoEPosicaoDoAdesivo() {
         if (!stickerGroup) return;
@@ -298,7 +310,10 @@ document.addEventListener('DOMContentLoaded', function () {
         Object.keys(groups).forEach(function (fillColor) {
             var count = groups[fillColor].length;
             var colorDiv = document.createElement('div');
-            colorDiv.style.cssText = "display:inline-block;width:30px;height:30px;border-radius:50%;background-color:" + fillColor + ";border:2px solid #fff;margin:5px;cursor:pointer;";
+            colorDiv.style.cssText =
+                "display:inline-block;width:30px;height:30px;border-radius:50%;background-color:" +
+                fillColor +
+                ";border:2px solid #fff;margin:5px;cursor:pointer;";
             colorDiv.title = 'Mudar cor ' + fillColor + ' (' + count + ' camada' + (count > 1 ? 's' : '') + ')';
             colorDiv.addEventListener('click', function () {
                 selectedGroup = groups[fillColor];
@@ -334,8 +349,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // ---------------------------
     // Nova implementação para edição de degradê utilizando Fabric.js
     // ---------------------------
-
-    // Ao invés de usar prompt, ao chamar editarGradiente abriremos uma modal com uma pré-visualização fabric
     function editarGradiente(obj) {
         if (!obj.gradientData) {
             obj.gradientData = {
@@ -347,7 +360,6 @@ document.addEventListener('DOMContentLoaded', function () {
         openGradientEditor(obj);
     }
 
-    // Cria/abre o editor de degradê usando Fabric.js
     function openGradientEditor(targetObj) {
         var modal = document.getElementById('gradient-editor-modal');
         if (!modal) {
@@ -517,7 +529,6 @@ document.addEventListener('DOMContentLoaded', function () {
             ]
         }));
         fabricCanvas.renderAll();
-
         modal.style.display = 'block';
     }
     // ---------------------------
@@ -525,7 +536,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // ---------------------------
 
     // Funções de texto
-
     function atualizarTextoNoCanvas() {
         var textContent = document.getElementById('texto').value;
         if (!textContent.trim()) {
@@ -536,7 +546,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             return;
         }
-
         var fontSize = parseInt(document.getElementById('tamanho-fonte').value) || 16;
         var fontFamily = document.getElementById('fontPicker').value || 'Arial';
         var fillColor = document.getElementById('cor-texto').value || '#000';
