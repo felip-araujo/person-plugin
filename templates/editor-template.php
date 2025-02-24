@@ -10,6 +10,9 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intro.js/4.2.2/introjs.min.css" integrity="sha512-... (hash)" crossorigin="anonymous" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/intro.js/4.2.2/intro.min.js" integrity="sha512-... (hash)" crossorigin="anonymous"></script>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/konva@8.3.5/konva.min.js"></script>
+
 <style>
     /* Ajustes para tornar o layout responsivo */
 
@@ -190,10 +193,10 @@ $sticker_id = isset($_GET['sticker_id']) ? intval($_GET['sticker_id']) : 0;
                     <div class="tab-pane fade" id="texto-tab-content">
                         <div>
                             <label for="texto" class="form-label">Texto do Adesivo:</label>
-                            <input data-intro="Digite o texto do adesivo." data-step="9" type="text" id="texto" class="form-control" placeholder="Digite o texto do adesivo" >
-                            <label data-intro="Altere a cor do adesivo." data-step="10"  for="cor-texto" class="form-label mt-2">Cor do Texto:</label>
+                            <input data-intro="Digite o texto do adesivo." data-step="9" type="text" id="texto" class="form-control" placeholder="Digite o texto do adesivo">
+                            <label data-intro="Altere a cor do adesivo." data-step="10" for="cor-texto" class="form-label mt-2">Cor do Texto:</label>
                             <input type="color" id="cor-texto" class="form-control" value="#000000">
-                            <label data-intro="Ajuste o tamanho da fonte." data-step="11"  for="tamanho-fonte" class="form-label mt-2">Tamanho da Fonte:</label>
+                            <label data-intro="Ajuste o tamanho da fonte." data-step="11" for="tamanho-fonte" class="form-label mt-2">Tamanho da Fonte:</label>
                             <input type="number" id="tamanho-fonte" class="form-range form-control" min="10" max="100" value="25">
                             <label data-intro="Selecione a fonte desejada." data-step="12" for="fontPicker" class="form-label mt-2">Fonte:</label>
                             <select id="fontPicker" class="form-control">
@@ -249,7 +252,7 @@ $sticker_id = isset($_GET['sticker_id']) ? intval($_GET['sticker_id']) : 0;
             <div class="col-md-9 d-flex align-items-center justify-content-center">
                 <div data-intro="Agora que você selecionou seu adesivo, é aqui que você pode personalizá-lo do jeito que quiser!" data-step="3" id="adesivo-canvas" style="width: 100%; height: 100%;" class="bg-white"></div>
             </div>
-            <div class="d-flex justify-content-center gap-1 mb-4 mt-3" data-intro="Aqui você pode realizar ações como voltar ou avançar edição, zomm e finalizar a compra " data-step="7" >
+            <div class="d-flex justify-content-center gap-1 mb-4 mt-3" data-intro="Aqui você pode realizar ações como voltar ou avançar edição, zomm e finalizar a compra " data-step="7">
                 <button id="undo-button" class="btn btn-secondary"><i class="fa-solid fa-rotate-left"></i></button>
                 <button id="redo-button" class="btn btn-secondary"><i class="fa-solid fa-rotate-right"></i></button>
                 <button id="zoom-in" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass-plus"></i></button>

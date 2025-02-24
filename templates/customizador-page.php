@@ -136,7 +136,7 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
     }
 </style>
 
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
 <input type="hidden" id="adesivoUrl" name="adesivoUrl" value="<?php echo esc_url($url_do_adesivo); ?>">
 
 <!-- Botão para iniciar o tour interativo -->
