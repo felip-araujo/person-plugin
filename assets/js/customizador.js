@@ -28,7 +28,6 @@ document.body.appendChild(inlineColorPicker);
 // Declaração global para que os callbacks tenham acesso
 var stage, layer, stickerGroup = null;
 
-// Função auxiliar para converter cor RGB para Hex
 function rgbToHex(rgb) {
     if (rgb.startsWith('#')) return rgb;
     var result = /^rgba?\((\d+),\s*(\d+),\s*(\d+)/i.exec(rgb);
@@ -40,41 +39,6 @@ function rgbToHex(rgb) {
     }
     return '#000000';
 }
-
-// Inicialização do Spectrum no inlineColorPicker
-// $(inlineColorPicker).spectrum({
-//     showInput: true,
-//     showInitial: true,
-//     preferredFormat: "hex",
-//     showPalette: true,
-//     palette: [],
-//     // Não vamos usar o preview interno (você pode ocultá-lo com CSS se necessário)
-//     move: function (color) {
-//         // Atualiza a cor em tempo real no grupo selecionado
-//         if (Array.isArray(selectedGroup) && stickerGroup && layer) {
-//             selectedGroup.forEach(child => {
-//                 child.fill(color.toHexString());
-//             });
-//             layer.draw();
-//         }
-//     },
-//     change: function (color) {
-//         // Aplica a cor final no grupo selecionado
-//         if (Array.isArray(selectedGroup) && stickerGroup && layer) {
-//             selectedGroup.forEach(child => {
-//                 child.fill(color.toHexString());
-//             });
-//             layer.draw();
-//             saveHistory();
-//             selectedGroup = null;
-//             $(inlineColorPicker).spectrum("hide");
-//             preencherSelecaoDeCores(); // Atualiza as bolinhas, se necessário
-//         }
-//     },
-//     hide: function () {
-//         selectedGroup = null;
-//     }
-// });
 
 document.addEventListener('DOMContentLoaded', function () {
     var canvasElement = document.getElementById('adesivo-canvas');
@@ -99,14 +63,19 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Função para converter estilos inline no SVG
+
     function converterEstilosInline(svgText) {
         const parser = new DOMParser();
         const doc = parser.parseFromString(svgText, 'image/svg+xml');
         const styleElements = doc.querySelectorAll('style');
         let cssText = '';
         styleElements.forEach(styleEl => {
-            cssText += styleEl.textContent;
+            let text = styleEl.textContent;
+            // Remove delimitadores CDATA, se houver
+            text = text.replace(/<!\[CDATA\[/g, "").replace(/\]\]>/g, "");
+            cssText += text;
         });
+        cssText = cssText.trim();
         const regras = {};
         cssText.replace(/\.([^ \n{]+)\s*\{([^}]+)\}/g, (match, className, declarations) => {
             const props = {};
@@ -123,6 +92,8 @@ document.addEventListener('DOMContentLoaded', function () {
             regras[className] = props;
             return '';
         });
+        console.log("Regras CSS extraídas:", regras);
+
         const elemsComClasse = doc.querySelectorAll('[class]');
         elemsComClasse.forEach(elem => {
             const classes = elem.getAttribute('class').split(/\s+/);
@@ -133,143 +104,162 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
         styleElements.forEach(el => el.parentNode.removeChild(el));
-        return new XMLSerializer().serializeToString(doc);
+        const result = new XMLSerializer().serializeToString(doc);
+        console.log("SVG após converter estilos:", result);
+        return result;
     }
 
-    function getEffectiveFill(elem) {
-        let fill = elem.getAttribute('fill');
-        if (fill && fill.trim() !== '' && fill.toLowerCase() !== 'none') {
-            return fill;
-        }
-        const styleAttr = elem.getAttribute('style');
-        if (styleAttr) {
-            const match = styleAttr.match(/fill\s*:\s*([^;]+)/i);
-            if (match && match[1] && match[1].trim() !== '' && match[1].trim().toLowerCase() !== 'none') {
-                return match[1].trim();
-            }
-        }
-        if (document.body.contains(elem)) {
-            const computed = window.getComputedStyle(elem);
-            if (computed && computed.fill && computed.fill !== 'none') {
-                return computed.fill;
-            }
-        }
-        return '#000000';
+    const svgInline = converterEstilosInline(svgText);
+    console.log("SVG convertido:", svgInline);
+
+
+    // Função para extrair gradientes do SVG e armazená-los
+    function extrairGradientes(svgDoc) {
+        const gradients = {};
+        svgDoc.querySelectorAll("linearGradient").forEach(grad => {
+            const id = grad.getAttribute("id");
+            const gradientUnits = grad.getAttribute("gradientUnits") || "objectBoundingBox";
+            const x1 = parseFloat(grad.getAttribute("x1")) || 0;
+            const y1 = parseFloat(grad.getAttribute("y1")) || 0;
+            const x2 = parseFloat(grad.getAttribute("x2")) || 1;
+            const y2 = parseFloat(grad.getAttribute("y2")) || 1;
+
+            const stops = [];
+            grad.querySelectorAll("stop").forEach(stop => {
+                const offset = parseFloat(stop.getAttribute("offset")) || 0;
+                const color = stop.style.getPropertyValue("stop-color") || stop.getAttribute("stop-color");
+                if (color) {
+                    stops.push(offset, color);
+                }
+            });
+
+            console.log(`Gradiente extraído: ${id}`, { x1, y1, x2, y2, stops });
+
+            gradients[id] = { x1, y1, x2, y2, stops, gradientUnits };
+        });
+
+        return gradients;
     }
 
-    // Função para carregar o adesivo (SVG)
+
+
+    const gradientsMap = extrairGradientes(svgDoc);
+    console.log("Gradientes extraídos:", gradientsMap);
+
+
+    // Retorna o fill efetivo (sólido ou referência a gradiente)
+    function getEffectiveFill(elem, gradientsMap) {
+        const fill = elem.getAttribute('fill');
+        console.log(`Elemento: ${elem.tagName}, Fill encontrado: ${fill}`);
+
+        if (fill && fill.startsWith("url(")) {
+            const gradientId = fill.match(/url\(#(.*?)\)/)?.[1];
+            console.log(`Gradiente referenciado: ${gradientId}`);
+
+            if (gradientId && gradientsMap[gradientId]) {
+                console.log(`Gradiente aplicado:`, gradientsMap[gradientId]);
+                return { isGradient: true, ...gradientsMap[gradientId] };
+            } else {
+                console.log("Gradiente não encontrado no mapa!");
+            }
+        }
+
+        return fill;
+    }
+
+
+    // Função para carregar o adesivo (SVG) e converter gradientes para propriedades do Konva
     function carregarAdesivo(stickerUrl) {
         fetch(stickerUrl)
-            .then((response) => {
+            .then(response => {
                 if (!response.ok) throw new Error('Erro ao carregar o adesivo: ' + response.status);
                 return response.text();
             })
-            .then((svgText) => {
-                const svgComInline = converterEstilosInline(svgText);
-                var parser = new DOMParser();
-                var svgDoc = parser.parseFromString(svgComInline, 'image/svg+xml');
+            .then(svgText => {
+                const svgInline = converterEstilosInline(svgText);
+                const parser = new DOMParser();
+                const svgDoc = parser.parseFromString(svgInline, 'image/svg+xml');
+                const gradientsMap = extrairGradientes(svgDoc);
+
                 layer.destroyChildren();
                 stickerGroup = new Konva.Group({ draggable: false });
 
-                // Seleciona todos os elementos relevantes
                 Array.from(svgDoc.querySelectorAll('path, rect, circle, ellipse, polygon, polyline, line')).forEach((elem, index) => {
-                    var fillColor = getEffectiveFill(elem);
-                    var tagName = elem.tagName.toLowerCase();
+                    const fillValue = getEffectiveFill(elem, gradientsMap);
+                    const tagName = elem.tagName.toLowerCase();
 
-                    if (tagName === 'path') {
-                        var pathData = elem.getAttribute('d');
-                        if (pathData) {
-                            var path = new Konva.Path({
-                                data: pathData,
-                                fill: fillColor,
-                                draggable: false,
-                                id: `layer-${index}`,
-                            });
-                            stickerGroup.add(path);
-                        }
-                    } else if (tagName === 'circle') {
-                        var cx = parseFloat(elem.getAttribute('cx')) || 0;
-                        var cy = parseFloat(elem.getAttribute('cy')) || 0;
-                        var r = parseFloat(elem.getAttribute('r')) || 0;
-                        var circle = new Konva.Circle({
+                    if (tagName === 'circle') {
+                        // Pegando atributos do círculo
+                        const cx = parseFloat(elem.getAttribute('cx'));
+                        const cy = parseFloat(elem.getAttribute('cy'));
+                        const r = parseFloat(elem.getAttribute('r'));
+
+                        let circle = new Konva.Circle({
                             x: cx,
                             y: cy,
                             radius: r,
-                            fill: fillColor,
+                            fill: null, // Define como null para garantir que o gradiente seja aplicado corretamente
                             draggable: false,
                             id: `layer-${index}`,
                         });
+
                         stickerGroup.add(circle);
-                    } else if (tagName === 'rect') {
-                        var x = parseFloat(elem.getAttribute('x')) || 0;
-                        var y = parseFloat(elem.getAttribute('y')) || 0;
-                        var width = parseFloat(elem.getAttribute('width')) || 0;
-                        var height = parseFloat(elem.getAttribute('height')) || 0;
-                        var rect = new Konva.Rect({
-                            x: x,
-                            y: y,
-                            width: width,
-                            height: height,
-                            fill: fillColor,
-                            draggable: false,
-                            id: `layer-${index}`,
-                        });
-                        stickerGroup.add(rect);
-                    } else if (tagName === 'ellipse') {
-                        var cx = parseFloat(elem.getAttribute('cx')) || 0;
-                        var cy = parseFloat(elem.getAttribute('cy')) || 0;
-                        var rx = parseFloat(elem.getAttribute('rx')) || 0;
-                        var ry = parseFloat(elem.getAttribute('ry')) || 0;
-                        var ellipse = new Konva.Ellipse({
-                            x: cx,
-                            y: cy,
-                            radiusX: rx,
-                            radiusY: ry,
-                            fill: fillColor,
-                            draggable: false,
-                            id: `layer-${index}`,
-                        });
-                        stickerGroup.add(ellipse);
-                    } else if (tagName === 'line') {
-                        // Para linhas, você pode buscar os atributos x1, y1, x2, y2 e criar um array de pontos
-                        var x1 = parseFloat(elem.getAttribute('x1')) || 0;
-                        var y1 = parseFloat(elem.getAttribute('y1')) || 0;
-                        var x2 = parseFloat(elem.getAttribute('x2')) || 0;
-                        var y2 = parseFloat(elem.getAttribute('y2')) || 0;
-                        var line = new Konva.Line({
-                            points: [x1, y1, x2, y2],
-                            stroke: fillColor,
-                            draggable: false,
-                            id: `layer-${index}`,
-                        });
-                        stickerGroup.add(line);
-                    }
-                    // Para polygon e polyline, você pode converter os pontos para um array numérico
-                    else if (tagName === 'polygon' || tagName === 'polyline') {
-                        var pointsString = elem.getAttribute('points');
-                        if (pointsString) {
-                            var points = pointsString.trim().split(/[\s,]+/).map(parseFloat);
-                            var shape = new Konva.Line({
-                                points: points,
-                                fill: fillColor,
-                                closed: (tagName === 'polygon'),
-                                draggable: false,
-                                id: `layer-${index}`,
-                            });
-                            stickerGroup.add(shape);
+
+                        if (fillValue && fillValue.isGradient) {
+                            console.log("Aplicando gradiente no círculo", { fillValue });
+
+                            const bbox = { x: cx - r, y: cy - r, width: 2 * r, height: 2 * r };
+                            let startPoint, endPoint;
+
+                            if (fillValue.gradientUnits === 'objectBoundingBox') {
+                                startPoint = {
+                                    x: bbox.x + fillValue.x1 * bbox.width,
+                                    y: bbox.y + fillValue.y1 * bbox.height,
+                                };
+                                endPoint = {
+                                    x: bbox.x + fillValue.x2 * bbox.width,
+                                    y: bbox.y + fillValue.y2 * bbox.height,
+                                };
+                            } else {
+                                startPoint = { x: fillValue.x1, y: fillValue.y1 };
+                                endPoint = { x: fillValue.x2, y: fillValue.y2 };
+                            }
+
+                            // Normaliza os pontos para ficarem dentro do círculo
+                            startPoint.x -= cx;
+                            startPoint.y -= cy;
+                            endPoint.x -= cx;
+                            endPoint.y -= cy;
+
+                            console.log("Circle - StartPoint:", startPoint, "EndPoint:", endPoint, "Stops:", fillValue.stops);
+
+                            circle.fillLinearGradientStartPoint(startPoint);
+                            circle.fillLinearGradientEndPoint(endPoint);
+                            circle.fillLinearGradientColorStops(fillValue.stops);
+
+                            console.log("Gradiente aplicado com sucesso!");
+                        } else {
+                            circle.fill(fillValue);
+                            console.log("Nenhum gradiente encontrado para este círculo.");
                         }
                     }
                 });
 
+                // Adicionando ao layer
                 layer.add(stickerGroup);
                 ajustarTamanhoEPosicaoDoAdesivo();
                 preencherSelecaoDeCores();
                 layer.draw();
-                saveHistory();
+
+
             })
-            .catch((error) => console.error('Erro ao carregar o adesivo:', error));
+            .catch(error => console.error('Erro ao carregar o adesivo:', error));
     }
 
+    console.log('fill value é:'.fillValue)
+    console.log('start é:'.startPoint)
+    console.log('end é:'.endPoint)
+    console.log(gradientsMap)
 
     function ajustarTamanhoEPosicaoDoAdesivo() {
         if (!stickerGroup) return;
@@ -294,48 +284,35 @@ document.addEventListener('DOMContentLoaded', function () {
         initialStickerPosition = { x: stickerGroup.x(), y: stickerGroup.y() };
     }
 
-    // Função para preencher a seleção de cores como bolinhas na aba lateral
     function preencherSelecaoDeCores() {
         var container = document.getElementById('layer-colors-container');
         if (!container) return;
-        container.innerHTML = ''; // Limpa o container
-
+        container.innerHTML = '';
         var groups = {};
-        // Agrupa os elementos por cor (em formato hex)
         stickerGroup.getChildren().forEach(child => {
             var fillColor = child.fill() || '#000000';
             fillColor = rgbToHex(fillColor).toLowerCase();
             if (!groups[fillColor]) groups[fillColor] = [];
             groups[fillColor].push(child);
         });
-
-        // Para cada cor, cria uma bolinha
         Object.keys(groups).forEach(function (fillColor) {
             var count = groups[fillColor].length;
             var colorDiv = document.createElement('div');
             colorDiv.style.cssText = "display:inline-block;width:30px;height:30px;border-radius:50%;background-color:" + fillColor + ";border:2px solid #fff;margin:5px;cursor:pointer;";
             colorDiv.title = 'Mudar cor ' + fillColor + ' (' + count + ' camada' + (count > 1 ? 's' : '') + ')';
-
             colorDiv.addEventListener('click', function () {
-                // Define o grupo selecionado
                 selectedGroup = groups[fillColor];
-
-                // Cria um input do tipo color
                 var colorInput = document.createElement('input');
                 colorInput.type = 'color';
                 colorInput.value = fillColor;
                 colorInput.style.position = 'fixed';
                 colorInput.style.zIndex = 10000;
-
-                // Posiciona o input ao lado da bolinha usando jQuery offset
                 var offset = $(colorDiv).offset();
                 var width = $(colorDiv).outerWidth();
                 $(colorInput).css({
-                    left: (offset.left + width + 10) + 'px', // 10px à direita
+                    left: (offset.left + width + 10) + 'px',
                     top: offset.top + 'px'
                 });
-
-                // Ao mudar a cor, atualiza o grupo em tempo real
                 colorInput.addEventListener('input', function (e) {
                     var newColor = e.target.value;
                     selectedGroup.forEach(child => {
@@ -343,82 +320,214 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                     layer.draw();
                 });
-
-                // Remove o input quando perder o foco
                 colorInput.addEventListener('blur', function () {
                     colorInput.remove();
-                    // Opcional: Atualiza as bolinhas caso a cor tenha mudado
                     preencherSelecaoDeCores();
                 });
-
                 document.body.appendChild(colorInput);
                 colorInput.focus();
             });
-
             container.appendChild(colorDiv);
         });
     }
 
+    // ---------------------------
+    // Nova implementação para edição de degradê utilizando Fabric.js
+    // ---------------------------
 
-    // Funções de histórico (undo/redo)
-    function saveHistory() {
-        if (historyStates.length > 50) {
-            historyStates.shift();
-            historyIndex--;
+    // Ao invés de usar prompt, ao chamar editarGradiente abriremos uma modal com uma pré-visualização fabric
+    function editarGradiente(obj) {
+        if (!obj.gradientData) {
+            obj.gradientData = {
+                startPoint: { x: 0, y: 0 },
+                endPoint: { x: obj.width() || 100, y: 0 },
+                colorStops: [0, "#ff0000", 1, "#0000ff"]
+            };
         }
-        if (historyIndex < historyStates.length - 1) {
-            historyStates = historyStates.slice(0, historyIndex + 1);
-        }
-        var json = layer.toJSON();
-        historyStates.push(json);
-        historyIndex++;
-        updateUndoRedoButtons();
+        openGradientEditor(obj);
     }
 
-    function undo() {
-        if (historyIndex > 0) {
-            historyIndex--;
-            var previousState = historyStates[historyIndex];
-            layer.destroyChildren();
-            var restoredLayer = Konva.Node.create(previousState).getChildren();
-            layer.add(...restoredLayer);
-            layer.draw();
-            stickerGroup = layer.findOne('Group');
-            preencherSelecaoDeCores();
-            updateUndoRedoButtons();
+    // Cria/abre o editor de degradê usando Fabric.js
+    function openGradientEditor(targetObj) {
+        var modal = document.getElementById('gradient-editor-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'gradient-editor-modal';
+            modal.style.position = 'fixed';
+            modal.style.top = '50%';
+            modal.style.left = '50%';
+            modal.style.transform = 'translate(-50%, -50%)';
+            modal.style.background = '#fff';
+            modal.style.padding = '20px';
+            modal.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
+            modal.style.zIndex = 10000;
+            modal.style.width = '400px';
+            modal.style.display = 'none';
+
+            // Cria o canvas do Fabric para pré-visualização do degradê
+            var fabricCanvasEl = document.createElement('canvas');
+            fabricCanvasEl.id = 'fabric-gradient-canvas';
+            fabricCanvasEl.width = 360;
+            fabricCanvasEl.height = 50;
+            fabricCanvasEl.style.border = '1px solid #ccc';
+            modal.appendChild(fabricCanvasEl);
+
+            // Inputs para os stops do degradê
+            var label1 = document.createElement('label');
+            label1.textContent = 'Stop 1 Offset: ';
+            var stop1Offset = document.createElement('input');
+            stop1Offset.type = 'number';
+            stop1Offset.step = '0.01';
+            stop1Offset.min = '0';
+            stop1Offset.max = '1';
+            stop1Offset.id = 'gradient-stop1-offset';
+            label1.appendChild(stop1Offset);
+            modal.appendChild(label1);
+
+            var label1Color = document.createElement('label');
+            label1Color.textContent = ' Cor: ';
+            var stop1Color = document.createElement('input');
+            stop1Color.type = 'color';
+            stop1Color.id = 'gradient-stop1-color';
+            label1Color.appendChild(stop1Color);
+            modal.appendChild(label1Color);
+
+            modal.appendChild(document.createElement('br'));
+
+            var label2 = document.createElement('label');
+            label2.textContent = 'Stop 2 Offset: ';
+            var stop2Offset = document.createElement('input');
+            stop2Offset.type = 'number';
+            stop2Offset.step = '0.01';
+            stop2Offset.min = '0';
+            stop2Offset.max = '1';
+            stop2Offset.id = 'gradient-stop2-offset';
+            label2.appendChild(stop2Offset);
+            modal.appendChild(label2);
+
+            var label2Color = document.createElement('label');
+            label2Color.textContent = ' Cor: ';
+            var stop2Color = document.createElement('input');
+            stop2Color.type = 'color';
+            stop2Color.id = 'gradient-stop2-color';
+            label2Color.appendChild(stop2Color);
+            modal.appendChild(label2Color);
+
+            modal.appendChild(document.createElement('br'));
+
+            // Botões Salvar e Cancelar
+            var saveButton = document.createElement('button');
+            saveButton.textContent = 'Salvar';
+            saveButton.id = 'gradient-save-button';
+            modal.appendChild(saveButton);
+
+            var cancelButton = document.createElement('button');
+            cancelButton.textContent = 'Cancelar';
+            cancelButton.id = 'gradient-cancel-button';
+            cancelButton.style.marginLeft = '10px';
+            modal.appendChild(cancelButton);
+
+            document.body.appendChild(modal);
+
+            // Inicializa o Fabric canvas
+            var fabricCanvas = new fabric.Canvas('fabric-gradient-canvas', {
+                selection: false,
+                backgroundColor: '#fff'
+            });
+            var rect = new fabric.Rect({
+                left: 0,
+                top: 0,
+                width: fabricCanvasEl.width,
+                height: fabricCanvasEl.height,
+                selectable: false
+            });
+            fabricCanvas.add(rect);
+            fabricCanvas.renderAll();
+
+            modal.fabricCanvas = fabricCanvas;
+            modal.rect = rect;
+
+            // Atualiza a pré-visualização sempre que os inputs mudarem
+            function updatePreview() {
+                var offset1 = parseFloat(stop1Offset.value) || 0;
+                var offset2 = parseFloat(stop2Offset.value) || 1;
+                var color1 = stop1Color.value || '#ff0000';
+                var color2 = stop2Color.value || '#0000ff';
+
+                rect.set('fill', new fabric.Gradient({
+                    type: 'linear',
+                    gradientUnits: 'percentage',
+                    coords: { x1: 0, y1: 0, x2: 1, y2: 0 },
+                    colorStops: [
+                        { offset: offset1, color: color1 },
+                        { offset: offset2, color: color2 }
+                    ]
+                }));
+                fabricCanvas.renderAll();
+            }
+            stop1Offset.addEventListener('input', updatePreview);
+            stop1Color.addEventListener('input', updatePreview);
+            stop2Offset.addEventListener('input', updatePreview);
+            stop2Color.addEventListener('input', updatePreview);
+
+            // Evento do botão Salvar
+            saveButton.addEventListener('click', function () {
+                var offset1 = parseFloat(stop1Offset.value) || 0;
+                var offset2 = parseFloat(stop2Offset.value) || 1;
+                var color1 = stop1Color.value || '#ff0000';
+                var color2 = stop2Color.value || '#0000ff';
+                var newStops = [offset1, color1, offset2, color2];
+
+                targetObj.gradientData.colorStops = newStops;
+                targetObj.fillLinearGradientColorStops(newStops);
+                targetObj.fillLinearGradientStartPoint(targetObj.gradientData.startPoint);
+                targetObj.fillLinearGradientEndPoint(targetObj.gradientData.endPoint);
+                layer.draw();
+                saveHistory();
+                modal.style.display = 'none';
+            });
+
+            // Evento do botão Cancelar
+            cancelButton.addEventListener('click', function () {
+                modal.style.display = 'none';
+            });
         }
+
+        // Preenche os inputs com os dados atuais do degradê
+        var stop1Offset = document.getElementById('gradient-stop1-offset');
+        var stop1Color = document.getElementById('gradient-stop1-color');
+        var stop2Offset = document.getElementById('gradient-stop2-offset');
+        var stop2Color = document.getElementById('gradient-stop2-color');
+
+        var stops = targetObj.gradientData.colorStops;
+        stop1Offset.value = stops[0];
+        stop1Color.value = stops[1];
+        stop2Offset.value = stops[2];
+        stop2Color.value = stops[3];
+
+        var fabricCanvas = modal.fabricCanvas;
+        var rect = modal.rect;
+        rect.set('fill', new fabric.Gradient({
+            type: 'linear',
+            gradientUnits: 'percentage',
+            coords: { x1: 0, y1: 0, x2: 1, y2: 0 },
+            colorStops: [
+                { offset: parseFloat(stops[0]), color: stops[1] },
+                { offset: parseFloat(stops[2]), color: stops[3] }
+            ]
+        }));
+        fabricCanvas.renderAll();
+
+        modal.style.display = 'block';
     }
+    // ---------------------------
+    // Fim da integração Fabric para edição de degradê
+    // ---------------------------
 
-    function redo() {
-        if (historyIndex < historyStates.length - 1) {
-            historyIndex++;
-            var nextState = historyStates[historyIndex];
-            layer.destroyChildren();
-            var restoredLayer = Konva.Node.create(nextState).getChildren();
-            layer.add(...restoredLayer);
-            layer.draw();
-            stickerGroup = layer.findOne('Group');
-            preencherSelecaoDeCores();
-            updateUndoRedoButtons();
-        }
-    }
+    // Funções de texto
 
-    function updateUndoRedoButtons() {
-        document.getElementById('undo-button').disabled = (historyIndex <= 0);
-        document.getElementById('redo-button').disabled = (historyIndex >= historyStates.length - 1);
-    }
-
-
-
-    //funcoes de texto 
-
-    // Variável global para o preview
-    // var tempTextObject = null;
-
-    // Função para atualizar o preview com base nos inputs
     function atualizarTextoNoCanvas() {
         var textContent = document.getElementById('texto').value;
-        // Se não houver texto, remove o preview (caso exista)
         if (!textContent.trim()) {
             if (tempTextObject) {
                 tempTextObject.destroy();
@@ -428,14 +537,12 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // Parâmetros atuais do texto
         var fontSize = parseInt(document.getElementById('tamanho-fonte').value) || 16;
         var fontFamily = document.getElementById('fontPicker').value || 'Arial';
         var fillColor = document.getElementById('cor-texto').value || '#000';
         var rotation = parseFloat(document.getElementById('rotacao-texto').value) || 0;
 
         if (!tempTextObject) {
-            // Cria o objeto de preview se ainda não existir
             tempTextObject = new Konva.Text({
                 x: stage.width() / 2,
                 y: stage.height() / 2,
@@ -448,7 +555,6 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             layer.add(tempTextObject);
         } else {
-            // Atualiza o preview existente
             tempTextObject.text(textContent);
             tempTextObject.fontSize(fontSize);
             tempTextObject.fontFamily(fontFamily);
@@ -458,7 +564,6 @@ document.addEventListener('DOMContentLoaded', function () {
         layer.draw();
     }
 
-    // Event listeners para atualizar o preview conforme os inputs mudam
     document.getElementById('texto').addEventListener('input', atualizarTextoNoCanvas);
     document.getElementById('tamanho-fonte').addEventListener('input', atualizarTextoNoCanvas);
     document.getElementById('fontPicker').addEventListener('change', atualizarTextoNoCanvas);
@@ -472,7 +577,6 @@ document.addEventListener('DOMContentLoaded', function () {
         atualizarTextoNoCanvas();
     });
 
-    // Ao clicar em "Adicionar Texto", cria o objeto definitivo e remove o preview
     document.getElementById('adicionar-texto-botao').addEventListener('click', function () {
         var textContent = document.getElementById('texto').value.trim();
         if (!textContent) return;
@@ -482,7 +586,6 @@ document.addEventListener('DOMContentLoaded', function () {
         var fillColor = document.getElementById('cor-texto').value || '#000';
         var rotation = parseFloat(document.getElementById('rotacao-texto').value) || 0;
 
-        // Cria o objeto definitivo com os parâmetros atuais
         var newTextObject = new Konva.Text({
             x: stage.width() / 2,
             y: stage.height() / 2,
@@ -494,17 +597,14 @@ document.addEventListener('DOMContentLoaded', function () {
             rotation: rotation
         });
 
-        // Habilita a edição inline (ao dar duplo clique)
         newTextObject.on('dblclick', function () {
             enableInlineEditing(newTextObject);
         });
-        // Exemplo: salva o estado após arrastar
         newTextObject.on('dragend', saveHistory);
 
         layer.add(newTextObject);
         layer.draw();
 
-        // Remove o preview (se existir) e limpa o input
         if (tempTextObject) {
             tempTextObject.destroy();
             tempTextObject = null;
@@ -513,13 +613,10 @@ document.addEventListener('DOMContentLoaded', function () {
         saveHistory();
     });
 
-    // Função para edição inline (permite editar o texto já adicionado)
     function enableInlineEditing(textNode) {
-        // Oculta o texto enquanto edita
         textNode.hide();
         layer.draw();
 
-        // Pega a posição e define o estilo do textarea
         var textPosition = textNode.getAbsolutePosition();
         var stageBox = stage.container().getBoundingClientRect();
 
@@ -539,7 +636,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         area.focus();
 
-        // Finaliza a edição ao pressionar Enter ou ao perder o foco
         area.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') {
                 finishEdit();
@@ -555,19 +651,12 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Event listeners para salvar o estado (assegure-se de que saveHistory está definida)
     document.getElementById('texto').addEventListener('blur', saveHistory);
     document.getElementById('tamanho-fonte').addEventListener('blur', saveHistory);
     document.getElementById('fontPicker').addEventListener('blur', saveHistory);
     document.getElementById('cor-texto').addEventListener('blur', saveHistory);
     document.getElementById('rotacao-texto').addEventListener('mouseup', saveHistory);
     document.getElementById('rotacao-texto-valor').addEventListener('blur', saveHistory);
-
-
-    //funcoes de texto 
-
-
-
 
     document.getElementById('salvar-modelo-botao').addEventListener('click', function () {
         if (tempTextObject) {
@@ -658,7 +747,6 @@ document.addEventListener('DOMContentLoaded', function () {
         fileInput.click();
     }
 
-    // Aumentar/Diminuir imagem
     document.getElementById('aumentar-png-botao').addEventListener('click', function () {
         if (insertedImage) {
             insertedImage.scaleX(insertedImage.scaleX() * 1.1);
@@ -676,7 +764,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Limpar Tela
     document.getElementById('limpar-tela-botao').addEventListener('click', function () {
         layer.destroyChildren();
         stickerGroup = null;
@@ -686,7 +773,6 @@ document.addEventListener('DOMContentLoaded', function () {
         saveHistory();
     });
 
-    // Formulário Salvar Adesivo 01
     const loadingOverlay = document.createElement('div');
     loadingOverlay.style.position = 'fixed';
     loadingOverlay.style.top = 0;
@@ -711,14 +797,12 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#salvar-adesivo-botao').on('click', function (e) {
         e.preventDefault();
 
-        // Garante que o stage esteja definido (o Konva Stage é criado no seu editor)
         if (!stage) {
             console.error('Stage não definido!');
             alert('Erro: O editor de adesivos não está carregado corretamente.');
             return;
         }
 
-        // Captura a imagem do stage renderizado (alta qualidade com pixelRatio 3)
         var adesivoBase64 = stage.toDataURL({ pixelRatio: 3 });
         console.log('Imagem capturada:', adesivoBase64);
 
@@ -762,9 +846,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-
-
-
     jQuery(document).ready(function ($) {
         setTimeout(function () {
             $('td.product-thumbnail img').each(function () {
@@ -775,5 +856,52 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }, 500);
     });
-});
 
+    // Funções de histórico (undo/redo)
+    function saveHistory() {
+        if (historyStates.length > 50) {
+            historyStates.shift();
+            historyIndex--;
+        }
+        if (historyIndex < historyStates.length - 1) {
+            historyStates = historyStates.slice(0, historyIndex + 1);
+        }
+        var json = layer.toJSON();
+        historyStates.push(json);
+        historyIndex++;
+        updateUndoRedoButtons();
+    }
+
+    function undo() {
+        if (historyIndex > 0) {
+            historyIndex--;
+            var previousState = historyStates[historyIndex];
+            layer.destroyChildren();
+            var restoredLayer = Konva.Node.create(previousState).getChildren();
+            layer.add(...restoredLayer);
+            layer.draw();
+            stickerGroup = layer.findOne('Group');
+            preencherSelecaoDeCores();
+            updateUndoRedoButtons();
+        }
+    }
+
+    function redo() {
+        if (historyIndex < historyStates.length - 1) {
+            historyIndex++;
+            var nextState = historyStates[historyIndex];
+            layer.destroyChildren();
+            var restoredLayer = Konva.Node.create(nextState).getChildren();
+            layer.add(...restoredLayer);
+            layer.draw();
+            stickerGroup = layer.findOne('Group');
+            preencherSelecaoDeCores();
+            updateUndoRedoButtons();
+        }
+    }
+
+    function updateUndoRedoButtons() {
+        document.getElementById('undo-button').disabled = (historyIndex <= 0);
+        document.getElementById('redo-button').disabled = (historyIndex >= historyStates.length - 1);
+    }
+});
