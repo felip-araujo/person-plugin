@@ -148,8 +148,8 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
     </div>
 
     <!-- Sidebar de adesivos -->
-    <button class="btn d-md-none hamburger-btn" onclick="toggleSidebar()">
-        <i class="fas fa-bars"></i> Adesivos
+    <button class="btn d-md-none hamburger-btn btn btn-info" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i> Verifique Produtos Disponíveis
     </button>
 
     <div class="p-4 bg-white ml-4 border-right shadow-sm overflow-auto side-bar d-md-block hidden" id="sidebar">
