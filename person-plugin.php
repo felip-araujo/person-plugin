@@ -9,6 +9,7 @@ Author: Evolution Design
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
+
 require __DIR__ . '/vendor/autoload.php';
 require __DIR__ . '/templates/email-handlers.php';
 
@@ -413,18 +414,46 @@ function salvar_imagem_personalizada_no_pedido($item, $cart_item_key, $values, $
 add_action('woocommerce_checkout_create_order_line_item', 'salvar_imagem_personalizada_no_pedido', 10, 4);
 
 
+// Função auxiliar para converter um PNG para PDF usando TCPDF
+function convert_png_to_pdf($png_path)
+{
+    // Cria uma nova instância do TCPDF
+    $pdf = new TCPDF();
+    $pdf->AddPage();
+
+    // Insere a imagem no PDF (ajuste os parâmetros conforme necessário)
+    $pdf->Image($png_path, 10, 10, 190, 0, 'PNG', '', 'T', false, 300, '', false, false, 0, false, false, false);
+
+    // Define o caminho para salvar o PDF (na mesma pasta, com a extensão .pdf)
+    $pdf_path = preg_replace('/\.png$/i', '.pdf', $png_path);
+    $pdf->Output($pdf_path, 'F'); // Salva o arquivo no disco
+    return $pdf_path;
+}
+
+
 // Adicionar o link do adesivo nos e-mails do pedido (usando a meta "_adesivo_url")
 function adicionar_link_adesivo_email($order, $sent_to_admin, $plain_text, $email)
 {
     $output = '';
     foreach ($order->get_items() as $item_id => $item) {
-        // Recupera a URL usando a meta key correta
-        $adesivo_url = $item->get_meta('_adesivo_url');
-        if ($adesivo_url) {
-            if ($plain_text) {
-                $output .= "\n" . __('Download do Adesivo (alta qualidade):', 'woocommerce') . ' ' . esc_url($adesivo_url) . "\n";
-            } else {
-                $output .= '<p>' . __('Download do Adesivo (alta qualidade):', 'woocommerce') . ' <a href="' . esc_url($adesivo_url) . '" target="_blank">' . __('Clique aqui para baixar', 'woocommerce') . '</a></p>';
+        // Recupera a URL do adesivo em PNG usando a meta key correta
+        $png_url = $item->get_meta('_adesivo_url');
+        if ($png_url) {
+            // Converte a URL para o caminho físico
+            $upload_dir = wp_upload_dir();
+            $png_path = str_replace($upload_dir['baseurl'], $upload_dir['basedir'], $png_url);
+
+            if (file_exists($png_path)) {
+                // Converte o PNG para PDF
+                $pdf_path = convert_png_to_pdf($png_path);
+                // Converte o caminho físico do PDF para URL
+                $pdf_url = str_replace($upload_dir['basedir'], $upload_dir['baseurl'], $pdf_path);
+
+                if ($plain_text) {
+                    $output .= "\n" . __('Download do Adesivo em PDF (alta qualidade):', 'woocommerce') . ' ' . esc_url($pdf_url) . "\n";
+                } else {
+                    $output .= '<p>' . __('Download do Adesivo em PDF (alta qualidade):', 'woocommerce') . ' <a href="' . esc_url($pdf_url) . '" target="_blank">' . __('Clique aqui para baixar', 'woocommerce') . '</a></p>';
+                }
             }
         }
     }
