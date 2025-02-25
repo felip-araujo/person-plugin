@@ -6,12 +6,21 @@
  * Exibe na lateral esquerda (sidebar) os adesivos e, na área principal, o editor.
  */
 
+
+if (!isset($url_do_adesivo)) {
+    $url_do_adesivo = '';
+}
+
+
 // Recupera o adesivo selecionado via URL (se houver)
 $selected_sticker = '';
 if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
     $selected_sticker = urldecode($_GET['sticker']);
 }
 ?>
+
+
+
 
 
 <style>
