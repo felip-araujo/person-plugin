@@ -417,18 +417,19 @@ add_action('woocommerce_checkout_create_order_line_item', 'salvar_imagem_persona
 // Função auxiliar para converter um PNG para PDF usando TCPDF
 function convert_png_to_pdf($png_path)
 {
-    // Cria uma nova instância do TCPDF
     $pdf = new TCPDF();
     $pdf->AddPage();
-
-    // Insere a imagem no PDF (ajuste os parâmetros conforme necessário)
-    $pdf->Image($png_path, 10, 10, 190, 0, 'PNG', '', 'T', false, 300, '', false, false, 0, false, false, false);
-
-    // Define o caminho para salvar o PDF (na mesma pasta, com a extensão .pdf)
+    $pdf->Image($png_path, 10, 10, 190, 0, 'PNG');
     $pdf_path = preg_replace('/\.png$/i', '.pdf', $png_path);
-    $pdf->Output($pdf_path, 'F'); // Salva o arquivo no disco
+    $result = $pdf->Output($pdf_path, 'F'); // Salva no disco
+    if (file_exists($pdf_path)) {
+        error_log("✅ PDF gerado: " . $pdf_path);
+    } else {
+        error_log("❌ Falha ao gerar o PDF a partir de: " . $png_path);
+    }
     return $pdf_path;
 }
+
 
 
 // Adicionar o link do adesivo nos e-mails do pedido (usando a meta "_adesivo_url")
