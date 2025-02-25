@@ -146,7 +146,7 @@ function plugin_processar_upload($plugin_sticker_dir) {
 }
 
 // -----------------------------
-// 4. Funções Auxiliares (incluindo conversão para PDF)
+// 4. Funções Auxiliares (Conversão de PNG para PDF)
 // -----------------------------
 function convert_png_to_pdf($png_path) {
     if (!file_exists($png_path)) {
@@ -376,11 +376,43 @@ function salvar_imagem_personalizada_no_pedido($item, $cart_item_key, $values, $
     if (!empty($adesivo_url)) {
         $item->add_meta_data('_adesivo_url', esc_url($adesivo_url), true);
     }
+    // Adiciona o meta do PDF
+    $product_id = $values['data']->get_id();
+    $pdf_url = get_post_meta($product_id, '_adesivo_pdf_url', true);
+    if (!empty($pdf_url)) {
+        $item->add_meta_data('_adesivo_pdf_url', esc_url($pdf_url), true);
+    }
 }
 add_action('woocommerce_checkout_create_order_line_item', 'salvar_imagem_personalizada_no_pedido', 10, 4);
 
 // -----------------------------
-// 8. Limpeza Agendada dos Produtos Temporários
+// 8. Envio do Link do PDF nos E-mails de Pedido
+// -----------------------------
+function adicionar_link_adesivo_email($order, $sent_to_admin, $plain_text, $email) {
+    $output = '';
+    foreach ($order->get_items() as $item_id => $item) {
+        $pdf_url = $item->get_meta('_adesivo_pdf_url');
+        if ($pdf_url) {
+            if ($plain_text) {
+                $output .= "\n" . __('Download do Adesivo em PDF (alta qualidade):', 'woocommerce') . ' ' . esc_url($pdf_url) . "\n";
+            } else {
+                $output .= '<p>' . __('Download do Adesivo em PDF (alta qualidade):', 'woocommerce') . ' <a href="' . esc_url($pdf_url) . '" target="_blank">' . __('Clique aqui para baixar', 'woocommerce') . '</a></p>';
+            }
+        }
+    }
+    if (!empty($output)) {
+        if ($plain_text) {
+            echo "\n" . __('Adesivo Personalizado', 'woocommerce') . "\n";
+        } else {
+            echo '<h2>' . __('Adesivo Personalizado', 'woocommerce') . '</h2>';
+        }
+        echo $output;
+    }
+}
+add_action('woocommerce_email_after_order_table', 'adicionar_link_adesivo_email', 10, 4);
+
+// -----------------------------
+// 9. Limpeza Agendada dos Produtos Temporários
 // -----------------------------
 function limpar_produtos_personalizados_antigos() {
     global $wpdb;
@@ -422,3 +454,4 @@ add_filter('woocommerce_order_item_thumbnail', function ($product_image, $item) 
     }
     return $product_image;
 }, 10, 2);
+?>
