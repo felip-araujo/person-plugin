@@ -272,6 +272,10 @@ $sticker_id = isset($_GET['sticker_id']) ? intval($_GET['sticker_id']) : 0;
     </div>
 </div>
 
+
+
+
+
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         document.getElementById("iniciar-tour").addEventListener("click", function() {

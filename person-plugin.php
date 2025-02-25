@@ -61,12 +61,28 @@ function person_plugin_enqueue_frontend_scripts() {
 add_action('wp_enqueue_scripts', 'person_plugin_enqueue_frontend_scripts', 20);
 
 function person_plugin_enqueue_scripts() {
-    wp_enqueue_script('person-plugin-js', plugins_url('assets/js/customizador.js', __FILE__), array('jquery'), null, true);
+    // Enfileira o gradiente.js (certifique-se de que o arquivo está em assets/js/)
+    wp_enqueue_script(
+        'gradiente-js',
+        plugins_url('assets/js/gradiente.js', __FILE__),
+        array(), // sem dependências específicas
+        null,
+        true
+    );
+    // Enfileira o customizador.js, fazendo-o depender do gradiente-js (e jQuery)
+    wp_enqueue_script(
+        'person-plugin-js',
+        plugins_url('assets/js/customizador.js', __FILE__),
+        array('jquery', 'gradiente-js'),
+        null,
+        true
+    );
     wp_localize_script('person-plugin-js', 'personPlugin', array(
         'ajax_url' => admin_url('admin-ajax.php'),
     ));
 }
 add_action('wp_enqueue_scripts', 'person_plugin_enqueue_scripts');
+
 
 function meu_plugin_carregar_fontawesome_kit() {
     if (is_admin()) {
@@ -454,4 +470,3 @@ add_filter('woocommerce_order_item_thumbnail', function ($product_image, $item) 
     }
     return $product_image;
 }, 10, 2);
-?>
