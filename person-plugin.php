@@ -61,19 +61,14 @@ function person_plugin_enqueue_frontend_scripts() {
 add_action('wp_enqueue_scripts', 'person_plugin_enqueue_frontend_scripts', 20);
 
 function person_plugin_enqueue_scripts() {
-    // Enfileira o gradiente.js (certifique-se de que o arquivo está em assets/js/)
-    wp_enqueue_script(
-        'gradiente-js',
-        plugins_url('assets/js/gradiente.js', __FILE__),
-        array(), // sem dependências específicas
-        null,
-        true
-    );
-    // Enfileira o customizador.js, fazendo-o depender do gradiente-js (e jQuery)
+    // Enfileira o Fabric.js (já incluído via CDN ou outro método)
+    wp_enqueue_script('fabric-js', 'https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js', array(), null, true);
+
+    // Enfileira o script principal customizador.js como módulo
     wp_enqueue_script(
         'person-plugin-js',
         plugins_url('assets/js/customizador.js', __FILE__),
-        array('jquery', 'gradiente-js'),
+        array('jquery', 'fabric-js'),
         null,
         true
     );
@@ -82,6 +77,15 @@ function person_plugin_enqueue_scripts() {
     ));
 }
 add_action('wp_enqueue_scripts', 'person_plugin_enqueue_scripts');
+
+function add_module_attribute($tag, $handle, $src) {
+    if ('person-plugin-js' === $handle) {
+        $tag = '<script type="module" src="' . esc_url($src) . '"></script>';
+    }
+    return $tag;
+}
+add_filter('script_loader_tag', 'add_module_attribute', 10, 3);
+
 
 
 function meu_plugin_carregar_fontawesome_kit() {

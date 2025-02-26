@@ -139,10 +139,7 @@ if (!isset($url_do_adesivo)) {
             flex-direction: initial;
         }
 
-        #close-editor {
-            margin-left: 35vh;
-            background-color: red;
-        }
+
     }
 
     @media (max-width: 568px) {
@@ -234,8 +231,13 @@ $sticker_id = isset($_GET['sticker_id']) ? intval($_GET['sticker_id']) : 0;
                         <form>
                             <div class="mb-3">
                                 <div id="layer-colors-container" style="display: flex; flex-wrap: wrap;">
-                                    <a href="" id="cor"></a>
+
+
+
+                                    <!-- <a href="" id="cor"></a> -->
                                 </div>
+                                <!-- <label for="gradient-color">Editar Gradiente:</label>
+                                <input type="color" id="gradient-color" value="#ff0000"> -->
                                 <!-- Botão para inserir um PNG -->
                                 <button data-intro="Para enviar ou adicionar sua própria imagem, clique neste botão e selecione um arquivo do seu dispositivo." data-step="5" id="inserir-imagem-botao" type="button" class="btn btn-primary w-100 mt-3">Enviar Imagem</button>
                                 <!-- Botões de aumentar/diminuir o PNG -->
@@ -257,7 +259,10 @@ $sticker_id = isset($_GET['sticker_id']) ? intval($_GET['sticker_id']) : 0;
             </div>
 
             <div class="col-md-9 d-flex align-items-center justify-content-center">
-                <div data-intro="Agora que você selecionou seu adesivo, é aqui que você pode personalizá-lo do jeito que quiser!" data-step="3" id="adesivo-canvas" style="width: 100%; height: 100%;" class="bg-white"></div>
+                <canvas id="adesivo-canvas"></canvas>
+                <div id="layer-colors-container"></div>
+                <!-- <div id="layer-colors-container"></div> -->
+                <!-- <canvas> data-intro="Agora que você selecionou seu adesivo, é aqui que você pode personalizá-lo do jeito que quiser!" data-step="3" id="adesivo-canvas" style="width: 100%; height: 100%;" class="bg-white"> </canvas> -->
             </div>
             <div class="d-flex justify-content-center gap-1 mb-4 mt-3" data-intro="Aqui você pode realizar ações como voltar ou avançar edição, zomm e finalizar a compra " data-step="7">
                 <button id="undo-button" class="btn btn-secondary"><i class="fa-solid fa-rotate-left"></i></button>
@@ -277,17 +282,6 @@ $sticker_id = isset($_GET['sticker_id']) ? intval($_GET['sticker_id']) : 0;
 
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        document.getElementById("iniciar-tour").addEventListener("click", function() {
-            introJs().start();
-        });
-    });
-
-    // Exemplo de fechamento do editor (mantido do seu código)
-    document.getElementById('close-editor').addEventListener('click', function() {
-        document.querySelector('.container').style.display = 'none';
-    });
-
     // Tour com Intro.js
     document.addEventListener("DOMContentLoaded", function() {
         if (sessionStorage.getItem("tourStep") === "2") {
