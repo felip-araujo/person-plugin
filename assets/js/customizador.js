@@ -440,8 +440,11 @@ document.addEventListener('DOMContentLoaded', function () {
             alert('Erro: O editor de adesivos não está carregado corretamente.');
             return;
         }
-        var adesivoBase64 = canvas.toDataURL({ format: 'png', quality: 1 });
-        console.log('Imagem capturada:', adesivoBase64);
+
+        // Gera o SVG do canvas (conteúdo vetorial)
+        var adesivoSVG = canvas.toSVG();
+        console.log('SVG gerado:', adesivoSVG);
+
         var price = $('#stickerPrice').val();
 
         if (!price || isNaN(price) || price <= 0) {
@@ -455,7 +458,7 @@ document.addEventListener('DOMContentLoaded', function () {
             dataType: 'json',
             data: {
                 action: 'salvar_adesivo_servidor',
-                adesivo_base64: adesivoBase64,
+                adesivo_svg: adesivoSVG, // enviando o conteúdo vetorial
                 price: price,
             },
             success: function (response) {
@@ -472,6 +475,8 @@ document.addEventListener('DOMContentLoaded', function () {
             },
         });
     }
+
+
 
     // Evento do botão de salvar
     $('#salvar-adesivo-botao').on('click', function (e) {
