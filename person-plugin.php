@@ -473,7 +473,7 @@ function adicionar_link_adesivo_email($order, $sent_to_admin, $plain_text, $emai
     }
 
     if (!empty($output)) {
-        error_log("📝 Link está sendo adicionado ao e-mail.");
+        error_log("📝 Link está sendo adicionado ao e-mail."); 
 
         if ($plain_text) {
             echo "\n" . __('Adesivo Personalizado', 'woocommerce') . "\n" . $output;
