@@ -288,6 +288,25 @@ document.getElementById('texto').addEventListener('input', function (e) {
     canvas.renderAll();
 });
 
+// Atualiza a cor do texto em tempo real
+document.getElementById('cor-texto').addEventListener('input', function (e) {
+    if (currentTextObj) {
+        currentTextObj.set('fill', e.target.value);
+        canvas.renderAll();
+    }
+});
+
+// Atualiza a fonte do texto em tempo real
+document.getElementById('fontPicker').addEventListener('change', function (e) {
+    if (currentTextObj) {
+        currentTextObj.set('fontFamily', e.target.value);
+        canvas.renderAll();
+    }
+});
+
+
+
+
 function addText() {
     // Se você quiser, finalize o objeto criado, por exemplo,
     // removendo o listener do input ou resetando a variável.

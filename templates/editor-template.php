@@ -200,7 +200,7 @@ $sticker_id = isset($_GET['sticker_id']) ? intval($_GET['sticker_id']) : 0;
                             <input data-intro="Digite o texto do adesivo." data-step="9" type="text" id="texto" class="form-control" placeholder="Digite o texto do adesivo">
                             <label data-intro="Altere a cor do adesivo." data-step="10" for="cor-texto" class="form-label mt-2">Cor do Texto:</label>
                             <input type="color" id="cor-texto" class="form-control" value="#000000">
-                            <label data-intro="Ajuste o tamanho da fonte." data-step="11" for="tamanho-fonte" class="form-label mt-2">Tamanho da Fonte:</label>
+                            <!-- <label data-intro="Ajuste o tamanho da fonte." data-step="11" for="tamanho-fonte" class="form-label mt-2">Tamanho da Fonte:</label> -->
                             <input type="number" id="tamanho-fonte" class="form-range form-control" min="10" max="100" value="25">
                             <label data-intro="Selecione a fonte desejada." data-step="12" for="fontPicker" class="form-label mt-2">Fonte:</label>
                             <select id="fontPicker" class="form-control">
