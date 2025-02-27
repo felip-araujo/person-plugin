@@ -252,28 +252,42 @@ function updateUndoRedoButtons() {
 // FUNÇÕES DE TEXTO, INSERÇÃO DE IMAGEM, ZOOM, ETC.
 
 // Adiciona texto usando fabric.IText (edição inline ao dar duplo clique)
-function addText() {
-    var textContent = document.getElementById('texto').value.trim();
-    if (!textContent) return;
-    var fontSize = parseInt(document.getElementById('tamanho-fonte').value) || 16;
-    var fontFamily = document.getElementById('fontPicker').value || 'Arial';
-    var fillColor = document.getElementById('cor-texto').value || '#000';
-    var rotation = parseFloat(document.getElementById('rotacao-texto').value) || 0;
-    var textObj = new fabric.IText(textContent, {
-        left: canvas.getWidth() / 2,
-        top: canvas.getHeight() / 2,
-        fontSize: fontSize,
-        fontFamily: fontFamily,
-        fill: fillColor,
-        angle: rotation,
-        editable: true,
-    });
-    canvas.add(textObj);
-    canvas.setActiveObject(textObj);
+
+
+// Variável para armazenar o objeto de texto atual
+let currentTextObj;
+
+// Adiciona um listener ao input de texto
+document.getElementById('texto').addEventListener('input', function (e) {
+    var valorDigitado = e.target.value;
+
+    // Se o objeto ainda não foi criado, cria-o e adiciona ao canvas
+    if (!currentTextObj) {
+        var fontSize = parseInt(document.getElementById('tamanho-fonte').value) || 16;
+        var fontFamily = document.getElementById('fontPicker').value || 'Arial';
+        var fillColor = document.getElementById('cor-texto').value || '#000';
+        var rotation = parseFloat(document.getElementById('rotacao-texto').value) || 0;
+
+        currentTextObj = new fabric.IText(valorDigitado, {
+            left: canvas.getWidth() / 2,
+            top: canvas.getHeight() / 2,
+            fontSize: fontSize,
+            fontFamily: fontFamily,
+            fill: fillColor,
+            angle: rotation,
+            editable: true,
+        });
+
+        canvas.add(currentTextObj);
+        canvas.setActiveObject(currentTextObj);
+    } else {
+        // Se o objeto já existe, apenas atualiza seu texto
+        currentTextObj.text = valorDigitado;
+    }
+
     canvas.renderAll();
-    saveHistory();
-    document.getElementById('texto').value = '';
-}
+});
+
 
 // Insere uma imagem a partir de arquivo
 function inserirImagem() {
@@ -403,7 +417,7 @@ document.addEventListener('DOMContentLoaded', function () {
             alert('Erro: Preço inválido!');
             return;
         }
-        if (!aceitoTeroms && !aceitoTermos) {
+        if (!aceitoTermos && !aceitoTermos) {
             if (confirm('Você precisa aceitar os termos para continuar. Deseja aceitar agora?')) {
                 $('#aceito-termos').prop('checked', true);
             } else {

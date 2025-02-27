@@ -220,7 +220,9 @@ $sticker_id = isset($_GET['sticker_id']) ? intval($_GET['sticker_id']) : 0;
                                 <option value="Smooch">Smooch</option>
                             </select>
                             <label data-intro="Ajuste a rotação do texto" data-step="13" for="rotacao-texto" class="form-label mt-2">Rotação do Texto:</label>
-                            <input type="range" id="rotacao-texto" class="form-range" min="-180" max="180" step="0.1" value="0">
+                            <input type="range" id="
+                            
+                            rotacao-texto" class="form-range" min="-180" max="180" step="0.1" value="0">
                             <input type="number" id="rotacao-texto-valor" class="form-control mt-1" min="-180" max="180" step="0.4" value="0">
                             <button data-intro="Adcione o texto definitivo, após isso você consegue adicionar um novo texto." data-step="14" id="adicionar-texto-botao" class="btn btn-primary w-100 mt-2">Adicionar Texto</button>
                         </div>
@@ -277,11 +279,16 @@ $sticker_id = isset($_GET['sticker_id']) ? intval($_GET['sticker_id']) : 0;
     </div>
 </div>
 
+<script type="module" src="customizador.js?ver=1740622541"></script>
 
 
 
 
 <script>
+
+
+
+
     // Tour com Intro.js
     document.addEventListener("DOMContentLoaded", function() {
         if (sessionStorage.getItem("tourStep") === "2") {
