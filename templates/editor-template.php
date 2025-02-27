@@ -201,7 +201,8 @@ $sticker_id = isset($_GET['sticker_id']) ? intval($_GET['sticker_id']) : 0;
                             <label data-intro="Altere a cor do adesivo." data-step="10" for="cor-texto" class="form-label mt-2">Cor do Texto:</label>
                             <input type="color" id="cor-texto" class="form-control" value="#000000">
                             <!-- <label data-intro="Ajuste o tamanho da fonte." data-step="11" for="tamanho-fonte" class="form-label mt-2">Tamanho da Fonte:</label> -->
-                            <input type="number" id="tamanho-fonte" class="form-range form-control" min="10" max="100" value="25">
+                            <input type="hidden" id="tamanho-fonte">
+                            <!-- <input style="visibility:hidden;" type="number" id="tamanho-fonte" class="form-range form-control" min="10" max="100" value="25"> -->
                             <label data-intro="Selecione a fonte desejada." data-step="12" for="fontPicker" class="form-label mt-2">Fonte:</label>
                             <select id="fontPicker" class="form-control">
                                 <option value="Arial">Arial</option>
@@ -219,9 +220,10 @@ $sticker_id = isset($_GET['sticker_id']) ? intval($_GET['sticker_id']) : 0;
                                 <option value="Oswald">Oswald</option>
                                 <option value="Smooch">Smooch</option>
                             </select>
-                            <label data-intro="Ajuste a rotação do texto" data-step="13" for="rotacao-texto" class="form-label mt-2">Rotação do Texto:</label>
-                            <input type="range" id="rotacao-texto" class="form-range" min="-180" max="180" step="0.1" value="0">
-                            <input type="number" id="rotacao-texto-valor" class="form-control mt-1" min="-180" max="180" step="0.4" value="0">
+                            <!-- <label data-intro="Ajuste a rotação do texto" data-step="13" for="rotacao-texto" class="form-label mt-2">Rotação do Texto:</label> -->
+                           <input type="hidden" id="rotacao-texto">
+                            <!-- <input style="visibility:hidden;" type="range" id="rotacao-texto" class="form-range" min="-180" max="180" step="0.1" value="0">
+                            <input type="number" id="rotacao-texto-valor" class="form-control mt-1" min="-180" max="180" step="0.4" value="0"> -->
                             <button data-intro="Adcione o texto definitivo, após isso você consegue adicionar um novo texto." data-step="14" id="adicionar-texto-botao" class="btn btn-primary w-100 mt-2">Adicionar Texto</button>
                         </div>
                     </div>
