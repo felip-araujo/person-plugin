@@ -288,6 +288,18 @@ document.getElementById('texto').addEventListener('input', function (e) {
     canvas.renderAll();
 });
 
+function addText() {
+    // Se você quiser, finalize o objeto criado, por exemplo,
+    // removendo o listener do input ou resetando a variável.
+    // Aqui, podemos simplesmente limpar o input e garantir que
+    // o objeto de texto atual fique "fixado" no canvas.
+    currentTextObj && currentTextObj.set({ editable: false });
+    currentTextObj = null;
+    // Opcionalmente, limpe o input:
+    document.getElementById('texto').value = '';
+    canvas.renderAll();
+}
+
 
 // Insere uma imagem a partir de arquivo
 function inserirImagem() {
