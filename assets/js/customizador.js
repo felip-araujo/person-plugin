@@ -433,8 +433,8 @@ document.addEventListener('DOMContentLoaded', function () {
         saveHistory();
     });
 
-    $('#salvar-adesivo-botao').on('click', function (e) {
-        e.preventDefault();
+    // Função para salvar o adesivo (já existente no seu código)
+    function salvarAdesivo() {
         if (!canvas) {
             console.error('Canvas não definido!');
             alert('Erro: O editor de adesivos não está carregado corretamente.');
@@ -443,18 +443,12 @@ document.addEventListener('DOMContentLoaded', function () {
         var adesivoBase64 = canvas.toDataURL({ format: 'png', quality: 1 });
         console.log('Imagem capturada:', adesivoBase64);
         var price = $('#stickerPrice').val();
-        var aceitoTermos = $('#aceito-termos').prop('checked');
+
         if (!price || isNaN(price) || price <= 0) {
             alert('Erro: Preço inválido!');
             return;
         }
-        if (!aceitoTermos && !aceitoTermos) {
-            if (confirm('Você precisa aceitar os termos para continuar. Deseja aceitar agora?')) {
-                $('#aceito-termos').prop('checked', true);
-            } else {
-                return;
-            }
-        }
+
         $.ajax({
             url: personPlugin.ajax_url,
             method: 'POST',
@@ -477,6 +471,33 @@ document.addEventListener('DOMContentLoaded', function () {
                 alert('Erro na requisição.');
             },
         });
+    }
+
+    // Evento do botão de salvar
+    $('#salvar-adesivo-botao').on('click', function (e) {
+        e.preventDefault();
+
+        // Verifica se os termos já foram aceitos
+        var aceitoTermos = $('#aceito-termos').prop('checked');
+
+        if (!aceitoTermos) {
+            // Exibe o modal dos termos
+            $('#termsModal').modal('show');
+        } else {
+            salvarAdesivo();
+        }
+    });
+
+    // Quando o usuário marcar o checkbox do modal, aceite os termos e salve
+    $('#acceptTermsBtn').on('change', function () {
+        if ($(this).is(':checked')) {
+            // Marque o checkbox oculto ou de controle dos termos
+            $('#aceito-termos').prop('checked', true);
+            // Fecha o modal
+            $('#termsModal').modal('hide');
+            // Salva o adesivo
+            salvarAdesivo();
+        }
     });
 
     jQuery(document).ready(function ($) {

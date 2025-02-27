@@ -82,6 +82,15 @@ if (!isset($url_do_adesivo)) {
         /* Realce com uma borda azul */
     }
 
+    #modal-terms {
+        color: #000000;
+    }
+
+    #modal-terms h5 {
+        font-family: 'Montserrat', sans-serif;
+        color: #000000;
+    }
+
     /* Responsividade para mobile */
     @media (max-width: 768px) {
 
@@ -221,7 +230,7 @@ $sticker_id = isset($_GET['sticker_id']) ? intval($_GET['sticker_id']) : 0;
                                 <option value="Smooch">Smooch</option>
                             </select>
                             <!-- <label data-intro="Ajuste a rotação do texto" data-step="13" for="rotacao-texto" class="form-label mt-2">Rotação do Texto:</label> -->
-                           <input type="hidden" id="rotacao-texto">
+                            <input type="hidden" id="rotacao-texto">
                             <!-- <input style="visibility:hidden;" type="range" id="rotacao-texto" class="form-range" min="-180" max="180" step="0.1" value="0">
                             <input type="number" id="rotacao-texto-valor" class="form-control mt-1" min="-180" max="180" step="0.4" value="0"> -->
                             <button data-intro="Adcione o texto definitivo, após isso você consegue adicionar um novo texto." data-step="14" id="adicionar-texto-botao" class="btn btn-primary w-100 mt-2">Adicionar Texto</button>
@@ -279,45 +288,98 @@ $sticker_id = isset($_GET['sticker_id']) ? intval($_GET['sticker_id']) : 0;
     </div>
 </div>
 
-<script type="module" src="customizador.js?ver=1740622541"></script>
+
+<!-- Modal de Termos de Uso -->
+<div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="termsModalLabel" style=" font-family: 'Montserrat', sans-serif;">Termos de Uso</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-terms">
+                    <h5>Aceitação dos Termos</h5>
+                    <p>
+                        Ao utilizar o editor e demais funcionalidades deste site, você declara ter lido, compreendido e aceitado integralmente estes Termos de Uso. Se você não concordar com qualquer parte destes termos, solicitamos que não utilize os serviços aqui oferecidos.
+                    </p>
+
+                    <h5>Responsabilidade pelo Conteúdo e Edições</h5>
+                    <p>
+                        O editor disponibilizado neste site é uma ferramenta para a criação e edição de conteúdos. Todas as criações, edições e alterações realizadas são de inteira responsabilidade do usuário. Você é o único responsável pelo conteúdo gerado, incluindo o uso de imagens, logos, marcas ou qualquer material que possa estar protegido por direitos autorais.
+                    </p>
+
+                    <h5>Uso de Marcas e Direitos Autorais</h5>
+                    <p>
+                        Caso você utilize marcas, logotipos ou qualquer conteúdo protegido por direitos autorais em suas criações, deverá garantir que possui as autorizações necessárias para tanto. A gráfica e a equipe técnica deste site não se responsabilizam por eventuais violações de direitos autorais ou de propriedade intelectual decorrentes do uso indevido desses elementos.
+                    </p>
+
+                    <h5>Isenção de Responsabilidade</h5>
+                    <p>
+                        Este site e seus responsáveis não assumem qualquer responsabilidade por danos, prejuízos ou implicações legais que possam advir do uso do editor ou do conteúdo criado por meio dele. É de sua inteira responsabilidade assegurar que todas as edições e criações estejam em conformidade com as leis vigentes e com os direitos de terceiros.
+                    </p>
+
+                    <h5>Alterações nos Termos de Uso</h5>
+                    <p>
+                        Reservamo-nos o direito de, a qualquer momento, modificar estes Termos de Uso. As alterações entrarão em vigor imediatamente após sua publicação no site. Recomendamos que você verifique periodicamente esta página para estar sempre ciente das condições vigentes.
+                    </p>
+
+                    <h5>Legislação Aplicável e Foro</h5>
+                    <p>
+                        Estes Termos serão regidos e interpretados de acordo com a legislação vigente no país. Eventuais disputas ou controvérsias decorrentes do uso do site serão dirimidas no foro da comarca em que a empresa estiver sediada, salvo disposição em contrário por lei.
+                    </p>
+                </div>
+
+                <div class="modal-footer">
+                    <label for="acceptTermsBtn" class="mb-0" style="color: #000000;">
+                        <input type="checkbox" name="acceptTermsBtn" id="acceptTermsBtn">
+                        Concordo com os termos de uso
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
 
 
 
 
-<script>
+    <script type="module" src="customizador.js?ver=1740622541"></script>
 
 
-    // Tour com Intro.js
-    document.addEventListener("DOMContentLoaded", function() {
-        if (sessionStorage.getItem("tourStep") === "2") {
-            iniciarTourEditor();
-        }
 
-        function iniciarTourEditor() {
-            const tour = new Shepherd.Tour({
-                useModalOverlay: true,
-                defaultStepOptions: {
-                    classes: 'shadow-md bg-purple-dark',
-                    scrollTo: true
-                }
-            });
 
-            tour.addStep({
-                title: "Passo 2",
-                text: "Agora edite o adesivo nesta área.",
-                attachTo: {
-                    element: "#editor-container",
-                    on: "top"
-                },
-                buttons: [{
-                    text: "Finalizar",
-                    action: function() {
-                        sessionStorage.removeItem("tourStep"); // Remove o status do tour
-                        tour.complete();
+    <script>
+        // Tour com Intro.js
+        document.addEventListener("DOMContentLoaded", function() {
+            if (sessionStorage.getItem("tourStep") === "2") {
+                iniciarTourEditor();
+            }
+
+            function iniciarTourEditor() {
+                const tour = new Shepherd.Tour({
+                    useModalOverlay: true,
+                    defaultStepOptions: {
+                        classes: 'shadow-md bg-purple-dark',
+                        scrollTo: true
                     }
-                }]
-            });
-            tour.start();
-        }
-    });
-</script>
+                });
+
+                tour.addStep({
+                    title: "Passo 2",
+                    text: "Agora edite o adesivo nesta área.",
+                    attachTo: {
+                        element: "#editor-container",
+                        on: "top"
+                    },
+                    buttons: [{
+                        text: "Finalizar",
+                        action: function() {
+                            sessionStorage.removeItem("tourStep"); // Remove o status do tour
+                            tour.complete();
+                        }
+                    }]
+                });
+                tour.start();
+            }
+        });
+    </script>
