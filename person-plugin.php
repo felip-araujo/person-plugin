@@ -210,34 +210,9 @@ function plugin_processar_upload($plugin_sticker_dir)
 // -----------------------------
 // 4. Funções Auxiliares (Conversão de PNG para PDF)
 // -----------------------------
-function convert_png_to_pdf($png_path)
-{
-    if (!file_exists($png_path)) {
-        error_log("❌ O arquivo PNG não existe: " . $png_path);
-        return false;
-    }
-    try {
-        $pdf = new \TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
-        $pdf->setPrintHeader(false);
-        $pdf->setPrintFooter(false);
-        $pdf->SetMargins(0, 0, 0, 0);
-        $pdf->SetAutoPageBreak(false, 0);
-        $pdf->AddPage();
-        $pdf->Image($png_path, 0, 0, 210, 0, 'PNG', '', '', false, 300, '', false, false, 0, false, false, false);
-        $pdf_path = preg_replace('/\.png$/i', '.pdf', $png_path);
-        $pdf->Output($pdf_path, 'F');
-        if (file_exists($pdf_path)) {
-            error_log("✅ PDF gerado: " . $pdf_path);
-            return $pdf_path;
-        } else {
-            error_log("❌ Falha ao gerar o PDF a partir de: " . $png_path);
-            return false;
-        }
-    } catch (Exception $e) {
-        error_log("❌ Exceção ao gerar PDF: " . $e->getMessage());
-        return false;
-    }
-}
+
+
+
 
 // -----------------------------
 // 5. Templates de Exibição e Shortcodes
@@ -361,6 +336,18 @@ function salvar_adesivo_servidor()
     update_post_meta($product_id, '_price', $price);
     update_post_meta($product_id, '_adesivo_svg_url', $svg_url);
 
+
+
+    // Converte o SVG para PDF utilizando Inkscape
+    $pdf_path = convert_svg_to_pdf($upload_path_svg);
+    if ($pdf_path) {
+        // Converte o caminho absoluto para URL
+        $pdf_url = str_replace($upload_dir['basedir'], $upload_dir['baseurl'], $pdf_path);
+        update_post_meta($product_id, '_adesivo_pdf_url', $pdf_url);
+        error_log("✅ PDF salvo e meta atualizada: " . $pdf_url);
+    }
+
+
     /**
      * Cria um attachment para o SVG e define-o como imagem destacada (thumbnail)
      */
@@ -393,6 +380,47 @@ function salvar_adesivo_servidor()
         'cart_url' => wc_get_cart_url()
     ));
     wp_die();
+}
+
+// $pdf_path = convert_svg_to_pdf($upload_path_svg);
+
+function convert_svg_to_pdf($svg_path)
+{
+    if (!file_exists($svg_path)) {
+        error_log("❌ O arquivo SVG não existe: " . $svg_path);
+        return false;
+    }
+
+    try {
+        // Ajuste o caminho conforme o ambiente:
+        // No Windows:
+        $inkscape_path = escapeshellarg("C:\\Program Files\\Inkscape\\bin\\inkscape.exe");
+        // Para Linux/Mac, por exemplo:
+        // $inkscape_path = escapeshellarg("/usr/bin/inkscape");
+
+        // Define o caminho para salvar o PDF, substituindo a extensão .svg por .pdf
+        $pdf_path = preg_replace('/\.svg$/i', '.pdf', $svg_path);
+
+        // Monta o comando com parâmetros adicionais para melhor compatibilidade:
+        $command = $inkscape_path . " " . escapeshellarg($svg_path)
+            . " --export-type=pdf"
+            . " --export-text-to-path"
+            . " --export-area-drawing"
+            . " --export-filename=" . escapeshellarg($pdf_path);
+
+        exec($command, $output, $return_var);
+
+        if ($return_var === 0 && file_exists($pdf_path)) {
+            error_log("✅ PDF gerado com Inkscape: " . $pdf_path);
+            return $pdf_path;
+        } else {
+            error_log("❌ Falha ao converter SVG para PDF com Inkscape. Comando: " . $command);
+            return false;
+        }
+    } catch (Exception $e) {
+        error_log("❌ Exceção ao converter SVG para PDF: " . $e->getMessage());
+        return false;
+    }
 }
 
 // -----------------------------
@@ -434,38 +462,51 @@ function add_svg_to_order_item_meta($item, $cart_item_key, $values, $order)
 {
     if (!empty($values['adesivo_url'])) {
         $item->update_meta_data('_adesivo_svg_url', $values['adesivo_url']);
+        // Transfere também o PDF, se disponível
+        $pdf_url = get_post_meta($item->get_product_id(), '_adesivo_pdf_url', true);
+        if ($pdf_url) {
+            $item->update_meta_data('_adesivo_pdf_url', $pdf_url);
+        }
     }
 }
 add_action('woocommerce_checkout_create_order_line_item', 'add_svg_to_order_item_meta', 10, 4);
+
 
 // -----------------------------
 // 8. Envio do Link do SVG nos E-mails de Pedido
 // -----------------------------
 function adicionar_link_adesivo_email($order, $sent_to_admin, $plain_text, $email)
 {
-
     error_log("🚀 Hook 'adicionar_link_adesivo_email' acionado!");
-
     $output = '';
 
     foreach ($order->get_items() as $item_id => $item) {
         $svg_url = $item->get_meta('_adesivo_svg_url');
-
         if ($svg_url) {
             error_log("✅ SVG URL encontrado para o item $item_id: " . $svg_url);
-
-            // Obtém o caminho relativo do arquivo a partir da URL
             $upload_dir = wp_upload_dir();
-            $relative_path = str_replace($upload_dir['baseurl'] . '/', '', $svg_url);
+            $relative_svg = str_replace($upload_dir['baseurl'] . '/', '', $svg_url);
+            $download_link_svg = home_url('?download_svg=' . $relative_svg);
 
-            // Cria o link de download forçado via nossa rota
-            $download_link = home_url('?download_svg=' . $relative_path);
-            error_log("🔗 Link de download gerado: " . $download_link);
+            // Tenta recuperar também o PDF
+            $pdf_url = $item->get_meta('_adesivo_pdf_url');
+            if ($pdf_url) {
+                $relative_pdf = str_replace($upload_dir['baseurl'] . '/', '', $pdf_url);
+                $download_link_pdf = home_url('?download_pdf=' . $relative_pdf);
+            } else {
+                $download_link_pdf = '';
+            }
 
             if ($plain_text) {
-                $output .= "\n" . __('Download do Adesivo SVG (alta qualidade):', 'woocommerce') . ' ' . esc_url($download_link) . "\n";
+                $output .= "\n" . __('Download do Adesivo SVG (alta qualidade):', 'woocommerce') . ' ' . esc_url($download_link_svg) . "\n";
+                if (!empty($download_link_pdf)) {
+                    $output .= "\n" . __('Download do Adesivo PDF (vetorial):', 'woocommerce') . ' ' . esc_url($download_link_pdf) . "\n";
+                }
             } else {
-                $output .= '<p>' . __('Download do Adesivo SVG (alta qualidade):', 'woocommerce') . ' <a href="' . esc_url($download_link) . '" target="_blank">' . __('Clique aqui para baixar', 'woocommerce') . '</a></p>';
+                $output .= '<p>' . __('Download do Adesivo SVG (alta qualidade):', 'woocommerce') . ' <a href="' . esc_url($download_link_svg) . '" target="_blank">' . __('Clique aqui para baixar', 'woocommerce') . '</a></p>';
+                if (!empty($download_link_pdf)) {
+                    $output .= '<p>' . __('Download do Adesivo PDF (vetorial):', 'woocommerce') . ' <a href="' . esc_url($download_link_pdf) . '" target="_blank">' . __('Clique aqui para baixar', 'woocommerce') . '</a></p>';
+                }
             }
         } else {
             error_log("❌ Nenhuma URL SVG encontrada para o item $item_id.");
@@ -473,8 +514,7 @@ function adicionar_link_adesivo_email($order, $sent_to_admin, $plain_text, $emai
     }
 
     if (!empty($output)) {
-        error_log("📝 Link está sendo adicionado ao e-mail."); 
-
+        error_log("📝 Link de adesivo adicionado ao e-mail.");
         if ($plain_text) {
             echo "\n" . __('Adesivo Personalizado', 'woocommerce') . "\n" . $output;
         } else {
@@ -484,8 +524,7 @@ function adicionar_link_adesivo_email($order, $sent_to_admin, $plain_text, $emai
         error_log("⚠️ Nenhum link foi gerado para o e-mail.");
     }
 }
-add_action('woocommerce_email_order_meta', 'adicionar_link_adesivo_email', 10, 4);
-add_action('woocommerce_email_after_order_table', 'adicionar_link_adesivo_email', 10, 4);
+
 
 // -----------------------------
 // 9. Limpeza Agendada dos Produtos Temporários
