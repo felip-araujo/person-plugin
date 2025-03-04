@@ -16,7 +16,8 @@ require __DIR__ . '/templates/email-handlers.php';
 /* -------------------------------------------------------------------------
    1. Rota para Forçar Download do Arquivo (SVG ou PDF)
 ------------------------------------------------------------------------- */
-function force_download_file() {
+function force_download_file()
+{
     if (isset($_GET['download_file']) && !empty($_GET['download_file'])) {
         $relative_file = sanitize_text_field($_GET['download_file']);
         $upload_dir = wp_upload_dir();
@@ -45,13 +46,15 @@ add_action('template_redirect', 'force_download_file');
 /* -------------------------------------------------------------------------
    2. Uploads e Configurações Gerais
 ------------------------------------------------------------------------- */
-function permitir_svg_upload($mimes) {
+function permitir_svg_upload($mimes)
+{
     $mimes['svg'] = 'image/svg+xml';
     return $mimes;
 }
 add_filter('upload_mimes', 'permitir_svg_upload');
 
-function customizar_rodape_plugin($footer_text) {
+function customizar_rodape_plugin($footer_text)
+{
     $tela_atual = get_current_screen();
     if ($tela_atual->id === 'toplevel_page_plugin-adesivos') {
         return '';
@@ -60,7 +63,8 @@ function customizar_rodape_plugin($footer_text) {
 }
 add_filter('admin_footer_text', 'customizar_rodape_plugin');
 
-function carregar_bootstrap_no_admin($hook_suffix) {
+function carregar_bootstrap_no_admin($hook_suffix)
+{
     if ($hook_suffix === 'toplevel_page_plugin-adesivos') {
         wp_enqueue_style('bootstrap-css', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css');
         wp_enqueue_script('bootstrap-js', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js', array('jquery'), null, true);
@@ -72,7 +76,8 @@ add_action('admin_enqueue_scripts', 'carregar_bootstrap_no_admin');
 /* -------------------------------------------------------------------------
    3. Scripts e Estilos do Frontend
 ------------------------------------------------------------------------- */
-function person_plugin_enqueue_frontend_scripts() {
+function person_plugin_enqueue_frontend_scripts()
+{
     if (is_page('custom-sticker')) {
         wp_enqueue_style('bootstrap-css', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css');
         wp_enqueue_style('person-plugin-customizer-css', plugin_dir_url(__FILE__) . 'assets/css/customizador.css');
@@ -84,7 +89,8 @@ function person_plugin_enqueue_frontend_scripts() {
 }
 add_action('wp_enqueue_scripts', 'person_plugin_enqueue_frontend_scripts', 20);
 
-function person_plugin_enqueue_scripts() {
+function person_plugin_enqueue_scripts()
+{
     wp_enqueue_script('fabric-js', 'https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js', array(), null, true);
     wp_enqueue_script(
         'person-plugin-js',
@@ -99,7 +105,8 @@ function person_plugin_enqueue_scripts() {
 }
 add_action('wp_enqueue_scripts', 'person_plugin_enqueue_scripts');
 
-function add_module_attribute($tag, $handle, $src) {
+function add_module_attribute($tag, $handle, $src)
+{
     if ('person-plugin-js' === $handle) {
         $tag = '<script type="module" src="' . esc_url($src) . '"></script>';
     }
@@ -107,7 +114,8 @@ function add_module_attribute($tag, $handle, $src) {
 }
 add_filter('script_loader_tag', 'add_module_attribute', 10, 3);
 
-function meu_plugin_carregar_fontawesome_kit() {
+function meu_plugin_carregar_fontawesome_kit()
+{
     if (is_admin()) {
         wp_enqueue_script('font-awesome-kit', 'https://kit.fontawesome.com/d4755c66d3.js', array(), null, true);
     }
@@ -118,7 +126,8 @@ add_action('admin_enqueue_scripts', 'meu_plugin_carregar_fontawesome_kit');
 /* -------------------------------------------------------------------------
    4. Menu e Templates do Admin
 ------------------------------------------------------------------------- */
-function plugin_adicionar_menu() {
+function plugin_adicionar_menu()
+{
     add_menu_page(
         'Configurações de Adesivos',
         'Seus Adesivos',
@@ -131,7 +140,8 @@ function plugin_adicionar_menu() {
 }
 add_action('admin_menu', 'plugin_adicionar_menu');
 
-function plugin_pagina_de_configuracao() {
+function plugin_pagina_de_configuracao()
+{
     echo '<div class="alert alert-warning" style="display: inline-flex; align-items: center; font-size: 1.2rem; margin-top: 1rem; padding: 10px;">
     <i class="fa-solid fa-circle-exclamation" style="margin-right: 10px;"></i>
     <p style="margin: 0;">Crie uma página com a tag <strong>[customizador_adesivo_page]</strong> para exibir o editor de adesivos, copie a tag abaixo.</p>
@@ -148,7 +158,8 @@ function plugin_pagina_de_configuracao() {
     echo '</div>';
 }
 
-function plugin_processar_upload() {
+function plugin_processar_upload()
+{
     if (!isset($_POST['sticker_nonce']) || !wp_verify_nonce($_POST['sticker_nonce'], 'upload_sticker_nonce')) {
         echo '<p class="alert alert-danger">Nonce inválido!</p>';
         return;
@@ -189,7 +200,8 @@ function plugin_processar_upload() {
 /* -------------------------------------------------------------------------
    5. Função para Exibição do Editor (mantendo a exibição original)
 ------------------------------------------------------------------------- */
-function person_plugin_display_customizer($sticker_url = '') {
+function person_plugin_display_customizer($sticker_url = '')
+{
     wp_enqueue_script('person-plugin-customizer-js', plugin_dir_url(__FILE__) . 'assets/js/customizador.js', array('jquery', 'konva-js'), null, true);
     wp_localize_script('person-plugin-customizer-js', 'pluginData', array(
         'stickerUrl' => $sticker_url,
@@ -204,7 +216,8 @@ function person_plugin_display_customizer($sticker_url = '') {
 /* -------------------------------------------------------------------------
    6. Shortcode para Exibição do Customizador na Página
 ------------------------------------------------------------------------- */
-function person_plugin_customizer_page() {
+function person_plugin_customizer_page()
+{
     ob_start();
     include plugin_dir_path(__FILE__) . 'templates/customizador-page.php';
     return ob_get_clean();
@@ -215,27 +228,42 @@ add_shortcode('customizador_adesivo_page', 'person_plugin_customizer_page');
 /* -------------------------------------------------------------------------
    7. Funções Auxiliares para Conversão de SVG para PDF
 ------------------------------------------------------------------------- */
-function convert_svg_to_pdf($svg_path) {
+function convert_svg_to_pdf($svg_path)
+{
     if (!file_exists($svg_path)) {
         error_log("❌ O arquivo SVG não existe: " . $svg_path);
         return false;
     }
     try {
-        // Ajuste o caminho conforme o ambiente – exemplo para Windows:
+        // Ajuste o caminho conforme seu ambiente
         $inkscape_path = escapeshellarg("C:\\Program Files\\Inkscape\\bin\\inkscape.exe");
-        // Para Linux/Mac, comente a linha acima e descomente a linha abaixo:
+        // Para Linux/Mac, por exemplo:
         // $inkscape_path = escapeshellarg("/usr/bin/inkscape");
 
-        // Define o caminho para salvar o PDF, substituindo a extensão .svg por .pdf
+        // Lê o conteúdo do SVG para detectar se tem página (width/height ou viewBox)
+        $svg_content = file_get_contents($svg_path);
+        // Se encontrar "width=" ou "height=" ou "viewBox=", presumimos que há página definida
+        $has_page = (bool) preg_match('/<svg[^>]*(width=|height=|viewBox=)/i', $svg_content);
+
+        // Define caminho do PDF
         $pdf_path = preg_replace('/\.svg$/i', '.pdf', $svg_path);
 
-        // Utiliza a opção --export-area-page para exportar a área definida no SVG,
-        // preservando suas dimensões originais.
-        $command = $inkscape_path . " " . escapeshellarg($svg_path) .
-            " --export-type=pdf" .
-            " --export-text-to-path" .
-            " --export-area-page" .
-            " --export-filename=" . escapeshellarg($pdf_path);
+        if ($has_page) {
+            // Se tiver página, exporta exatamente a página
+            $command = $inkscape_path . " " . escapeshellarg($svg_path) .
+                " --export-type=pdf" .
+                " --export-text-to-path" .
+                " --export-area-page" .  // <--- respeita o tamanho definido no SVG
+                " --export-filename=" . escapeshellarg($pdf_path);
+        } else {
+            // Se não tiver página, exporta só o conteúdo (desenho),
+            // sem margem extra. Se quiser uma margem, adicione: --export-margin=10
+            $command = $inkscape_path . " " . escapeshellarg($svg_path) .
+                " --export-type=pdf" .
+                " --export-text-to-path" .
+                " --export-area-drawing" .
+                " --export-filename=" . escapeshellarg($pdf_path);
+        }
 
         exec($command, $output, $return_var);
 
@@ -243,7 +271,7 @@ function convert_svg_to_pdf($svg_path) {
             error_log("✅ PDF gerado com Inkscape: " . $pdf_path);
             return $pdf_path;
         } else {
-            error_log("❌ Falha ao converter SVG para PDF com Inkscape. Comando: " . $command);
+            error_log("❌ Falha ao converter SVG para PDF. Comando: " . $command);
             return false;
         }
     } catch (Exception $e) {
@@ -253,10 +281,12 @@ function convert_svg_to_pdf($svg_path) {
 }
 
 
+
 /* -------------------------------------------------------------------------
    8. Salvamento do SVG e Criação do Produto Temporário no WooCommerce
 ------------------------------------------------------------------------- */
-function salvar_imagem_personalizada($base64_image) {
+function salvar_imagem_personalizada($base64_image)
+{
     $upload_dir = wp_upload_dir();
     $filename = 'adesivo-' . time() . '.png';
     $upload_path = $upload_dir['path'] . '/' . $filename;
@@ -278,7 +308,8 @@ function salvar_imagem_personalizada($base64_image) {
 add_action('wp_ajax_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
 add_action('wp_ajax_nopriv_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
 
-function salvar_adesivo_servidor() {
+function salvar_adesivo_servidor()
+{
     if (!isset($_POST['adesivo_svg']) || !isset($_POST['price'])) {
         wp_send_json_error(array('message' => 'Dados incompletos.'));
         wp_die();
@@ -366,7 +397,8 @@ function salvar_adesivo_servidor() {
 /* -------------------------------------------------------------------------
    9. Exibição do Adesivo no Carrinho, Checkout e E-mails
 ------------------------------------------------------------------------- */
-function restore_custom_cart_item_data($cart_item, $cart_item_key) {
+function restore_custom_cart_item_data($cart_item, $cart_item_key)
+{
     if (isset($cart_item['adesivo_url']) && !empty($cart_item['adesivo_url'])) {
         $cart_item['data']->add_meta_data('adesivo_url', $cart_item['adesivo_url'], true);
     } else {
@@ -383,7 +415,8 @@ function restore_custom_cart_item_data($cart_item, $cart_item_key) {
 }
 add_filter('woocommerce_get_cart_item_from_session', 'restore_custom_cart_item_data', 20, 2);
 
-function exibir_imagem_personalizada_no_carrinho($item_data, $cart_item) {
+function exibir_imagem_personalizada_no_carrinho($item_data, $cart_item)
+{
     if (!empty($cart_item['adesivo_url'])) {
         $item_data[] = array(
             'key'     => __('Imagem Personalizada', 'woocommerce'),
@@ -399,7 +432,8 @@ add_filter('woocommerce_get_item_data', 'exibir_imagem_personalizada_no_carrinho
 /* -------------------------------------------------------------------------
    10. Transferência do Meta do Carrinho para o Pedido
 ------------------------------------------------------------------------- */
-function add_svg_to_order_item_meta($item, $cart_item_key, $values, $order) {
+function add_svg_to_order_item_meta($item, $cart_item_key, $values, $order)
+{
     if (!empty($values['adesivo_url'])) {
         $item->update_meta_data('_adesivo_svg_url', $values['adesivo_url']);
         // Transfere também o PDF, se disponível
@@ -415,7 +449,8 @@ add_action('woocommerce_checkout_create_order_line_item', 'add_svg_to_order_item
 /* -------------------------------------------------------------------------
    11. Exibição do Link do Adesivo nos E-mails de Pedido
 ------------------------------------------------------------------------- */
-function adicionar_link_adesivo_email($order, $sent_to_admin, $plain_text, $email) {
+function adicionar_link_adesivo_email($order, $sent_to_admin, $plain_text, $email)
+{
     error_log("🚀 Hook 'adicionar_link_adesivo_email' acionado!");
     $output = '';
 
@@ -469,7 +504,8 @@ add_action('woocommerce_email_after_order_table', 'adicionar_link_adesivo_email'
 /* -------------------------------------------------------------------------
    12. Anexar PDF nos E-mails do WooCommerce
 ------------------------------------------------------------------------- */
-function add_pdf_attachment_to_woocommerce_email($attachments, $email_id, $order) {
+function add_pdf_attachment_to_woocommerce_email($attachments, $email_id, $order)
+{
     if (in_array($email_id, array('customer_processing_order', 'customer_completed_order'))) {
         foreach ($order->get_items() as $item) {
             $pdf_url = $item->get_meta('_adesivo_pdf_url');
@@ -494,7 +530,8 @@ add_filter('woocommerce_email_attachments', 'add_pdf_attachment_to_woocommerce_e
 /* -------------------------------------------------------------------------
    13. Limpeza Agendada dos Produtos Temporários
 ------------------------------------------------------------------------- */
-function limpar_produtos_personalizados_antigos() {
+function limpar_produtos_personalizados_antigos()
+{
     global $wpdb;
     $tempo_limite = strtotime('-24 hours');
     $query = $wpdb->prepare("
@@ -511,7 +548,8 @@ function limpar_produtos_personalizados_antigos() {
     }
 }
 
-function agendar_limpeza_produtos_personalizados() {
+function agendar_limpeza_produtos_personalizados()
+{
     if (!wp_next_scheduled('evento_limpar_produtos_personalizados')) {
         wp_schedule_event(time(), 'daily', 'evento_limpar_produtos_personalizados');
     }
@@ -519,7 +557,8 @@ function agendar_limpeza_produtos_personalizados() {
 add_action('wp', 'agendar_limpeza_produtos_personalizados');
 add_action('evento_limpar_produtos_personalizados', 'limpar_produtos_personalizados_antigos');
 
-function desativar_limpeza_produtos_personalizados() {
+function desativar_limpeza_produtos_personalizados()
+{
     $timestamp = wp_next_scheduled('evento_limpar_produtos_personalizados');
     if ($timestamp) {
         wp_unschedule_event($timestamp, 'evento_limpar_produtos_personalizados');
@@ -539,7 +578,8 @@ add_filter('woocommerce_order_item_thumbnail', function ($product_image, $item) 
     return $product_image;
 }, 10, 2);
 
-function carregar_font_awesome() {
+function carregar_font_awesome()
+{
     wp_enqueue_style('font-awesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css', array(), '5.15.4');
 }
 add_action('admin_enqueue_scripts', 'carregar_font_awesome');
@@ -550,7 +590,8 @@ add_action('wp_enqueue_scripts', 'carregar_font_awesome');
    15. Criação da Tabela (caso necessário)
 ------------------------------------------------------------------------- */
 register_activation_hook(__FILE__, 'criar_tabela_adesivos');
-function criar_tabela_adesivos() {
+function criar_tabela_adesivos()
+{
     global $wpdb;
     $tabela = $wpdb->prefix . 'adesivos';
     $charset_collate = $wpdb->get_charset_collate();
