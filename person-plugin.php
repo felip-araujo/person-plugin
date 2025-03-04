@@ -25,7 +25,6 @@ function force_download_file() {
 
         if (file_exists($filepath) && strpos($filepath, $upload_dir['basedir']) === 0) {
             header('Content-Description: File Transfer');
-            // Ajusta o content-type conforme necessário (application/pdf para PDF, por exemplo)
             header('Content-Type: application/pdf');
             header('Content-Disposition: attachment; filename="' . basename($filepath) . '"');
             header('Expires: 0');
@@ -230,11 +229,12 @@ function convert_svg_to_pdf($svg_path) {
         // Define o caminho para salvar o PDF, substituindo a extensão .svg por .pdf
         $pdf_path = preg_replace('/\.svg$/i', '.pdf', $svg_path);
 
-        // Monta o comando para converter o SVG em PDF:
+        // Utiliza a opção --export-area-page para exportar a área definida no SVG,
+        // preservando suas dimensões originais.
         $command = $inkscape_path . " " . escapeshellarg($svg_path) .
             " --export-type=pdf" .
             " --export-text-to-path" .
-            " --export-area-drawing" .
+            " --export-area-page" .
             " --export-filename=" . escapeshellarg($pdf_path);
 
         exec($command, $output, $return_var);
@@ -287,7 +287,7 @@ function salvar_adesivo_servidor() {
     $price = floatval($_POST['price']);
     error_log("📌 Preço recebido no PHP: " . $price);
 
-    // Salva o conteúdo SVG em um arquivo
+    // Salva o conteúdo SVG em um arquivo sem modificações (mantendo dimensões originais)
     $upload_dir = wp_upload_dir();
     $filename_svg = 'adesivo-' . time() . '.svg';
     $upload_path_svg = $upload_dir['path'] . '/' . $filename_svg;
