@@ -169,13 +169,19 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
 
         <div data-intro="Aqui você pode selecionar os adesivos disponíveis para customização." data-step="1" id="stickerAccordion" class="accordion">
             <?php
-            // Agrupando adesivos por letra inicial do nome
+            // Agrupando adesivos por letra inicial do nome – somente adesivos não editados
             $args = array(
                 'post_type'      => 'attachment',
                 'post_mime_type' => 'image/svg+xml',
                 'posts_per_page' => -1,
                 'orderby'        => 'title',
-                'order'          => 'ASC'
+                'order'          => 'ASC',
+                'meta_query'     => array(
+                    array(
+                        'key'     => '_adesivo_editado',
+                        'compare' => 'NOT EXISTS'
+                    )
+                )
             );
             $stickers = get_posts($args);
 
@@ -210,7 +216,6 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
                                 <div class="sticker-grid">
                                     <?php foreach ($sticker_group as $sticker) : ?>
                                         <a href="<?php echo esc_url(add_query_arg('sticker', urlencode($sticker['url']))); ?>" class="sticker-item text-center m-2" data-price="<?php echo esc_attr($sticker['price']); ?>">
-
                                             <img id="img-adesivo" src="<?php echo esc_url($sticker['url']); ?>" class="img-fluid rounded border p-2 bg-light" alt="<?php echo esc_attr($sticker['name']); ?>">
                                             <span class="d-block small mt-1 sticker-name"><?php echo esc_html($sticker['name']); ?></span>
                                             <?php if (!empty($sticker['price'])) : ?>
@@ -218,7 +223,6 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
                                             <?php endif; ?>
                                         </a>
                                     <?php endforeach; ?>
-
                                     <input type="hidden" id="stickerPrice" name="stickerPrice" value="0.1">
                                 </div>
                             </div>
@@ -229,6 +233,7 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
                 echo '<p class="text-center text-muted">Nenhum adesivo encontrado.</p>';
             endif;
             ?>
+
         </div>
     </div>
 </div>
