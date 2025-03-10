@@ -316,6 +316,42 @@ function salvar_imagem_personalizada($base64_image) {
 add_action('wp_ajax_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
 add_action('wp_ajax_nopriv_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
 
+
+function ajustar_svg_dimensoes($svg_content) {
+    $dom = new DOMDocument();
+    // Suprime warnings de parsing (caso o SVG não esteja 100% válido)
+    libxml_use_internal_errors(true);
+    $dom->loadXML($svg_content);
+    libxml_clear_errors();
+
+    $svg = $dom->getElementsByTagName('svg')->item(0);
+    if ($svg) {
+        $width = $svg->getAttribute('width');
+        $height = $svg->getAttribute('height');
+
+        // Verifica se width e height estão definidos e se contêm "mm"
+        if (empty($width) || empty($height) || (stripos($width, 'mm') === false && stripos($height, 'mm') === false)) {
+            if ($svg->hasAttribute('viewBox')) {
+                // viewBox deve ter o formato: "minX minY width height"
+                $viewBox = $svg->getAttribute('viewBox');
+                $parts = preg_split('/\s+/', trim($viewBox));
+                if (count($parts) === 4) {
+                    $w = $parts[2];
+                    $h = $parts[3];
+                    // Define width e height com a unidade "mm"
+                    $svg->setAttribute('width', $w . 'mm');
+                    $svg->setAttribute('height', $h . 'mm');
+                }
+            }
+        }
+        return $dom->saveXML();
+    }
+    return $svg_content;
+}
+
+
+
+
 function salvar_adesivo_servidor() {
     if (!isset($_POST['adesivo_svg']) || !isset($_POST['price'])) {
         wp_send_json_error(array('message' => 'Dados incompletos.'));
@@ -325,11 +361,14 @@ function salvar_adesivo_servidor() {
     $price = floatval($_POST['price']);
     error_log("📌 Preço recebido no PHP: " . $price);
 
-    // Salva o conteúdo SVG em um arquivo sem modificações (mantendo dimensões originais)
+    // Salva o conteúdo SVG em um arquivo sem modificações – mas primeiro ajusta as dimensões
     $upload_dir = wp_upload_dir();
     $filename_svg = 'adesivo-' . time() . '.svg';
     $upload_path_svg = $upload_dir['path'] . '/' . $filename_svg;
     $svg_content = wp_unslash($_POST['adesivo_svg']);
+
+    // Ajusta os atributos de dimensão do SVG (garante width/height em mm)
+    $svg_content = ajustar_svg_dimensoes($svg_content);
 
     if (file_put_contents($upload_path_svg, $svg_content) === false) {
         error_log('❌ Erro ao salvar o SVG.');
@@ -639,4 +678,3 @@ function exclude_edited_attachments_pre_get_posts($query) {
     }
 }
 add_action('pre_get_posts', 'exclude_edited_attachments_pre_get_posts');
-?>
