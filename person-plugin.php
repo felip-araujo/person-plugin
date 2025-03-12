@@ -350,8 +350,6 @@ function ajustar_svg_dimensoes($svg_content) {
 }
 
 
-
-
 function salvar_adesivo_servidor() {
     if (!isset($_POST['adesivo_svg']) || !isset($_POST['price'])) {
         wp_send_json_error(array('message' => 'Dados incompletos.'));
