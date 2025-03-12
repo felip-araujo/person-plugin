@@ -8,6 +8,7 @@ var historyStates = [];
 var historyIndex = -1;
 var tempTextObject = null;
 var selectedObject = null; // Objeto(s) ativo(s) para edição de cor/gradiente
+var originalSvgDimensions = { width: null, height: null };
 
 // Cria um seletor de cor inline para edição direta (se necessário)
 var inlineColorPicker = document.createElement('input');
@@ -74,15 +75,37 @@ function converterEstilosInline(svgText) {
     return new XMLSerializer().serializeToString(doc);
 }
 
+
+function getOriginalDimensions(svgText) {
+    var parser = new DOMParser();
+    var doc = parser.parseFromString(svgText, 'image/svg+xml');
+    var svgElem = doc.querySelector('svg');
+    if (svgElem) {
+        var w = svgElem.getAttribute('width');
+        var h = svgElem.getAttribute('height');
+        // Remove "mm" e converte para número, se necessário
+        if (w && h) {
+            return { width: parseFloat(w), height: parseFloat(h) };
+        }
+    }
+    return null;
+}
+
+
 // ---------------------------------------------------------------------------
-// FUNÇÃO: Carregar adesivo via Fabric.js (removendo scripts internos)
+// FUNÇÃO: Carregar adesivo via Fabric.js (mantendo as dimensões originais)
 function carregarAdesivo(stickerUrl) {
     fetch(stickerUrl)
         .then(function (response) {
             return response.text();
         })
         .then(function (svgText) {
-            // Remove todas as tags <script> do SVG para evitar execução de código indesejada
+            // Armazena as dimensões originais antes de modificar o SVG
+            var dims = getOriginalDimensions(svgText);
+            if (dims) {
+                originalSvgDimensions = dims;
+            }
+            // Remove as tags <script>
             var parser = new DOMParser();
             var doc = parser.parseFromString(svgText, 'image/svg+xml');
             var scripts = doc.querySelectorAll('script');
@@ -90,8 +113,11 @@ function carregarAdesivo(stickerUrl) {
                 script.parentNode.removeChild(script);
             });
             var cleanedSVG = new XMLSerializer().serializeToString(doc);
-            // (Opcional) converter estilos inline:
+
+            // (Opcional) converter estilos inline se necessário:
             // cleanedSVG = converterEstilosInline(cleanedSVG);
+
+            // Carrega o SVG no Fabric sem aplicar escala (para manter as dimensões originais)
             fabric.loadSVGFromString(cleanedSVG, function (objects, options) {
                 var svgGroup = fabric.util.groupSVGElements(objects, options);
                 svgGroup.set({
@@ -99,20 +125,16 @@ function carregarAdesivo(stickerUrl) {
                     top: 0,
                     selectable: true,
                 });
+                // Centraliza o objeto sem alterar seu tamanho
                 var canvasWidth = canvas.getWidth();
                 var canvasHeight = canvas.getHeight();
-                var scale = Math.min(canvasWidth / svgGroup.width, canvasHeight / svgGroup.height);
-                svgGroup.scale(scale);
                 svgGroup.set({
-                    left: (canvasWidth - svgGroup.width * scale) / 2,
-                    top: (canvasHeight - svgGroup.height * scale) / 2,
+                    left: (canvasWidth - svgGroup.width) / 2,
+                    top: (canvasHeight - svgGroup.height) / 2,
                 });
                 canvas.add(svgGroup);
                 canvas.renderAll();
-
-                // Chama a função para preencher as bolinhas de cores assim que o adesivo for carregado
                 preencherSelecaoDeCores();
-
                 saveHistory();
             });
         })
@@ -120,7 +142,6 @@ function carregarAdesivo(stickerUrl) {
             console.error("Erro ao carregar o adesivo:", error);
         });
 }
-
 // ---------------------------------------------------------------------------
 // FUNÇÃO: Preencher seleção de cores (bolinhas) com base nos fills dos objetos
 function preencherSelecaoDeCores() {
@@ -251,9 +272,6 @@ function updateUndoRedoButtons() {
 // ---------------------------------------------------------------------------
 // FUNÇÕES DE TEXTO, INSERÇÃO DE IMAGEM, ZOOM, ETC.
 
-// Adiciona texto usando fabric.IText (edição inline ao dar duplo clique)
-
-
 // Variável para armazenar o objeto de texto atual
 let currentTextObj;
 
@@ -304,21 +322,12 @@ document.getElementById('fontPicker').addEventListener('change', function (e) {
     }
 });
 
-
-
-
 function addText() {
-    // Se você quiser, finalize o objeto criado, por exemplo,
-    // removendo o listener do input ou resetando a variável.
-    // Aqui, podemos simplesmente limpar o input e garantir que
-    // o objeto de texto atual fique "fixado" no canvas.
     currentTextObj && currentTextObj.set({ editable: false });
     currentTextObj = null;
-    // Opcionalmente, limpe o input:
     document.getElementById('texto').value = '';
     canvas.renderAll();
 }
-
 
 // Insere uma imagem a partir de arquivo
 function inserirImagem() {
@@ -357,34 +366,27 @@ function aplicarZoom(direction) {
     canvas.setZoom(newZoom);
 }
 
-// ---------------------------------------------------------------------------
-// EVENTOS INICIAIS E CONFIGURAÇÃO DO CANVAS
 document.addEventListener('DOMContentLoaded', function () {
     var canvasElement = document.getElementById('adesivo-canvas');
     if (!canvasElement) {
         console.error("Elemento com id 'adesivo-canvas' não encontrado. Certifique-se de usar uma tag <canvas>.");
         return;
     }
-    // Inicializa o canvas Fabric
     canvas = new fabric.Canvas('adesivo-canvas', {
         width: canvasElement.offsetWidth,
         height: canvasElement.offsetHeight,
         preserveObjectStacking: true,
     });
 
-    // Se houver URL do adesivo, carrega-o
     if (typeof pluginData !== 'undefined' && pluginData.stickerUrl) {
         carregarAdesivo(pluginData.stickerUrl);
     }
 
-    // Chama o editor de gradiente importado após a inicialização do canvas.
-    // Define uma função para obter o objeto selecionado.
     function getSelectedObject() {
         return selectedObject;
     }
     setupGradientEditor(canvas, getSelectedObject);
 
-    // Configura os botões e eventos
     document.getElementById('adicionar-texto-botao').addEventListener('click', addText);
     document.getElementById('zoom-in').addEventListener('click', function () {
         aplicarZoom('in');
@@ -433,7 +435,6 @@ document.addEventListener('DOMContentLoaded', function () {
         saveHistory();
     });
 
-    // Função para salvar o adesivo (já existente no seu código)
     function salvarAdesivo() {
         if (!canvas) {
             console.error('Canvas não definido!');
@@ -441,12 +442,19 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // Gera o SVG do canvas (conteúdo vetorial)
+        // Gera o SVG do canvas
         var adesivoSVG = canvas.toSVG();
-        console.log('SVG gerado:', adesivoSVG);
+        console.log('SVG gerado (antes da correção de dimensões):', adesivoSVG);
+
+        // Se as dimensões originais foram extraídas, substitua os atributos no SVG exportado
+        if (originalSvgDimensions.width && originalSvgDimensions.height) {
+            adesivoSVG = adesivoSVG.replace(/width="[^"]+"/, 'width="' + originalSvgDimensions.width + 'mm"')
+                .replace(/height="[^"]+"/, 'height="' + originalSvgDimensions.height + 'mm"')
+                .replace(/viewBox="[^"]+"/, 'viewBox="0 0 ' + originalSvgDimensions.width + ' ' + originalSvgDimensions.height + '"');
+        }
+        console.log('SVG exportado com dimensões originais:', adesivoSVG);
 
         var price = $('#stickerPrice').val();
-
         if (!price || isNaN(price) || price <= 0) {
             alert('Erro: Preço inválido!');
             return;
@@ -458,7 +466,7 @@ document.addEventListener('DOMContentLoaded', function () {
             dataType: 'json',
             data: {
                 action: 'salvar_adesivo_servidor',
-                adesivo_svg: adesivoSVG, // enviando o conteúdo vetorial
+                adesivo_svg: adesivoSVG, // Envia o SVG com as dimensões originais
                 price: price,
             },
             success: function (response) {
@@ -476,31 +484,21 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-
-
-    // Evento do botão de salvar
     $('#salvar-adesivo-botao').on('click', function (e) {
         e.preventDefault();
-
-        // Verifica se os termos já foram aceitos
         var aceitoTermos = $('#aceito-termos').prop('checked');
 
         if (!aceitoTermos) {
-            // Exibe o modal dos termos
             $('#termsModal').modal('show');
         } else {
             salvarAdesivo();
         }
     });
 
-    // Quando o usuário marcar o checkbox do modal, aceite os termos e salve
     $('#acceptTermsBtn').on('change', function () {
         if ($(this).is(':checked')) {
-            // Marque o checkbox oculto ou de controle dos termos
             $('#aceito-termos').prop('checked', true);
-            // Fecha o modal
             $('#termsModal').modal('hide');
-            // Salva o adesivo
             salvarAdesivo();
         }
     });
@@ -521,7 +519,6 @@ document.addEventListener('DOMContentLoaded', function () {
         preencherSelecaoDeCores();
     });
 
-    // Verifica elementos opcionais
     var iniciarTourBtn = document.getElementById('iniciar-tour');
     if (iniciarTourBtn) {
         iniciarTourBtn.addEventListener("click", function () {
