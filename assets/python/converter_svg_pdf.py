@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 import sys
 import os
+
+# Adiciona o diretório com a biblioteca do Cairo ao PATH.
+# Ajuste o caminho conforme onde sua biblioteca do Cairo está instalada.
+if os.name == 'nt':
+    os.environ['PATH'] = r"C:\msys64\mingw64\bin;" + os.environ.get('PATH', '')
+
 import cairosvg
 
 def main():
@@ -15,7 +21,7 @@ def main():
     print("Input SVG:", input_svg)
     print("Output PDF:", output_pdf)
     
-    # Se estiver no Windows, converte o caminho para o formato URL
+    # Se estiver no Windows e o caminho não estiver no formato URL, ajuste-o
     if os.name == 'nt' and not input_svg.lower().startswith("file:///"):
         input_svg = "file:///" + input_svg.replace("\\", "/")
         print("Input SVG ajustado:", input_svg)
