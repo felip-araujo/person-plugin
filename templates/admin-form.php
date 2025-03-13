@@ -12,6 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_sticker_price'])
     }
 }
 
+
 // Formulário de envio de adesivos e busca
 echo '<div class="row align-items-center mb-3">';
 echo '<div class="col-md-6">';
@@ -50,9 +51,7 @@ echo '
         </td>
         <!-- Item 2 -->
         <td style="padding: 10px; text-align: center;">
-            <a href="#form-adesivos" style="text-decoration: none; color: #343a40; display: flex; align-items: center; justify-content: center;">
-                <i class="fas fa-gear" style="margin-right: 8px;"></i>
-                <span>Configurações</span>
+           
             </a>
         </td>
         <!-- Item 3 -->
@@ -84,6 +83,12 @@ $args_attachments = array(
     'post_status'    => 'inherit',
     'posts_per_page' => $posts_per_page,
     'paged'          => $current_page,
+    'meta_query'     => array(
+        array(
+            'key'     => '_adesivo_editado',
+            'compare' => 'NOT EXISTS'
+        )
+    )
 );
 
 // Adiciona o filtro de busca, se aplicável
@@ -219,85 +224,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_attachment']))
     }
 }
 
-// Seção de Configurações
-// echo '<h3 >Configurações</h3>';
-echo '
-<div class=" d-flex align-items-center" role="alert">
-    <i class="fas fa-gear me-2"></i>
-    <h4 style="margin-top: .4rem;margin-left: .5rem; font-size: 1.2rem"; class="mb-6"> Configurações </h4>
-</div>';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_manual_id'])) {
-    if (!isset($_POST['manual_id_nonce_field']) || !wp_verify_nonce($_POST['manual_id_nonce_field'], 'manual_product_id_nonce')) {
-        die('Ação não autorizada.');
-    }
-
-    $manual_product_id = intval($_POST['manual_product_id']); // Captura o ID do produto enviado no formulário
-
-    if ($manual_product_id) {
-        // Salva o ID do produto em uma opção ou meta (como preferir)
-        update_option('manual_product_id', $manual_product_id);
-
-        // Mensagem de sucesso
-        echo '<div class="notice notice-success"><p>ID do produto salvo com sucesso!</p></div>';
-    } else {
-        // Mensagem de erro
-        echo '<div class="notice notice-error"><p>Erro ao salvar o ID do produto. Verifique o valor inserido.</p></div>';
-    }
-}
-
-$recognize_sticker_setting = get_option('person_plugin_recognize_sticker', 'yes');
-$admin_email = get_option('person_plugin_admin_email', '');
-$sender_email = get_option('person_plugin_sender_email', '');
-$sender_password = get_option('person_plugin_sender_password', '');
-
-echo '<form id="form-adesivos" method="post">';
-wp_nonce_field('person_plugin_settings_nonce', 'person_plugin_nonce');
-echo '<div class="form-group">';
-echo '<label for="recognize_sticker">Ativar reconhecimento de adesivo pelo nome do produto:</label>';
-echo '<select name="recognize_sticker" id="recognize_sticker" class="form-control">';
-echo '<option value="yes"' . selected($recognize_sticker_setting, 'yes', false) . '>Sim</option>';
-echo '<option value="no"' . selected($recognize_sticker_setting, 'no', false) . '>Não</option>';
-echo '</select>';
-echo '</div>';
-
-echo '<div class="form-group">';
-echo '<label for="admin_email">Email da Equipe de Produção (Administrador):</label>';
-echo '<input type="email" name="admin_email" id="admin_email" class="form-control" value="' . esc_attr($admin_email) . '">';
-echo '</div>';
-
-echo '<div class="form-group">';
-echo '<label for="sender_email">Email de Remetente:</label>';
-echo '<input type="email" name="sender_email" id="sender_email" class="form-control" value="' . esc_attr($sender_email) . '">';
-echo '</div>';
-
-echo '<div class="form-group">';
-echo '<label for="sender_password">Senha de App do Email de Remetente:</label>';
-echo '<input type="password" name="sender_password" id="sender_password" class="form-control" value="' . esc_attr($sender_password) . '">';
-echo '</div>';
-
-echo '<button type="submit" name="save_plugin_settings" class="btn btn-primary">Salvar Configurações</button>';
-echo '</form>';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_plugin_settings'])) {
-    if (!isset($_POST['person_plugin_nonce']) || !wp_verify_nonce($_POST['person_plugin_nonce'], 'person_plugin_settings_nonce')) {
-        echo '<p class="alert alert-danger">Nonce inválido!</p>';
-    } else {
-        $recognize_sticker = sanitize_text_field($_POST['recognize_sticker']);
-        update_option('person_plugin_recognize_sticker', $recognize_sticker);
-
-        $admin_email = sanitize_email($_POST['admin_email']);
-        update_option('person_plugin_admin_email', $admin_email);
-
-        $sender_email = sanitize_email($_POST['sender_email']);
-        update_option('person_plugin_sender_email', $sender_email);
-
-        $sender_password = sanitize_text_field($_POST['sender_password']);
-        update_option('person_plugin_sender_password', $sender_password);
-
-        echo '<p class="alert alert-success">Configurações salvas com sucesso!</p>';
-    }
-}
 
 // Scripts
 echo "

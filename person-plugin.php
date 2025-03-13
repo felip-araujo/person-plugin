@@ -263,23 +263,27 @@ function convert_svg_to_pdf($svg_path)
         return false;
     }
 
-    // Normaliza os caminhos para usar sempre barras normais
+    // Normaliza o caminho (usar barras normais)
     $svg_path = str_replace('\\', '/', $svg_path);
 
     // Define o caminho para o SVG processado
     $processed_svg_path = preg_replace('/\.svg$/i', '_processed.svg', $svg_path);
     $processed_svg_path = str_replace('\\', '/', $processed_svg_path);
 
-    // Chama o script Python para pré‑processar o SVG (manter dimensões originais e cores)
-    $python_script = __DIR__ . '/assets/python/process_svg.py';
-    $python_script = str_replace('\\', '/', $python_script);
-    // Se o Python estiver no PATH, use "python"; caso contrário, coloque o caminho completo
-    $python_exe = '"C:/Users/DPO-ISMA/AppData/Local/Programs/Python/Python313/python.exe"';
+    // Caminho para o script de pré-processamento
+    $python_process_script = __DIR__ . '/assets/python/process_svg.py';
+    $python_process_script = str_replace('\\', '/', $python_process_script);
 
+    // Use "python" (ou "python3", conforme seu ambiente)
+    $python_exe = 'C:/Users/DPO-ISMA/AppData/Local/Programs/Python/Python313/python.exe';
+
+
+    // Comando para pré-processar o SVG
     $command = escapeshellcmd($python_exe) . " "
-        . escapeshellarg($python_script) . " "
+        . escapeshellarg($python_process_script) . " "
         . escapeshellarg($svg_path) . " "
         . escapeshellarg($processed_svg_path) . " 2>&1";
+
     exec($command, $output, $return_var);
 
     if ($return_var !== 0 || !file_exists($processed_svg_path)) {
@@ -288,32 +292,32 @@ function convert_svg_to_pdf($svg_path)
         return false;
     }
 
-    // Define o caminho para o PDF inicial gerado pelo CairoSVG
-    $initial_pdf_path = preg_replace('/\.svg$/i', '_initial.pdf', $svg_path);
+    // Define os caminhos para os PDFs
+    $initial_pdf_path = preg_replace('/\.svg$/i', '_initial.pdf', $processed_svg_path);
     $initial_pdf_path = str_replace('\\', '/', $initial_pdf_path);
-    // Define o caminho final para o PDF
-    $final_pdf_path = preg_replace('/\.svg$/i', '.pdf', $svg_path);
+    $final_pdf_path = preg_replace('/\.svg$/i', '.pdf', $processed_svg_path);
     $final_pdf_path = str_replace('\\', '/', $final_pdf_path);
 
-    // Chama o script Python que utiliza o CairoSVG para converter o SVG processado em PDF
-    $python_script_cairo = __DIR__ . '/assets/python/converter_svg_pdf.py';
-    $python_script_cairo = str_replace('\\', '/', $python_script_cairo);
-    $command_cairo = escapeshellcmd($python_exe) . " "
-        . escapeshellarg($python_script_cairo) . " "
+    // Caminho para o script Python que converte o SVG para PDF (usando CairoSVG)
+    $converter_script = __DIR__ . '/assets/python/converter_svg_pdf.py';
+    $converter_script = str_replace('\\', '/', $converter_script);
+
+    $command = escapeshellcmd($python_exe) . " "
+        . escapeshellarg($converter_script) . " "
         . escapeshellarg($processed_svg_path) . " "
         . escapeshellarg($initial_pdf_path) . " --export-dpi=96 2>&1";
-    exec($command_cairo, $cairo_output, $cairo_return);
 
-    if ($cairo_return !== 0 || !file_exists($initial_pdf_path)) {
-        error_log("❌ Falha ao converter SVG para PDF com CairoSVG. Comando: " . $command_cairo);
-        error_log("Saída: " . implode("\n", $cairo_output));
+    exec($command, $output, $return_var);
+    if ($return_var !== 0 || !file_exists($initial_pdf_path)) {
+        error_log("❌ Falha ao converter SVG para PDF com Python. Comando: " . $command);
+        error_log("Saída: " . implode("\n", $output));
         return false;
     }
 
-    // Extrai as dimensões originais do SVG processado (em mm)
+    // Obtém as dimensões do SVG processado (a função get_svg_dimensions deve retornar números sem unidades)
     list($width_mm, $height_mm) = get_svg_dimensions($processed_svg_path);
     if ($width_mm <= 0 || $height_mm <= 0) {
-        error_log("❌ Dimensões inválidas extraídas do SVG processado.");
+        error_log("❌ Dimensões inválidas extraídas do SVG.");
         return false;
     }
 
@@ -321,10 +325,8 @@ function convert_svg_to_pdf($svg_path)
     $width_points = $width_mm * 72 / 25.4;
     $height_points = $height_mm * 72 / 25.4;
 
-    // Caminho absoluto para o GhostScript – ajuste conforme o seu ambiente
-    $gs_exe = '"C:/Program Files/gs/gs10.05.0/bin/gswin64c.exe"';
-
-    // Monta o comando do GhostScript para forçar a página com as dimensões corretas
+    // Caminho para o executável do GhostScript (ajuste se necessário)
+    $gs_exe = '"C:\Program Files\gs\gs10.05.0\bin\gswin64c.exe"';
     $gs_command = $gs_exe . " -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dNOPAUSE -dBATCH -dFIXEDMEDIA " .
         "-dDEVICEWIDTHPOINTS=" . escapeshellarg($width_points) . " -dDEVICEHEIGHTPOINTS=" . escapeshellarg($height_points) .
         " -sOutputFile=" . escapeshellarg($final_pdf_path) . " " . escapeshellarg($initial_pdf_path) . " 2>&1";
@@ -337,13 +339,14 @@ function convert_svg_to_pdf($svg_path)
         return false;
     }
 
-    // Remove os arquivos temporários (PDF inicial e SVG processado) se não forem mais necessários
+    // Remove o PDF inicial, se não for necessário
     @unlink($initial_pdf_path);
-    @unlink($processed_svg_path);
 
     error_log("✅ PDF final gerado com GhostScript: " . $final_pdf_path);
     return $final_pdf_path;
 }
+
+
 
 /**
  * Função auxiliar para extrair as dimensões (em mm) de um arquivo SVG.
@@ -464,6 +467,8 @@ function salvar_adesivo_servidor()
         'post_content' => '',
         'post_status'  => 'publish',
         'post_type'    => 'product'
+
+
     );
     $product_id = wp_insert_post($produto_temporario);
     if (!$product_id) {
@@ -471,6 +476,7 @@ function salvar_adesivo_servidor()
         wp_send_json_error(array('message' => 'Erro ao criar produto.'));
         wp_die();
     }
+    wp_set_post_terms($product_id, array('exclude-from-catalog', 'exclude-from-search'), 'product_visibility');
     // Define o preço e salva a URL do SVG no meta do produto
     update_post_meta($product_id, '_regular_price', $price);
     update_post_meta($product_id, '_price', $price);
