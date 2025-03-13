@@ -12,7 +12,7 @@ var selectedObject = null; // Objeto(s) ativo(s) para edição de cor/gradiente
 // Variáveis para armazenar os atributos originais do SVG
 var originalSvgWidth = null;
 var originalSvgHeight = null;
-
+var exportScaleFactor = 1;
 
 // Fator de escala para exibição no editor (para caber no canvas)
 var displayScale = 1;
@@ -127,24 +127,33 @@ function carregarAdesivo(stickerUrl) {
             // Carrega o SVG no canvas usando Fabric.js
             fabric.loadSVGFromString(cleanedSVG, function (objects, options) {
                 var svgGroup = fabric.util.groupSVGElements(objects, options);
-                // NÃO aplique escala – preserve o tamanho original dos objetos
+            
+                // Calcula fator de escala para exibição:
+                var scaleX = canvas.getWidth() / svgGroup.width;
+                var scaleY = canvas.getHeight() / svgGroup.height;
+                
+                // Usa a menor escala para garantir que o adesivo caiba no canvas
+                var displayScale = Math.min(scaleX, scaleY) * 0.9; // 0.9 para margem visual
+                
                 svgGroup.set({
-                    left: 0,
-                    top: 0,
+                    left: canvas.getWidth() / 2,
+                    top: canvas.getHeight() / 2,
+                    originX: 'center',
+                    originY: 'center',
+                    scaleX: displayScale,
+                    scaleY: displayScale,
                     selectable: true,
                 });
-                // Centraliza o objeto no canvas sem alterar seu tamanho
-                var canvasWidth = canvas.getWidth();
-                var canvasHeight = canvas.getHeight();
-                svgGroup.set({
-                    left: (canvasWidth - svgGroup.width) / 2,
-                    top: (canvasHeight - svgGroup.height) / 2,
-                });
+            
+                canvas.clear(); // Limpa objetos anteriores se houver
                 canvas.add(svgGroup);
                 canvas.renderAll();
+            
+                // Continua o resto do fluxo...
                 preencherSelecaoDeCores();
                 saveHistory();
             });
+            
         })
         .catch(function (error) {
             console.error("Erro ao carregar o adesivo:", error);
