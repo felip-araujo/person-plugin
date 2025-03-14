@@ -51,6 +51,7 @@ function getOriginalDimensions(svgText) {
     if (svgElem) {
         var w = svgElem.getAttribute('width');
         var h = svgElem.getAttribute('height');
+        console.log(w.h);
         // Remove a unidade "mm" se presente e converte para número
         if (w && h) {
             return { width: parseFloat(w), height: parseFloat(h) };
@@ -116,6 +117,7 @@ function carregarAdesivo(stickerUrl) {
             if (svgElem) {
                 originalSvgWidth = svgElem.getAttribute('width');   // ex: "636.567mm"
                 originalSvgHeight = svgElem.getAttribute('height'); // ex: "760.136mm"
+                console.log(originalSvgWidth, originalSvgHeight);
             }
             // Remove <script> se houver, para segurança
             var scripts = doc.getElementsByTagName('script');
@@ -127,14 +129,14 @@ function carregarAdesivo(stickerUrl) {
             // Carrega o SVG no canvas usando Fabric.js
             fabric.loadSVGFromString(cleanedSVG, function (objects, options) {
                 var svgGroup = fabric.util.groupSVGElements(objects, options);
-            
+
                 // Calcula fator de escala para exibição:
                 var scaleX = canvas.getWidth() / svgGroup.width;
                 var scaleY = canvas.getHeight() / svgGroup.height;
-                
+
                 // Usa a menor escala para garantir que o adesivo caiba no canvas
                 var displayScale = Math.min(scaleX, scaleY) * 0.9; // 0.9 para margem visual
-                
+
                 svgGroup.set({
                     left: canvas.getWidth() / 2,
                     top: canvas.getHeight() / 2,
@@ -144,16 +146,16 @@ function carregarAdesivo(stickerUrl) {
                     scaleY: displayScale,
                     selectable: true,
                 });
-            
+
                 canvas.clear(); // Limpa objetos anteriores se houver
                 canvas.add(svgGroup);
                 canvas.renderAll();
-            
+
                 // Continua o resto do fluxo...
                 preencherSelecaoDeCores();
                 saveHistory();
             });
-            
+
         })
         .catch(function (error) {
             console.error("Erro ao carregar o adesivo:", error);
@@ -427,30 +429,79 @@ document.addEventListener('DOMContentLoaded', function () {
             alert('Erro: O editor de adesivos não está carregado corretamente.');
             return;
         }
-
+    
         // Gera o SVG do canvas (conteúdo vetorial)
         var adesivoSVG = canvas.toSVG();
         console.log('SVG gerado pelo Fabric.js:', adesivoSVG);
-
-        // Se tivermos as dimensões originais, injetamos no elemento <svg>
+    
+        // Se tivermos as dimensões originais, vamos ajustá-las
         if (originalSvgWidth && originalSvgHeight) {
-            adesivoSVG = adesivoSVG.replace(/<svg([^>]*)>/, function (match, attrs) {
-                // Remove quaisquer atributos width ou height existentes
-                attrs = attrs.replace(/\s*(width|height)="[^"]*"/g, '');
-                return '<svg' + attrs + ' width="' + originalSvgWidth + '" height="' + originalSvgHeight + '">';
-            });
+            // Extraímos os valores numéricos dos atributos (supondo que estão em mm)
+            var width_mm = parseFloat(originalSvgWidth);
+            var height_mm = parseFloat(originalSvgHeight);
+    
+            // Converte de mm para pixels (1 mm = 96/25.4 ≈ 3.78)
+            var factor = 96 / 25.4;
+            var width_px = (width_mm * factor).toFixed(2);   // ex.: ~2406.90
+            var height_px = (height_mm * factor).toFixed(2);  // ex.: ~2873.30
+    
+            console.log("Dimensões originais (mm):", originalSvgWidth, originalSvgHeight);
+            console.log("Convertidas para px:", width_px, height_px);
+    
+            // Usando DOMParser para manipular o SVG
+            var parser = new DOMParser();
+            var doc = parser.parseFromString(adesivoSVG, "image/svg+xml");
+            var svgElem = doc.querySelector("svg");
+            if (svgElem) {
+                // Define os atributos width e height com os valores originais (em mm)
+                svgElem.setAttribute("width", originalSvgWidth);
+                svgElem.setAttribute("height", originalSvgHeight);
+                // Define o viewBox com os valores convertidos para px
+                svgElem.setAttribute("viewBox", "0 0 " + width_px + " " + height_px);
+    
+                // Procura entre os filhos imediatos de <svg> algum <g> com atributo transform cujo fator de escala seja menor que 1
+                var groups = svgElem.querySelectorAll(":scope > g[transform]");
+                for (var i = 0; i < groups.length; i++) {
+                    var transform = groups[i].getAttribute("transform");
+                    var match = transform.match(/matrix\(([^)]+)\)/);
+                    if (match) {
+                        // Separa os valores da matriz (assumindo que são separados por espaços)
+                        var parts = match[1].split(/[\s,]+/);
+                        if (parts.length >= 4) {
+                            var scaleX = parseFloat(parts[0]);
+                            // Se o fator de escala for menor que 1, removemos esse grupo
+                            if (scaleX < 1) {
+                                console.log("Removendo o grupo com transform:", transform);
+                                // Move os filhos desse grupo para o nível do SVG
+                                while (groups[i].firstChild) {
+                                    svgElem.insertBefore(groups[i].firstChild, groups[i]);
+                                }
+                                // Remove o grupo vazio
+                                svgElem.removeChild(groups[i]);
+                                // Se deseja remover apenas o primeiro grupo com esse comportamento, interrompa aqui:
+                                break;
+                            }
+                        }
+                    }
+                }
+    
+                // Serializa novamente o SVG modificado
+                adesivoSVG = new XMLSerializer().serializeToString(doc);
+            } else {
+                console.warn("Elemento <svg> não encontrado após o parse.");
+            }
+            console.log("SVG final ajustado:", adesivoSVG);
         } else {
             console.warn("Dimensões originais não definidas; usando as do Fabric.js.");
         }
-
-        console.log('SVG final ajustado:', adesivoSVG);
-
+    
         var price = $('#stickerPrice').val();
         if (!price || isNaN(price) || price <= 0) {
             alert('Erro: Preço inválido!');
             return;
         }
-
+    
+        // Envia também as dimensões para o servidor (elas serão utilizadas no script Python/CairoSVG)
         $.ajax({
             url: personPlugin.ajax_url,
             method: 'POST',
@@ -459,6 +510,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 action: 'salvar_adesivo_servidor',
                 adesivo_svg: adesivoSVG,
                 price: price,
+                width: originalSvgWidth,
+                height: originalSvgHeight
             },
             success: function (response) {
                 console.log('Resposta do servidor:', response);
@@ -474,8 +527,13 @@ document.addEventListener('DOMContentLoaded', function () {
             },
         });
     }
+    
+    
+
+
 
     $('#salvar-adesivo-botao').on('click', function (e) {
+
         e.preventDefault();
         var aceitoTermos = $('#aceito-termos').prop('checked');
         if (!aceitoTermos) {
