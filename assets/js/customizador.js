@@ -516,7 +516,7 @@ document.addEventListener('DOMContentLoaded', function () {
             success: function (response) {
                 console.log('Resposta do servidor:', response);
                 if (response.success) {
-                    window.location.href = response.data.cart_url;
+                    // window.location.href = response.data.cart_url;
                 } else {
                     alert(response.data.message);
                 }
