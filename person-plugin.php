@@ -256,95 +256,8 @@ add_shortcode('customizador_adesivo_page', 'person_plugin_customizer_page');
  * Se os valores incluírem "mm", eles são convertidos para float.
  */
 
-function convert_svg_to_pdf($svg_path)
-{
-    if (!file_exists($svg_path)) {
-        error_log("❌ O arquivo SVG não existe: " . $svg_path);
-        return false;
-    }
-
-    // Normaliza o caminho (usar barras normais)
-    $svg_path = str_replace('\\', '/', $svg_path);
-
-    // Define o caminho para o SVG processado
-    $processed_svg_path = preg_replace('/\.svg$/i', '_processed.svg', $svg_path);
-    $processed_svg_path = str_replace('\\', '/', $processed_svg_path);
-
-    // Caminho para o script de pré-processamento
-    $python_process_script = __DIR__ . '/assets/python/process_svg.py';
-    $python_process_script = str_replace('\\', '/', $python_process_script);
-
-    // Use "python" (ou "python3", conforme seu ambiente)
-    $python_exe = 'C:/Users/DPO-ISMA/AppData/Local/Programs/Python/Python313/python.exe';
 
 
-    // Comando para pré-processar o SVG
-    $command = escapeshellcmd($python_exe) . " "
-        . escapeshellarg($python_process_script) . " "
-        . escapeshellarg($svg_path) . " "
-        . escapeshellarg($processed_svg_path) . " 2>&1";
-
-    exec($command, $output, $return_var);
-
-    if ($return_var !== 0 || !file_exists($processed_svg_path)) {
-        error_log("❌ Falha no pré-processamento do SVG. Comando: " . $command);
-        error_log("Saída: " . implode("\n", $output));
-        return false;
-    }
-
-    // Define os caminhos para os PDFs
-    $initial_pdf_path = preg_replace('/\.svg$/i', '_initial.pdf', $processed_svg_path);
-    $initial_pdf_path = str_replace('\\', '/', $initial_pdf_path);
-    $final_pdf_path = preg_replace('/\.svg$/i', '.pdf', $processed_svg_path);
-    $final_pdf_path = str_replace('\\', '/', $final_pdf_path);
-
-    // Caminho para o script Python que converte o SVG para PDF (usando CairoSVG)
-    $converter_script = __DIR__ . '/assets/python/converter_svg_pdf.py';
-    $converter_script = str_replace('\\', '/', $converter_script);
-
-    $command = escapeshellcmd($python_exe) . " "
-        . escapeshellarg($converter_script) . " "
-        . escapeshellarg($processed_svg_path) . " "
-        . escapeshellarg($initial_pdf_path) . " --export-dpi=96 2>&1";
-
-    exec($command, $output, $return_var);
-    if ($return_var !== 0 || !file_exists($initial_pdf_path)) {
-        error_log("❌ Falha ao converter SVG para PDF com Python. Comando: " . $command);
-        error_log("Saída: " . implode("\n", $output));
-        return false;
-    }
-
-    // Obtém as dimensões do SVG processado (a função get_svg_dimensions deve retornar números sem unidades)
-    list($width_mm, $height_mm) = get_svg_dimensions($processed_svg_path);
-    if ($width_mm <= 0 || $height_mm <= 0) {
-        error_log("❌ Dimensões inválidas extraídas do SVG.");
-        return false;
-    }
-
-    // Converte mm para pontos (1 mm = 72/25.4 pt)
-    $width_points = $width_mm * 72 / 25.4;
-    $height_points = $height_mm * 72 / 25.4;
-
-    // Caminho para o executável do GhostScript (ajuste se necessário)
-    $gs_exe = '"C:\Program Files\gs\gs10.05.0\bin\gswin64c.exe"';
-    $gs_command = $gs_exe . " -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dNOPAUSE -dBATCH -dFIXEDMEDIA " .
-        "-dDEVICEWIDTHPOINTS=" . escapeshellarg($width_points) . " -dDEVICEHEIGHTPOINTS=" . escapeshellarg($height_points) .
-        " -sOutputFile=" . escapeshellarg($final_pdf_path) . " " . escapeshellarg($initial_pdf_path) . " 2>&1";
-
-    exec($gs_command, $gs_output, $gs_return);
-
-    if ($gs_return !== 0 || !file_exists($final_pdf_path)) {
-        error_log("❌ GhostScript falhou. Comando: " . $gs_command);
-        error_log("Saída: " . implode("\n", $gs_output));
-        return false;
-    }
-
-    // Remove o PDF inicial, se não for necessário
-    @unlink($initial_pdf_path);
-
-    error_log("✅ PDF final gerado com GhostScript: " . $final_pdf_path);
-    return $final_pdf_path;
-}
 
 
 
@@ -352,27 +265,6 @@ function convert_svg_to_pdf($svg_path)
  * Função auxiliar para extrair as dimensões (em mm) de um arquivo SVG.
  * Ela lê os atributos width e height e remove o sufixo "mm" se presente.
  */
-function get_svg_dimensions($svg_path)
-{
-    $svg_content = file_get_contents($svg_path);
-    if (!$svg_content) {
-        return array(0, 0);
-    }
-    $dom = new DOMDocument();
-    libxml_use_internal_errors(true);
-    $dom->loadXML($svg_content);
-    libxml_clear_errors();
-    $svg = $dom->getElementsByTagName('svg')->item(0);
-    if ($svg) {
-        $width = $svg->getAttribute('width');
-        $height = $svg->getAttribute('height');
-        // Remove o sufixo "mm" e converte para float
-        $width = floatval(str_replace('mm', '', $width));
-        $height = floatval(str_replace('mm', '', $height));
-        return array($width, $height);
-    }
-    return array(0, 0);
-}
 
 
 
@@ -402,82 +294,126 @@ function salvar_imagem_personalizada($base64_image)
 add_action('wp_ajax_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
 add_action('wp_ajax_nopriv_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
 
-function ajustar_svg_dimensoes($svg_content)
+// function ajustar_svg_dimensoes($svg_content)
+// {
+//     $dom = new DOMDocument();
+//     libxml_use_internal_errors(true);
+//     $dom->loadXML($svg_content);
+//     libxml_clear_errors();
+
+//     $svg = $dom->getElementsByTagName('svg')->item(0);
+//     if ($svg) {
+//         $width = $svg->getAttribute('width');
+//         $height = $svg->getAttribute('height');
+
+//         // Se já estiverem definidos em "mm", não altera nada
+//         if (
+//             !empty($width) && !empty($height) &&
+//             (stripos($width, 'mm') !== false && stripos($height, 'mm') !== false)
+//         ) {
+//             return $dom->saveXML();
+//         }
+
+//         // Se houver viewBox, usamos os valores do viewBox para definir as dimensões com "mm"
+//         if ($svg->hasAttribute('viewBox')) {
+//             $viewBox = $svg->getAttribute('viewBox');
+//             $parts = preg_split('/\s+/', trim($viewBox));
+//             if (count($parts) === 4) {
+//                 $w = $parts[2];
+//                 $h = $parts[3];
+//                 $svg->setAttribute('width', $w . 'mm');
+//                 $svg->setAttribute('height', $h . 'mm');
+//             }
+//         }
+//         return $dom->saveXML();
+//     }
+//     return $svg_content;
+// }
+
+
+
+function salvar_adesivo_servidor()
 {
-    $dom = new DOMDocument();
-    libxml_use_internal_errors(true);
-    $dom->loadXML($svg_content);
-    libxml_clear_errors();
-    $svg = $dom->getElementsByTagName('svg')->item(0);
-    if ($svg) {
-        $width = $svg->getAttribute('width');
-        $height = $svg->getAttribute('height');
-        if (
-            !empty($width) && !empty($height) &&
-            (stripos($width, 'mm') !== false && stripos($height, 'mm') !== false)
-        ) {
-            return $svg_content;
-        }
-        if ($svg->hasAttribute('viewBox')) {
-            $viewBox = $svg->getAttribute('viewBox');
-            $parts = preg_split('/\s+/', trim($viewBox));
-            if (count($parts) === 4) {
-                $w = $parts[2];
-                $h = $parts[3];
-                $svg->setAttribute('width', $w . 'mm');
-                $svg->setAttribute('height', $h . 'mm');
-            }
-        }
-        return $dom->saveXML();
-    }
-    return $svg_content;
-}
-
-
-
-function salvar_adesivo_servidor() {
-    if ( isset($_POST['adesivo_svg']) && !empty($_POST['adesivo_svg']) ) {
-        $svg_content = wp_unslash( $_POST['adesivo_svg'] );
-    } else {
-        $svg_content = file_get_contents( 'php://input' );
-    }
-
-    if ( empty($svg_content) ) {
-        error_log( "❌ SVG não recebido." );
-        wp_send_json_error( array( 'message' => 'SVG não recebido.' ) );
+    if (!isset($_POST['adesivo_svg']) || !isset($_POST['price'])) {
+        wp_send_json_error(array('message' => 'Dados incompletos.'));
         wp_die();
     }
 
-    // Remover DOCTYPE se existir
-    $svg_content = preg_replace('/<!DOCTYPE svg[^>]*>/i', '', $svg_content);
-    
-    // Opcional: Remover comentários (para limpar)
-    $svg_content = preg_replace('/<!--(.*?)-->/', '', $svg_content);
+    $price = floatval($_POST['price']);
+    error_log("📌 Preço recebido no PHP: " . $price);
 
-    error_log( "Conteúdo SVG recebido (300 primeiros caracteres): " . substr( $svg_content, 0, 300 ) );
-
+    // Salva o conteúdo SVG em um arquivo sem ajustes
     $upload_dir = wp_upload_dir();
     $filename_svg = 'adesivo-' . time() . '.svg';
-    $upload_path_svg = trailingslashit( $upload_dir['path'] ) . $filename_svg;
+    $upload_path_svg = trailingslashit($upload_dir['path']) . $filename_svg;
+    // Não aplica ajustar_svg_dimensoes(), usa o SVG enviado
+    $svg_content = wp_unslash($_POST['adesivo_svg']);
 
-    $bytes = file_put_contents( $upload_path_svg, $svg_content );
-    if ( $bytes === false ) {
-        error_log( '❌ Erro ao salvar o SVG.' );
-        wp_send_json_error( array( 'message' => 'Erro ao salvar o SVG.' ) );
+    if (file_put_contents($upload_path_svg, $svg_content) === false) {
+        error_log('❌ Erro ao salvar o SVG.');
+        wp_send_json_error(array('message' => 'Erro ao salvar o SVG.'));
+        wp_die();
+    }
+    $svg_url = trailingslashit($upload_dir['url']) . $filename_svg;
+    error_log('✅ SVG salvo com sucesso: ' . $svg_url);
+
+    // Criação do produto temporário no WooCommerce
+    $product_title = 'Adesivo Personalizado - ' . time();
+    $produto_temporario = array(
+        'post_title'   => $product_title,
+        'post_content' => '',
+        'post_status'  => 'publish',
+        'post_type'    => 'product'
+    );
+    $product_id = wp_insert_post($produto_temporario);
+    if (!$product_id) {
+        error_log('❌ Erro ao criar produto temporário.');
+        wp_send_json_error(array('message' => 'Erro ao criar produto.'));
+        wp_die();
+    }
+    wp_set_post_terms($product_id, array('exclude-from-catalog', 'exclude-from-search'), 'product_visibility');
+
+    // Define preço e salva a URL do SVG
+    update_post_meta($product_id, '_regular_price', $price);
+    update_post_meta($product_id, '_price', $price);
+    update_post_meta($product_id, '_adesivo_svg_url', $svg_url);
+
+    // Cria attachment para o SVG e define como imagem destacada
+    $attachment = array(
+        'post_mime_type' => 'image/svg+xml',
+        'post_title'     => sanitize_file_name(basename($upload_path_svg)),
+        'post_content'   => '',
+        'post_status'    => 'inherit'
+    );
+    $attachment_id = wp_insert_attachment($attachment, $upload_path_svg, $product_id);
+    require_once(ABSPATH . 'wp-admin/includes/image.php');
+    $attach_data = wp_generate_attachment_metadata($attachment_id, $upload_path_svg);
+    wp_update_attachment_metadata($attachment_id, $attach_data);
+    set_post_thumbnail($product_id, $attachment_id);
+
+    // Marca o adesivo como "editado"
+    update_post_meta($attachment_id, '_adesivo_editado', 'sim');
+
+    // Adiciona o produto ao carrinho com a URL do SVG
+    $cart_item_data = array(
+        'adesivo_url' => $svg_url
+    );
+    $added = WC()->cart->add_to_cart($product_id, 1, 0, array(), $cart_item_data);
+    if (!$added) {
+        error_log('❌ Erro ao adicionar o produto ao carrinho.');
+        wp_send_json_error(array('message' => 'Erro ao adicionar o produto ao carrinho.'));
         wp_die();
     }
 
-    error_log( "✅ SVG salvo com sucesso: " . trailingslashit( $upload_dir['url'] ) . $filename_svg );
-    error_log( "Tamanho do arquivo salvo: " . $bytes . " bytes" );
-
-    wp_send_json_success( array(
-        'message' => 'SVG salvo com sucesso!',
-        'svg_url' => trailingslashit( $upload_dir['url'] ) . $filename_svg
-    ) );
+    wp_send_json_success(array(
+        'message'  => 'Produto temporário criado e adicionado ao carrinho!',
+        'cart_url' => wc_get_cart_url()
+    ));
     wp_die();
 }
-add_action( 'wp_ajax_salvar_adesivo_servidor', 'salvar_adesivo_servidor' );
-add_action( 'wp_ajax_nopriv_salvar_adesivo_servidor', 'salvar_adesivo_servidor' );
+add_action('wp_ajax_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
+add_action('wp_ajax_nopriv_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
+
 
 /* -------------------------------------------------------------------------
    10. Exibição do Adesivo no Carrinho, Checkout e E-mails

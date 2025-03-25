@@ -5,37 +5,28 @@ import cairosvg
 
 def main():
     if len(sys.argv) < 3:
-        print("Uso: python converter_svg_pdf.py <input.svg> <output.pdf> [<width_mm> <height_mm>]")
+        print("Usage: converter_svg_pdf.py input.svg output.pdf [width_mm height_mm]")
         sys.exit(1)
     
     input_svg = sys.argv[1]
     output_pdf = sys.argv[2]
-    
-    # Debug: imprimir os caminhos recebidos
-    print("Input SVG:", input_svg)
-    print("Output PDF:", output_pdf)
-    
-    # Se estiver no Windows e o caminho não estiver no formato URL, ajuste-o
+
+    # Se estiver no Windows e o caminho não estiver no formato URL, ajusta-o
     if os.name == 'nt' and not input_svg.lower().startswith("file:///"):
         input_svg = "file:///" + input_svg.replace("\\", "/")
-        print("Input SVG ajustado:", input_svg)
     
     output_width = None
     output_height = None
-    
-    # Se foram passados parâmetros para dimensões, use-os
     if len(sys.argv) >= 5:
         try:
             width_mm = float(sys.argv[3])
             height_mm = float(sys.argv[4])
-            print("Dimensões recebidas (mm):", width_mm, height_mm)
-            # Converte de mm para pixels: px = mm * (96/25.4)
+            # Converte de mm para pixels: 1 mm = 96/25.4 px (assumindo 96 DPI)
             factor = 96 / 25.4
             output_width = width_mm * factor
             output_height = height_mm * factor
-            print("Dimensões convertidas para px:", output_width, output_height)
         except Exception as e:
-            print("Erro ao ler as dimensões:", e)
+            print("Erro ao ler dimensões:", e)
             sys.exit(1)
     
     try:
@@ -45,8 +36,7 @@ def main():
                 write_to=output_pdf,
                 output_width=output_width,
                 output_height=output_height,
-                dpi=96,
-                scale=1.0
+                dpi=96
             )
         else:
             cairosvg.svg2pdf(url=input_svg, write_to=output_pdf)

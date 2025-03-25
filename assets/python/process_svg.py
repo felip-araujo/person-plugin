@@ -17,15 +17,13 @@ except Exception as e:
 
 root = tree.getroot()
 
-# Verifica se os atributos já estão com "mm"
-width_attr = root.get("width")
-height_attr = root.get("height")
-
-if width_attr and height_attr and "mm" in width_attr and "mm" in height_attr:
-    # Já possuem "mm", não alteramos
+# Se já existir width e height contendo "mm", mantemos; caso contrário, se houver viewBox, usamos seus valores.
+width = root.get("width")
+height = root.get("height")
+if width and height and ("mm" in width and "mm" in height):
+    # Já está com a unidade desejada
     pass
 else:
-    # Se não houver ou estiver sem unidade, e se houver viewBox, usa seus valores
     viewBox = root.get("viewBox")
     if viewBox:
         parts = viewBox.split()
@@ -35,10 +33,15 @@ else:
             root.set("height", vb_height + "mm")
         else:
             print("viewBox com formato inesperado:", viewBox)
+            sys.exit(1)
     else:
-        if width_attr:
-            root.set("width", width_attr.replace("mm", "").strip() + "mm")
-        if height_attr:
-            root.set("height", height_attr.replace("mm", "").strip() + "mm")
+        # Se não houver viewBox, tenta limpar qualquer unidade e acrescentar "mm"
+        if width:
+            numeric_width = ''.join([c for c in width if (c.isdigit() or c=='.')])
+            root.set("width", numeric_width + "mm")
+        if height:
+            numeric_height = ''.join([c for c in height if (c.isdigit() or c=='.')])
+            root.set("height", numeric_height + "mm")
 
+# Salva o SVG processado (sem DOCTYPE)
 tree.write(output_svg, encoding="utf-8", xml_declaration=True)
