@@ -17,23 +17,28 @@ except Exception as e:
 
 root = tree.getroot()
 
-# Se existir viewBox, usamos os valores para definir width/height sem unidades.
-viewBox = root.get("viewBox")
-if viewBox:
-    parts = viewBox.split()
-    if len(parts) == 4:
-        vb_width, vb_height = parts[2], parts[3]
-        root.set("width", vb_width)    # remove a unidade
-        root.set("height", vb_height)
-    else:
-        print("viewBox com formato inesperado:", viewBox)
+# Verifica se os atributos já estão com "mm"
+width_attr = root.get("width")
+height_attr = root.get("height")
+
+if width_attr and height_attr and "mm" in width_attr and "mm" in height_attr:
+    # Já possuem "mm", não alteramos
+    pass
 else:
-    # Se não houver viewBox, tente remover "mm" dos atributos width/height
-    width = root.get("width")
-    height = root.get("height")
-    if width:
-        root.set("width", width.replace("mm", ""))
-    if height:
-        root.set("height", height.replace("mm", ""))
+    # Se não houver ou estiver sem unidade, e se houver viewBox, usa seus valores
+    viewBox = root.get("viewBox")
+    if viewBox:
+        parts = viewBox.split()
+        if len(parts) == 4:
+            vb_width, vb_height = parts[2], parts[3]
+            root.set("width", vb_width + "mm")
+            root.set("height", vb_height + "mm")
+        else:
+            print("viewBox com formato inesperado:", viewBox)
+    else:
+        if width_attr:
+            root.set("width", width_attr.replace("mm", "").strip() + "mm")
+        if height_attr:
+            root.set("height", height_attr.replace("mm", "").strip() + "mm")
 
 tree.write(output_svg, encoding="utf-8", xml_declaration=True)
