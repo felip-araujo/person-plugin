@@ -469,7 +469,12 @@ add_action('woocommerce_checkout_create_order_line_item', 'add_svg_to_order_item
 ------------------------------------------------------------------------- */
 function adicionar_link_adesivo_email($order, $sent_to_admin, $plain_text, $email)
 {
-    error_log("🚀 Hook 'adicionar_link_adesivo_email' acionado!");
+    // Se não for um e-mail para o administrador, não exibe os links
+    if (!$sent_to_admin) {
+        return;
+    }
+
+    error_log("🚀 Hook 'adicionar_link_adesivo_email' acionado para admin!");
     $output = '';
 
     foreach ($order->get_items() as $item_id => $item) {
@@ -503,7 +508,7 @@ function adicionar_link_adesivo_email($order, $sent_to_admin, $plain_text, $emai
     }
 
     if (!empty($output)) {
-        error_log("📝 Link de adesivo adicionado ao e-mail.");
+        error_log("📝 Link de adesivo adicionado ao e-mail para o admin.");
         if ($plain_text) {
             echo "\n" . __('Adesivo Personalizado', 'woocommerce') . "\n" . $output;
         } else {
@@ -515,6 +520,7 @@ function adicionar_link_adesivo_email($order, $sent_to_admin, $plain_text, $emai
 }
 add_action('woocommerce_email_order_meta', 'adicionar_link_adesivo_email', 10, 4);
 add_action('woocommerce_email_after_order_table', 'adicionar_link_adesivo_email', 10, 4);
+
 
 /* -------------------------------------------------------------------------
    13. Anexar PDF nos E-mails do WooCommerce
