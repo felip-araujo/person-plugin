@@ -189,7 +189,7 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
             if ($stickers) :
                 foreach ($stickers as $sticker) {
                     $sticker_url = wp_get_attachment_url($sticker->ID);
-                    $sticker_name = pathinfo($sticker_url, PATHINFO_FILENAME);
+                    $sticker_name = get_the_title($sticker->ID);
                     $letter = strtoupper(substr($sticker_name, 0, 1));
 
                     if (!isset($groups[$letter])) {

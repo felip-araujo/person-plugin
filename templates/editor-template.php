@@ -185,7 +185,7 @@ $sticker_id = isset($_GET['sticker_id']) ? intval($_GET['sticker_id']) : 0;
     <div class="container mt-5">
         <!-- Título com tour -->
         <div>
-            <h2 id="titulo">Personalize seu Adesivo</h2>
+            <p></p>
         </div>
         <!-- Row para divisão lado a lado -->
         <div class="row" id="abas">
@@ -281,10 +281,10 @@ $sticker_id = isset($_GET['sticker_id']) ? intval($_GET['sticker_id']) : 0;
                 <button id="zoom-in" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
                 <button id="zoom-out" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
                 <button id="reset-zoom" class="btn btn-secondary"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></button>
-                <button id="salvar-modelo-botao" class="btn btn-primary">Salvar Modelo</button>
                 <button type="submit" id="salvar-adesivo-botao" class="btn btn-success">Comprar Agora</button>
             </div>
         </div>
+        <a style="color:rgba(222, 226, 230, 0.58); text-decoration:none;" href="https://evoludesign.com.br/"><p>Desenvolvido por <span style="font-weight:800;">Evo Design</span> </p></a>
     </div>
 </div>
 

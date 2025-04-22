@@ -1,4 +1,26 @@
 <?php
+
+// Processar renomeação do adesivo
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['rename_sticker'])) {
+    if (
+        !isset($_POST['rename_sticker_nonce'])
+        || !wp_verify_nonce($_POST['rename_sticker_nonce'], 'rename_sticker_nonce_action')
+    ) {
+        echo '<p class="alert alert-danger">Nonce inválido!</p>';
+    } else {
+        $attachment_id = intval($_POST['attachment_id']);
+        $new_title     = sanitize_text_field($_POST['sticker_name']);
+        // Atualiza title e slug (post_name)
+        wp_update_post(array(
+            'ID'         => $attachment_id,
+            'post_title' => $new_title,
+            'post_name'  => sanitize_title($new_title),
+        ));
+        echo '<div class="notice notice-success"><p>Nome do adesivo atualizado para “' . esc_html($new_title) . '” com sucesso!</p></div>';
+    }
+}
+
+
 // Processa o salvamento do preço do adesivo para cada item
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_sticker_price'])) {
     if (!isset($_POST['sticker_price_nonce']) || !wp_verify_nonce($_POST['sticker_price_nonce'], 'save_sticker_price_nonce')) {
@@ -118,7 +140,20 @@ if ($query->have_posts()) {
 
         echo '<tr>';
         echo '<td style="width: 50px;"><img src="' . esc_url($url_svg) . '" alt="' . esc_attr($nome_arquivo) . '" style="width: 80px; border-radius:.7rem; background-color:#eee; height: auto;"></td>';
-        echo '<td>' . esc_html($nome_arquivo) . '</td>';
+
+        echo '<td>';
+        // Campo de renomeação
+        echo '<form method="post" style="display:inline-flex; align-items:center;">';
+        wp_nonce_field('rename_sticker_nonce_action', 'rename_sticker_nonce');
+        echo '<input type="hidden" name="attachment_id" value="' . esc_attr($attachment_id) . '">';
+        // Usa o título atual do attachment
+        $current_name = get_the_title($attachment_id);
+        echo '<input type="text" name="sticker_name" value="' . esc_attr($current_name) . '" style="width:150px; margin-right:5px;">';
+        echo '<button type="submit" name="rename_sticker" class="btn btn-sm btn-primary">Renomear</button>';
+        echo '</form>';
+        echo '</td>';
+
+
 
         // Campo para salvar o preço do adesivo
         echo '<td>';
@@ -142,6 +177,7 @@ if ($query->have_posts()) {
     }
     echo '</tbody>';
     echo '</table>';
+    echo '<a style="color:rgba(0, 0, 0, 0.52); text-decoration:none;" href="https://evoludesign.com.br/"><p>Desenvolvido por <span style="font-weight:800;">Evo Design</span> </p></a>';
 
     // Renderiza a paginação
     $total_pages = $query->max_num_pages;
@@ -165,6 +201,9 @@ if ($query->have_posts()) {
 } else {
     echo '<p>Nenhum adesivo encontrado.</p>';
 }
+
+
+
 
 // Envio dos preços dos adesivos para o frontend
 echo '<script>';
@@ -259,4 +298,3 @@ function copiarTag(event) {
     alert("Tag copiada para a área de transferência!");
 }
 </script>';
-?>
