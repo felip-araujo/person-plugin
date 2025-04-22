@@ -1,9 +1,10 @@
 <?php
 /*
-Plugin Name: Person Plugin - Customizador de Adesivos
-Description: Plugin para customização de adesivos com controle de cores, fontes, etc.
-Version: 1.0
+Plugin Name: Person Plugin - Editor de Adesivos
+Description: Plugin para edição de (Arquivos SVG) edite e gerencie seus arquivos de forma prática.
+Version: 2.0
 Author: Evolution Design
+Author URI:  https://evoludesign.com.br/
 */
 
 use PHPMailer\PHPMailer\PHPMailer;
