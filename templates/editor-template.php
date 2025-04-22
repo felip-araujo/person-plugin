@@ -284,7 +284,6 @@ $sticker_id = isset($_GET['sticker_id']) ? intval($_GET['sticker_id']) : 0;
                 <button type="submit" id="salvar-adesivo-botao" class="btn btn-success">Comprar Agora</button>
             </div>
         </div>
-        <a style="color:rgba(222, 226, 230, 0.58); text-decoration:none;" href="https://evoludesign.com.br/"><p>Desenvolvido por <span style="font-weight:800;">Evo Design</span> </p></a>
     </div>
 </div>
 
