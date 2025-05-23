@@ -497,6 +497,30 @@ function ea_exibir_botao_personalizador()
 }
 
 
+// Cria um shortcode para exibir o botão do personalizador
+function ea_shortcode_botao_personalizador() {
+    if (!is_product()) return '';
+
+    global $product;
+
+    if (!$product) return '';
+
+    $link_personalizador = get_post_meta($product->get_id(), '_link_personalizador', true);
+
+    if (!empty($link_personalizador)) {
+        return '<div class="ea-botao-personalizador" style="margin-top: 15px;">
+                    <a href="' . esc_url($link_personalizador) . '" class="button" target="_blank" rel="noopener noreferrer" style="background-color: #00a2ff; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                        Personalizar Agora
+                    </a>
+                </div>';
+    }
+
+    return '';
+}
+add_shortcode('botao_personalizador', 'ea_shortcode_botao_personalizador');
+
+
+
 /* -------------------------------------------------------------------------
    11. Transferência do Meta do Carrinho para o Pedido
 ------------------------------------------------------------------------- */
