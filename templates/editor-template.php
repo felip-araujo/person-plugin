@@ -20,6 +20,11 @@ if (!isset($url_do_adesivo)) {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/konva@8.3.5/konva.min.js"></script>
 
+<!-- Pickr: biblioteca de paleta de cores responsiva -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/classic.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr"></script>
+
+
 <style>
     /* Ajustes para tornar o layout responsivo */
 
