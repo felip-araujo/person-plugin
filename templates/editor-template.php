@@ -282,6 +282,8 @@ $sticker_id = isset($_GET['sticker_id']) ? intval($_GET['sticker_id']) : 0;
                 <button id="zoom-out" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
                 <button id="reset-zoom" class="btn btn-secondary"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></button>
                 <button id="salvar-modelo-botao" class="btn btn-primary">Salvar Modelo</button>
+                <a href="<?php echo home_url(); ?>"><button id="salvar-modelo-botao" class="btn btn-primary">Voltar para a Loja</button></a>
+
                 <button type="submit" id="salvar-adesivo-botao" class="btn btn-success">Comprar Agora</button>
             </div>
         </div>
