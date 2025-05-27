@@ -576,3 +576,48 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Cria o botão do Pickr dentro da paleta de cores
+    const customPickerWrapper = document.createElement('div');
+    customPickerWrapper.id = 'color-picker';
+    customPickerWrapper.style = 'width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; margin: 5px; cursor: pointer; background: #000;';
+    
+    const container = document.getElementById('layer-colors-container');
+    if (container) container.appendChild(customPickerWrapper);
+
+    const pickr = Pickr.create({
+        el: '#color-picker',
+        theme: 'classic', // ou 'nano', 'monolith'
+        default: '#000000',
+        components: {
+            preview: true,
+            opacity: true,
+            hue: true,
+            interaction: {
+                hex: true,
+                rgba: true,
+                input: true,
+                clear: true,
+                save: true
+            }
+        }
+    });
+
+    pickr.on('save', (color) => {
+        const hex = color.toHEXA().toString();
+        if (selectedObject && Array.isArray(selectedObject)) {
+            selectedObject.forEach(obj => {
+                if (typeof obj.fill === 'object' && obj.fill.type === 'linear') {
+                    obj.fill.colorStops.forEach(stop => stop.color = hex);
+                    obj.set('fill', obj.fill);
+                } else {
+                    obj.set('fill', hex);
+                }
+            });
+            canvas.renderAll();
+            preencherSelecaoDeCores();
+        }
+        pickr.hide();
+    });
+});
