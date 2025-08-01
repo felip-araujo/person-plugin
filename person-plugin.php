@@ -2,7 +2,7 @@
 /*
 Plugin Name: Person Plugin - Editor de Adesivos
 Description: Plugin para edição de (Arquivos SVG) edite e gerencie seus arquivos de forma prática.
-Version: 2.2.3
+Version: 2.2.4
 Author: Evolution Design
 Author URI:  https://evoludesign.com.br/
 */
@@ -341,6 +341,10 @@ function salvar_adesivo_servidor()
 
     $price = floatval($_POST['price']);
     error_log("📌 Preço recebido no PHP: " . $price);
+    update_post_meta($product_id, '_weight', '0.05');    // Exemplo: 50g
+    update_post_meta($product_id, '_length', '20');      // Exemplo: 20cm de comprimento
+    update_post_meta($product_id, '_width', '10');       // Exemplo: 10cm de largura
+    update_post_meta($product_id, '_height', '0.1');     // Exemplo: 0.1cm de altura (bem fino)
 
     // Salva o conteúdo SVG em um arquivo
     $upload_dir = wp_upload_dir();
