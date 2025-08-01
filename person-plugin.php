@@ -332,7 +332,6 @@ add_action('wp_ajax_nopriv_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
 // }
 
 
-
 function salvar_adesivo_servidor()
 {
     if (!isset($_POST['adesivo_svg']) || !isset($_POST['price'])) {
@@ -343,11 +342,10 @@ function salvar_adesivo_servidor()
     $price = floatval($_POST['price']);
     error_log("📌 Preço recebido no PHP: " . $price);
 
-    // Salva o conteúdo SVG em um arquivo sem ajustes
+    // Salva o conteúdo SVG em um arquivo
     $upload_dir = wp_upload_dir();
     $filename_svg = 'adesivo-' . time() . '.svg';
     $upload_path_svg = trailingslashit($upload_dir['path']) . $filename_svg;
-    // Não aplica ajustar_svg_dimensoes(), usa o SVG enviado
     $svg_content = wp_unslash($_POST['adesivo_svg']);
 
     if (file_put_contents($upload_path_svg, $svg_content) === false) {
@@ -358,7 +356,7 @@ function salvar_adesivo_servidor()
     $svg_url = trailingslashit($upload_dir['url']) . $filename_svg;
     error_log('✅ SVG salvo com sucesso: ' . $svg_url);
 
-    // Criação do produto temporário no WooCommerce
+    // Cria produto temporário
     $product_title = 'Adesivo Personalizado - ' . time();
     $produto_temporario = array(
         'post_title'   => $product_title,
@@ -367,19 +365,23 @@ function salvar_adesivo_servidor()
         'post_type'    => 'product'
     );
     $product_id = wp_insert_post($produto_temporario);
+
     if (!$product_id) {
         error_log('❌ Erro ao criar produto temporário.');
         wp_send_json_error(array('message' => 'Erro ao criar produto.'));
         wp_die();
     }
-    wp_set_post_terms($product_id, array('exclude-from-catalog', 'exclude-from-search'), 'product_visibility');
 
-    // Define preço e salva a URL do SVG
+    // Define preço e atributos
+    wp_set_post_terms($product_id, array('exclude-from-catalog', 'exclude-from-search'), 'product_visibility');
     update_post_meta($product_id, '_regular_price', $price);
     update_post_meta($product_id, '_price', $price);
     update_post_meta($product_id, '_adesivo_svg_url', $svg_url);
 
-    // Cria attachment para o SVG e define como imagem destacada
+    // Define classe de entrega personalizada (envios-sede-decalques-automotivos)
+    update_post_meta($product_id, '_shipping_class', 'envios-sede-decalques-automotivos');
+
+    // Cria e vincula imagem destacada (SVG)
     $attachment = array(
         'post_mime_type' => 'image/svg+xml',
         'post_title'     => sanitize_file_name(basename($upload_path_svg)),
@@ -391,11 +393,9 @@ function salvar_adesivo_servidor()
     $attach_data = wp_generate_attachment_metadata($attachment_id, $upload_path_svg);
     wp_update_attachment_metadata($attachment_id, $attach_data);
     set_post_thumbnail($product_id, $attachment_id);
-
-    // Marca o adesivo como "editado"
     update_post_meta($attachment_id, '_adesivo_editado', 'sim');
 
-    // Adiciona o produto ao carrinho com a URL do SVG
+    // Adiciona ao carrinho com dados do SVG
     $cart_item_data = array(
         'adesivo_url' => $svg_url
     );
@@ -412,6 +412,7 @@ function salvar_adesivo_servidor()
     ));
     wp_die();
 }
+
 add_action('wp_ajax_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
 add_action('wp_ajax_nopriv_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
 
