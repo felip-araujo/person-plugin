@@ -2,7 +2,7 @@
 /*
 Plugin Name: Person Plugin - Editor de Adesivos
 Description: Plugin para edição de (Arquivos SVG) edite e gerencie seus arquivos de forma prática.
-Version: 2.2.1
+Version: 2.2.2
 Author: Evolution Design
 Author URI:  https://evoludesign.com.br/
 */
@@ -455,17 +455,23 @@ add_filter('woocommerce_get_item_data', 'exibir_imagem_personalizada_no_carrinho
 add_action('woocommerce_product_options_general_product_data', 'ea_adicionar_campo_link_personalizador');
 function ea_adicionar_campo_link_personalizador()
 {
-    woocommerce_wp_text_input(
-        array(
-            'id'          => '_link_personalizador',
-            'label'       => __('Link para Personalizador', 'text-domain'),
-            'placeholder' => 'https://seusite.com/personalizador',
-            'description' => __('Digite o link da página do personalizador para este produto.'),
-            'desc_tip'    => true,
-            'type'        => 'url'
-        )
-    );
+    global $product;
+
+    // Força a exibição do campo para produtos variáveis também
+    echo '<div class="options_group show_if_simple show_if_variable">';
+
+    woocommerce_wp_text_input(array(
+        'id'          => '_link_personalizador',
+        'label'       => __('Link para Personalizador', 'text-domain'),
+        'placeholder' => 'https://seusite.com/personalizador',
+        'description' => __('Digite o link da página do personalizador para este produto.'),
+        'desc_tip'    => true,
+        'type'        => 'url'
+    ));
+
+    echo '</div>';
 }
+
 
 // Salva o campo personalizado corretamente, sem remover caracteres
 add_action('woocommerce_process_product_meta', 'ea_salvar_campo_link_personalizador');
@@ -486,12 +492,14 @@ function ea_exibir_botao_personalizador()
 {
     global $product;
 
-    $link_personalizador = get_post_meta($product->get_id(), '_link_personalizador', true);
+    // Garante que sempre use o ID do produto pai
+    $product_id = $product->is_type('variation') ? $product->get_parent_id() : $product->get_id();
+
+    $link_personalizador = get_post_meta($product_id, '_link_personalizador', true);
 
     if (!empty($link_personalizador)) {
-        // Não fazer nenhuma codificação, apenas exibir o link diretamente
         echo '<div class="ea-botao-personalizador" style="margin-top: 15px;">';
-        echo '<a href="' . $link_personalizador . '" class="button" target="_blank" rel="noopener noreferrer" style="background-color: #00a2ff; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Editar Agora</a>';
+        echo '<a href="' . esc_url($link_personalizador) . '" class="button" target="_blank" rel="noopener noreferrer" style="background-color: #00a2ff; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Editar Agora</a>';
         echo '</div>';
     }
 }
