@@ -341,10 +341,6 @@ function salvar_adesivo_servidor()
 
     $price = floatval($_POST['price']);
     error_log("📌 Preço recebido no PHP: " . $price);
-    update_post_meta($product_id, '_weight', '0.05');    // Exemplo: 50g
-    update_post_meta($product_id, '_length', '20');      // Exemplo: 20cm de comprimento
-    update_post_meta($product_id, '_width', '10');       // Exemplo: 10cm de largura
-    update_post_meta($product_id, '_height', '0.1');     // Exemplo: 0.1cm de altura (bem fino)
 
     // Salva o conteúdo SVG em um arquivo
     $upload_dir = wp_upload_dir();
@@ -376,13 +372,19 @@ function salvar_adesivo_servidor()
         wp_die();
     }
 
+    // Atualiza atributos do produto (peso, dimensões)
+    update_post_meta($product_id, '_weight', '0.05');    // 50g
+    update_post_meta($product_id, '_length', '20');      // 20cm
+    update_post_meta($product_id, '_width', '10');       // 10cm
+    update_post_meta($product_id, '_height', '0.1');     // 0.1cm
+
     // Define preço e atributos
     wp_set_post_terms($product_id, array('exclude-from-catalog', 'exclude-from-search'), 'product_visibility');
     update_post_meta($product_id, '_regular_price', $price);
     update_post_meta($product_id, '_price', $price);
     update_post_meta($product_id, '_adesivo_svg_url', $svg_url);
 
-    // Define classe de entrega personalizada (envios-sede-decalques-automotivos)
+    // Define classe de entrega personalizada
     update_post_meta($product_id, '_shipping_class', 'envios-sede-decalques-automotivos');
 
     // Cria e vincula imagem destacada (SVG)
@@ -399,11 +401,15 @@ function salvar_adesivo_servidor()
     set_post_thumbnail($product_id, $attachment_id);
     update_post_meta($attachment_id, '_adesivo_editado', 'sim');
 
-    // Adiciona ao carrinho com dados do SVG
+    // Dados customizados para o carrinho (sem array para evitar erro)
     $cart_item_data = array(
-        'adesivo_url' => $svg_url
+        'adesivo_url' => $svg_url,
+        'custom_price' => $price,
+        // Removi 'custom_dimensions' para evitar erro; use meta do produto para peso/dimensão
     );
+
     $added = WC()->cart->add_to_cart($product_id, 1, 0, array(), $cart_item_data);
+
     if (!$added) {
         error_log('❌ Erro ao adicionar o produto ao carrinho.');
         wp_send_json_error(array('message' => 'Erro ao adicionar o produto ao carrinho.'));
@@ -421,6 +427,7 @@ add_action('wp_ajax_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
 add_action('wp_ajax_nopriv_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
 
 
+
 /* -------------------------------------------------------------------------
    10. Exibição do Adesivo no Carrinho, Checkout e E-mails
 ------------------------------------------------------------------------- */
@@ -435,11 +442,13 @@ function restore_custom_cart_item_data($cart_item, $cart_item_key)
             $cart_item['adesivo_url'] = $meta;
             $cart_item['data']->add_meta_data('adesivo_url', $meta, true);
         } else {
-            error_log("❌ Nenhum SVG encontrado no carrinho para o item " . $cart_item_key);
+            error_log("❌ Nenhum SVG encontrado no carrinho para o item " . (is_array($cart_item_key) ? json_encode($cart_item_key) : $cart_item_key));
+
         }
     }
     return $cart_item;
 }
+
 add_filter('woocommerce_get_cart_item_from_session', 'restore_custom_cart_item_data', 20, 2);
 
 function exibir_imagem_personalizada_no_carrinho($item_data, $cart_item)
