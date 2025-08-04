@@ -374,9 +374,9 @@ function salvar_adesivo_servidor()
 
     // Atualiza atributos do produto (peso, dimensões)
     update_post_meta($product_id, '_weight', '0.05');    // 50g
-    update_post_meta($product_id, '_length', '20');      // 20cm
+    update_post_meta($product_id, '_length', '10');      // 20cm
     update_post_meta($product_id, '_width', '10');       // 10cm
-    update_post_meta($product_id, '_height', '0.1');     // 0.1cm
+    update_post_meta($product_id, '_height', '10');     // 0.1cm
 
     // Define preço e atributos
     wp_set_post_terms($product_id, array('exclude-from-catalog', 'exclude-from-search'), 'product_visibility');
