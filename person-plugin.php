@@ -331,7 +331,6 @@ add_action('wp_ajax_nopriv_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
 //     return $svg_content;
 // }
 
-
 function salvar_adesivo_servidor()
 {
     if (!isset($_POST['adesivo_svg']) || !isset($_POST['price'])) {
@@ -372,20 +371,34 @@ function salvar_adesivo_servidor()
         wp_die();
     }
 
-    // Atualiza atributos do produto (peso, dimensões)
-    update_post_meta($product_id, '_weight', '0.05');    // 50g
-    update_post_meta($product_id, '_length', '10');      // 20cm
-    update_post_meta($product_id, '_width', '10');       // 10cm
-    update_post_meta($product_id, '_height', '10');     // 0.1cm
+    // Define o tipo do produto e atributos principais
+    update_post_meta($product_id, '_product_type', 'simple');
+    update_post_meta($product_id, '_virtual', 'no');
+    update_post_meta($product_id, '_downloadable', 'no');
 
-    // Define preço e atributos
+    // Peso e dimensões físicas
+    update_post_meta($product_id, '_weight', '0.05');    // 50g
+    update_post_meta($product_id, '_length', '10');      // 10cm
+    update_post_meta($product_id, '_width', '10');       // 10cm
+    update_post_meta($product_id, '_height', '10');      // 10cm
+
+    // Classe de entrega (usa o ID da shipping class)
+    $shipping_class_slug = 'envios-sede-decalques-automotivos';
+    $shipping_class = get_term_by('slug', $shipping_class_slug, 'product_shipping_class');
+    if ($shipping_class && !is_wp_error($shipping_class)) {
+        update_post_meta($product_id, '_shipping_class_id', $shipping_class->term_id);
+    } else {
+        error_log('❌ Classe de entrega não encontrada: ' . $shipping_class_slug);
+    }
+
+    // Preço e visibilidade
     wp_set_post_terms($product_id, array('exclude-from-catalog', 'exclude-from-search'), 'product_visibility');
     update_post_meta($product_id, '_regular_price', $price);
     update_post_meta($product_id, '_price', $price);
     update_post_meta($product_id, '_adesivo_svg_url', $svg_url);
 
-    // Define classe de entrega personalizada
-    update_post_meta($product_id, '_shipping_class', 'envios-sede-decalques-automotivos');
+    // Garante que os transientes do produto sejam atualizados
+    wc_delete_product_transients($product_id);
 
     // Cria e vincula imagem destacada (SVG)
     $attachment = array(
@@ -401,11 +414,10 @@ function salvar_adesivo_servidor()
     set_post_thumbnail($product_id, $attachment_id);
     update_post_meta($attachment_id, '_adesivo_editado', 'sim');
 
-    // Dados customizados para o carrinho (sem array para evitar erro)
+    // Dados customizados para o carrinho
     $cart_item_data = array(
         'adesivo_url' => $svg_url,
-        'custom_price' => $price,
-        // Removi 'custom_dimensions' para evitar erro; use meta do produto para peso/dimensão
+        'custom_price' => $price
     );
 
     $added = WC()->cart->add_to_cart($product_id, 1, 0, array(), $cart_item_data);
@@ -416,6 +428,9 @@ function salvar_adesivo_servidor()
         wp_die();
     }
 
+    // Força recálculo dos métodos de entrega
+    WC()->cart->calculate_totals();
+
     wp_send_json_success(array(
         'message'  => 'Produto temporário criado e adicionado ao carrinho!',
         'cart_url' => wc_get_cart_url()
@@ -425,7 +440,6 @@ function salvar_adesivo_servidor()
 
 add_action('wp_ajax_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
 add_action('wp_ajax_nopriv_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
-
 
 
 /* -------------------------------------------------------------------------
