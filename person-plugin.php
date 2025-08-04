@@ -355,6 +355,7 @@ function salvar_adesivo_servidor()
     $svg_url = trailingslashit($upload_dir['url']) . $filename_svg;
     error_log('✅ SVG salvo com sucesso: ' . $svg_url);
 
+
     // Cria produto temporário
     $product_title = 'Adesivo Personalizado - ' . time();
     $produto_temporario = array(
@@ -362,8 +363,6 @@ function salvar_adesivo_servidor()
         'post_content' => '',
         'post_status'  => 'publish',
         'post_type'    => 'product',
-        'post_date'    => current_time('mysql'),
-        'post_date_gmt' => get_gmt_from_date(current_time('mysql'))
     );
     $product_id = wp_insert_post($produto_temporario);
 
@@ -372,6 +371,11 @@ function salvar_adesivo_servidor()
         wp_send_json_error(array('message' => 'Erro ao criar produto.'));
         wp_die();
     }
+
+    wp_update_post(array(
+        'ID' => $product_id,
+        'post_status' => 'publish'
+    ));
 
     // Define o tipo do produto e atributos principais
     update_post_meta($product_id, '_product_type', 'simple');
@@ -387,7 +391,7 @@ function salvar_adesivo_servidor()
     // Classe de entrega (usa o ID da shipping class)
     $shipping_class_slug = 'envios-sede-decalques-automotivos';
     $shipping_class = get_term_by('slug', $shipping_class_slug, 'product_shipping_class');
-    
+
     if ($shipping_class && !is_wp_error($shipping_class)) {
         update_post_meta($product_id, '_shipping_class_id', $shipping_class->term_id);
         wp_set_object_terms($product_id, $shipping_class->term_id, 'product_shipping_class');
@@ -395,10 +399,11 @@ function salvar_adesivo_servidor()
     } else {
         error_log('❌ Classe de entrega NÃO encontrada: ' . $shipping_class_slug);
     }
-    
+
 
     // Preço e visibilidade
-    wp_set_post_terms($product_id, array('exclude-from-catalog', 'exclude-from-search'), 'product_visibility');
+    // wp_set_post_terms($product_id, array('exclude-from-catalog', 'exclude-from-search'), 'product_visibility');
+    wp_set_object_terms($product_id, 'visible', 'product_visibility');
     update_post_meta($product_id, '_regular_price', $price);
     update_post_meta($product_id, '_price', $price);
     update_post_meta($product_id, '_adesivo_svg_url', $svg_url);
@@ -463,7 +468,6 @@ function restore_custom_cart_item_data($cart_item, $cart_item_key)
             $cart_item['data']->add_meta_data('adesivo_url', $meta, true);
         } else {
             error_log("❌ Nenhum SVG encontrado no carrinho para o item " . (is_array($cart_item_key) ? json_encode($cart_item_key) : $cart_item_key));
-
         }
     }
     return $cart_item;
@@ -540,7 +544,8 @@ function ea_exibir_botao_personalizador()
 
 
 // Cria um shortcode para exibir o botão do personalizador
-function ea_shortcode_botao_personalizador() {
+function ea_shortcode_botao_personalizador()
+{
     if (!is_product()) return '';
 
     global $product;
