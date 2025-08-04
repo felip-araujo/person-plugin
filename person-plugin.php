@@ -361,7 +361,9 @@ function salvar_adesivo_servidor()
         'post_title'   => $product_title,
         'post_content' => '',
         'post_status'  => 'publish',
-        'post_type'    => 'product'
+        'post_type'    => 'product',
+        'post_date'    => current_time('mysql'),
+        'post_date_gmt' => get_gmt_from_date(current_time('mysql'))
     );
     $product_id = wp_insert_post($produto_temporario);
 
