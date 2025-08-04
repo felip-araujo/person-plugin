@@ -385,11 +385,15 @@ function salvar_adesivo_servidor()
     // Classe de entrega (usa o ID da shipping class)
     $shipping_class_slug = 'envios-sede-decalques-automotivos';
     $shipping_class = get_term_by('slug', $shipping_class_slug, 'product_shipping_class');
+    
     if ($shipping_class && !is_wp_error($shipping_class)) {
         update_post_meta($product_id, '_shipping_class_id', $shipping_class->term_id);
+        wp_set_object_terms($product_id, $shipping_class->term_id, 'product_shipping_class');
+        error_log('✅ Classe de entrega atribuída: ID ' . $shipping_class->term_id);
     } else {
-        error_log('❌ Classe de entrega não encontrada: ' . $shipping_class_slug);
+        error_log('❌ Classe de entrega NÃO encontrada: ' . $shipping_class_slug);
     }
+    
 
     // Preço e visibilidade
     wp_set_post_terms($product_id, array('exclude-from-catalog', 'exclude-from-search'), 'product_visibility');
