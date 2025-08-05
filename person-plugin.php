@@ -389,7 +389,7 @@ function salvar_adesivo_servidor()
     update_post_meta($product_id, '_height', '10');      // 10cm
 
     // Classe de entrega (usa o ID da shipping class)
-    $shipping_class_slug = 'envios-sede-decalques-automotivos';
+    $shipping_class_slug = 'envios-fabrica';
     $shipping_class = get_term_by('slug', $shipping_class_slug, 'product_shipping_class');
 
     if ($shipping_class && !is_wp_error($shipping_class)) {
