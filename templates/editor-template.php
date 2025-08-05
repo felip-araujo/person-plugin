@@ -178,13 +178,16 @@ if (!isset($url_do_adesivo)) {
 
 <?php
 $sticker_id = isset($_GET['sticker_id']) ? intval($_GET['sticker_id']) : 0;
+$sticker_price = isset($_GET['price']) ? floatval($_GET['price']) : 0;
 ?>
 
 
 
 <!-- Campos ocultos para armazenar o preço e URL do adesivo -->
-<input type="hidden" id="stickerPrice" name="stickerPrice" value="0">
+<!-- <input type="hidden" id="stickerPrice" name="stickerPrice" value="0"> -->
 <input type="hidden" id="adesivoUrl" name="adesivoUrl" value="<?php echo esc_url($url_do_adesivo); ?>">
+<input type="hidden" id="stickerPrice" name="stickerPrice" value="<?php echo esc_attr($sticker_price); ?>">
+
 
 <div class="container-fluid" style="overflow-y: auto;">
     <div class="container mt-5">

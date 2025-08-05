@@ -215,7 +215,7 @@ if (isset($_GET['sticker']) && !empty($_GET['sticker'])) {
                             <div class="accordion-body">
                                 <div class="sticker-grid">
                                     <?php foreach ($sticker_group as $sticker) : ?>
-                                        <a href="<?php echo esc_url(add_query_arg('sticker', urlencode($sticker['url']))); ?>" class="sticker-item text-center m-2" data-price="<?php echo esc_attr($sticker['price']); ?>">
+                                        <a href="<?php echo esc_url(add_query_arg(['sticker' => urlencode($sticker['url']), 'price' => $sticker['price']])); ?>" class="sticker-item text-center m-2" data-price="<?php echo esc_attr($sticker['price']); ?>">
                                             <img id="img-adesivo" src="<?php echo esc_url($sticker['url']); ?>" class="img-fluid rounded border p-2 bg-light" alt="<?php echo esc_attr($sticker['name']); ?>">
                                             <span class="d-block small mt-1 sticker-name"><?php echo esc_html($sticker['name']); ?></span>
                                             <?php if (!empty($sticker['price'])) : ?>
