@@ -13,6 +13,9 @@ use PHPMailer\PHPMailer\Exception;
 require __DIR__ . '/vendor/autoload.php';
 require __DIR__ . '/templates/email-handlers.php';
 
+date_default_timezone_set('America/Sao_Paulo'); // ou America/Manaus
+
+
 /* -------------------------------------------------------------------------
    1. Rota para Forçar Download do Arquivo (PDF)
 ------------------------------------------------------------------------- */
@@ -355,6 +358,13 @@ function salvar_adesivo_servidor()
     $svg_url = trailingslashit($upload_dir['url']) . $filename_svg;
     error_log('✅ SVG salvo com sucesso: ' . $svg_url);
 
+    $post_date = current_time('mysql');              // Usa fuso do WordPress (São Paulo)
+    $post_date_gmt = get_gmt_from_date($post_date);  // Converte para UTC correto
+
+    // var_dump($post_date, $post_date_gmt);
+    error_log('Data Variavel: ' . $post_date);
+    error_log('Hora Variavel: ' . $post_date_gmt);
+    
 
     // Cria produto temporário
     $product_title = 'Adesivo Personalizado - ' . time();
@@ -363,6 +373,7 @@ function salvar_adesivo_servidor()
         'post_content' => '',
         'post_status'  => 'publish',
         'post_type'    => 'product',
+        'post_date' => $post_date
     );
     $product_id = wp_insert_post($produto_temporario);
 
