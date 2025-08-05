@@ -414,7 +414,7 @@ function salvar_adesivo_servidor()
 
     // Preço e visibilidade
     wp_set_post_terms($product_id, array('exclude-from-catalog', 'exclude-from-search'), 'product_visibility');
-    wp_set_object_terms($product_id, 'visible', 'product_visibility');
+    // wp_set_object_terms($product_id, 'visible', 'product_visibility');
     update_post_meta($product_id, '_regular_price', $price);
     update_post_meta($product_id, '_price', $price);
     update_post_meta($product_id, '_adesivo_svg_url', $svg_url);
