@@ -427,72 +427,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!canvas) {
             console.error('Canvas não definido!');
             alert('Erro: O editor de adesivos não está carregado corretamente.');
-            return; 
-        }
-    
-        // Gera o SVG do canvas (conteúdo vetorial)
-        var adesivoSVG = canvas.toSVG();
-        console.log('SVG gerado pelo Fabric.js:', adesivoSVG);
-    
-        // Se tivermos as dimensões originais, vamos ajustá-las
-        if (originalSvgWidth && originalSvgHeight) {
-            // Extraímos os valores numéricos dos atributos (supondo que estão em mm)
-            var width_mm = parseFloat(originalSvgWidth);
-            var height_mm = parseFloat(originalSvgHeight);
-    
-            // Converte de mm para pixels (1 mm = 96/25.4 ≈ 3.78)
-            var factor = 96 / 25.4;
-            var width_px = (width_mm * factor).toFixed(2);   // ex.: ~2406.90
-            var height_px = (height_mm * factor).toFixed(2);  // ex.: ~2873.30
-    
-            console.log("Dimensões originais (mm):", originalSvgWidth, originalSvgHeight);
-            console.log("Convertidas para px:", width_px, height_px); 
-    
-            // Usando DOMParser para manipular o SVG
-            var parser = new DOMParser();
-            var doc = parser.parseFromString(adesivoSVG, "image/svg+xml");
-            var svgElem = doc.querySelector("svg");
-            if (svgElem) {
-                // Define os atributos width e height com os valores originais (em mm)
-                svgElem.setAttribute("width", originalSvgWidth);
-                svgElem.setAttribute("height", originalSvgHeight);
-                // Define o viewBox com os valores convertidos para px
-                svgElem.setAttribute("viewBox", "0 0 " + width_px + " " + height_px);
-    
-                // Procura entre os filhos imediatos de <svg> algum <g> com atributo transform cujo fator de escala seja menor que 1
-                var groups = svgElem.querySelectorAll(":scope > g[transform]");
-                for (var i = 0; i < groups.length; i++) {
-                    var transform = groups[i].getAttribute("transform");
-                    var match = transform.match(/matrix\(([^)]+)\)/);
-                    if (match) {
-                        // Separa os valores da matriz (assumindo que são separados por espaços)
-                        var parts = match[1].split(/[\s,]+/);
-                        if (parts.length >= 4) {
-                            var scaleX = parseFloat(parts[0]);
-                            // Se o fator de escala for menor que 1, removemos esse grupo
-                            if (scaleX < 1) {
-                                console.log("Removendo o grupo com transform:", transform);
-                                // Move os filhos desse grupo para o nível do SVG
-                                while (groups[i].firstChild) {
-                                    svgElem.insertBefore(groups[i].firstChild, groups[i]);
-                                }
-                                // Remove o grupo vazio
-                                svgElem.removeChild(groups[i]);
-                                // Se deseja remover apenas o primeiro grupo com esse comportamento, interrompa aqui:
-                                break;
-                            }
-                        }
-                    }
-                }
-    
-                // Serializa novamente o SVG modificado
-                adesivoSVG = new XMLSerializer().serializeToString(doc);
-            } else {
-                console.warn("Elemento <svg> não encontrado após o parse.");
-            }
-            console.log("SVG final ajustado:", adesivoSVG);
-        } else {
-            console.warn("Dimensões originais não definidas; usando as do Fabric.js.");
+            return;
         }
     
         var price = $('#stickerPrice').val();
@@ -501,14 +436,20 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
     
-        // Envia também as dimensões para o servidor (elas serão utilizadas no script Python/CairoSVG)
+        // Gera PNG do canvas
+        var adesivoPNG = canvas.toDataURL({
+            format: 'png',
+            multiplier: 2 // opcional, aumenta resolução
+        });
+    
+        // Envia ao servidor
         $.ajax({
             url: personPlugin.ajax_url,
             method: 'POST',
             dataType: 'json',
             data: {
                 action: 'salvar_adesivo_servidor',
-                adesivo_svg: adesivoSVG,
+                adesivo_png: adesivoPNG, // agora PNG base64
                 price: price,
                 width: originalSvgWidth,
                 height: originalSvgHeight

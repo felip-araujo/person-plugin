@@ -334,123 +334,81 @@ add_action('wp_ajax_nopriv_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
 //     return $svg_content;
 // }
 
-function salvar_adesivo_servidor()
-{
-    if (!isset($_POST['adesivo_svg']) || !isset($_POST['price'])) {
+function salvar_adesivo_servidor() {
+    if (!isset($_POST['adesivo_png']) || !isset($_POST['price'])) {
         wp_send_json_error(array('message' => 'Dados incompletos.'));
         wp_die();
     }
 
     $price = floatval($_POST['price']);
-    error_log("📌 Preço recebido no PHP: " . $price);
+    $png_data = $_POST['adesivo_png'];
 
-    // Salva o conteúdo SVG em um arquivo
-    $upload_dir = wp_upload_dir();
-    $filename_svg = 'adesivo-' . time() . '.svg';
-    $upload_path_svg = trailingslashit($upload_dir['path']) . $filename_svg;
-    $svg_content = wp_unslash($_POST['adesivo_svg']);
+    // Remove o prefixo base64
+    if (preg_match('/^data:image\/png;base64,/', $png_data)) {
+        $png_data = preg_replace('/^data:image\/png;base64,/', '', $png_data);
+    }
 
-    if (file_put_contents($upload_path_svg, $svg_content) === false) {
-        error_log('❌ Erro ao salvar o SVG.');
-        wp_send_json_error(array('message' => 'Erro ao salvar o SVG.'));
+    $png_data = base64_decode($png_data);
+    if ($png_data === false) {
+        wp_send_json_error(array('message' => 'Erro ao decodificar PNG.'));
         wp_die();
     }
-    $svg_url = trailingslashit($upload_dir['url']) . $filename_svg;
-    error_log('✅ SVG salvo com sucesso: ' . $svg_url);
 
-    $post_date = current_time('mysql');              // Usa fuso do WordPress (São Paulo)
-    $post_date_gmt = get_gmt_from_date($post_date);  // Converte para UTC correto
+    // Salva PNG no upload
+    $upload_dir = wp_upload_dir();
+    $filename_png = 'adesivo-' . time() . '.png';
+    $upload_path_png = trailingslashit($upload_dir['path']) . $filename_png;
 
-    // var_dump($post_date, $post_date_gmt);
-    error_log('Data Variavel: ' . $post_date);
-    error_log('Hora Variavel: ' . $post_date_gmt);
-    
+    if (file_put_contents($upload_path_png, $png_data) === false) {
+        wp_send_json_error(array('message' => 'Erro ao salvar o PNG.'));
+        wp_die();
+    }
+    $png_url = trailingslashit($upload_dir['url']) . $filename_png;
 
-    // Cria produto temporário
+    // Criação do produto no WooCommerce
     $product_title = 'Adesivo Personalizado - ' . time();
     $produto_temporario = array(
         'post_title'   => $product_title,
         'post_content' => '',
         'post_status'  => 'publish',
-        'post_type'    => 'product',
-        'post_date' => $post_date
+        'post_type'    => 'product'
     );
     $product_id = wp_insert_post($produto_temporario);
-
     if (!$product_id) {
-        error_log('❌ Erro ao criar produto temporário.');
         wp_send_json_error(array('message' => 'Erro ao criar produto.'));
         wp_die();
     }
 
-    wp_update_post(array(
-        'ID' => $product_id,
-        'post_status' => 'publish'
-    ));
-
-    // Define o tipo do produto e atributos principais
     update_post_meta($product_id, '_product_type', 'simple');
     update_post_meta($product_id, '_virtual', 'no');
     update_post_meta($product_id, '_downloadable', 'no');
-
-    // Peso e dimensões físicas
-    update_post_meta($product_id, '_weight', '0.05');    // 50g
-    update_post_meta($product_id, '_length', '10');      // 10cm
-    update_post_meta($product_id, '_width', '10');       // 10cm
-    update_post_meta($product_id, '_height', '10');      // 10cm
-
-    // Classe de entrega (usa o ID da shipping class)
-    $shipping_class_slug = 'envios-fabrica';
-    $shipping_class = get_term_by('slug', $shipping_class_slug, 'product_shipping_class');
-
-    if ($shipping_class && !is_wp_error($shipping_class)) {
-        update_post_meta($product_id, '_shipping_class_id', $shipping_class->term_id);
-        wp_set_object_terms($product_id, $shipping_class->term_id, 'product_shipping_class');
-        error_log('✅ Classe de entrega atribuída: ID ' . $shipping_class->term_id);
-    } else {
-        error_log('❌ Classe de entrega NÃO encontrada: ' . $shipping_class_slug);
-    }
-
-
-    // Preço e visibilidade
-    wp_set_post_terms($product_id, array('exclude-from-catalog', 'exclude-from-search'), 'product_visibility');
-    // wp_set_object_terms($product_id, 'visible', 'product_visibility');
     update_post_meta($product_id, '_regular_price', $price);
     update_post_meta($product_id, '_price', $price);
-    update_post_meta($product_id, '_adesivo_svg_url', $svg_url);
+    update_post_meta($product_id, '_adesivo_png_url', $png_url);
 
-    // Garante que os transientes do produto sejam atualizados
-    wc_delete_product_transients($product_id);
-
-    // Cria e vincula imagem destacada (SVG)
+    // Anexa imagem destacada
     $attachment = array(
-        'post_mime_type' => 'image/svg+xml',
-        'post_title'     => sanitize_file_name(basename($upload_path_svg)),
-        'post_content'   => '',
+        'post_mime_type' => 'image/png',
+        'post_title'     => sanitize_file_name($filename_png),
         'post_status'    => 'inherit'
     );
-    $attachment_id = wp_insert_attachment($attachment, $upload_path_svg, $product_id);
+    $attachment_id = wp_insert_attachment($attachment, $upload_path_png, $product_id);
     require_once(ABSPATH . 'wp-admin/includes/image.php');
-    $attach_data = wp_generate_attachment_metadata($attachment_id, $upload_path_svg);
+    $attach_data = wp_generate_attachment_metadata($attachment_id, $upload_path_png);
     wp_update_attachment_metadata($attachment_id, $attach_data);
     set_post_thumbnail($product_id, $attachment_id);
-    update_post_meta($attachment_id, '_adesivo_editado', 'sim');
 
-    // Dados customizados para o carrinho
+    // Adiciona ao carrinho
     $cart_item_data = array(
-        'adesivo_url' => $svg_url,
+        'adesivo_url' => $png_url,
         'custom_price' => $price
     );
-
     $added = WC()->cart->add_to_cart($product_id, 1, 0, array(), $cart_item_data);
-
     if (!$added) {
-        error_log('❌ Erro ao adicionar o produto ao carrinho.');
         wp_send_json_error(array('message' => 'Erro ao adicionar o produto ao carrinho.'));
         wp_die();
     }
 
-    // Força recálculo dos métodos de entrega
     WC()->cart->calculate_totals();
 
     wp_send_json_success(array(
@@ -459,6 +417,7 @@ function salvar_adesivo_servidor()
     ));
     wp_die();
 }
+
 
 add_action('wp_ajax_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
 add_action('wp_ajax_nopriv_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
