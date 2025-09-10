@@ -427,7 +427,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!canvas) {
             console.error('Canvas não definido!');
             alert('Erro: O editor de adesivos não está carregado corretamente.');
-            return;
+            return; 
         }
     
         // Gera o SVG do canvas (conteúdo vetorial)
