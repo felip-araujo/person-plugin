@@ -439,7 +439,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Gera PNG do canvas
         var adesivoPNG = canvas.toDataURL({
             format: 'png',
-            multiplier: 2 // opcional, aumenta resolução
+            multiplier: 4 // opcional, aumenta resolução
         });
     
         // Envia ao servidor
