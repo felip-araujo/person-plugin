@@ -373,7 +373,13 @@ function salvar_adesivo_servidor() {
     update_post_meta($product_id, '_adesivo_svg_url', $svg_url);
     update_post_meta($product_id, '_adesivo_png_url', $png_url);
 
-    update_post_meta($product_id, '_shipping_class', 'envios-sede-decalques-automotivos');
+    if (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false) {
+        // Ambiente de testes → produto sem frete
+        update_post_meta($product_id, '_virtual', 'yes');
+    } else {
+        // Ambiente do cliente → usa classe de envio correta
+        update_post_meta($product_id, '_shipping_class', 'envios-sede-decalques-automotivos');
+    }
 
     // Usa PNG como thumb (mais seguro no WP)
     $attachment = array(
@@ -413,37 +419,6 @@ add_action('wp_ajax_nopriv_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
 /* -------------------------------------------------------------------------
    10. Exibição do Adesivo no Carrinho, Checkout e E-mails
 ------------------------------------------------------------------------- */
-function restore_custom_cart_item_data($cart_item, $cart_item_key)
-{
-    if (isset($cart_item['adesivo_url']) && !empty($cart_item['adesivo_url'])) {
-        $cart_item['data']->add_meta_data('adesivo_url', $cart_item['adesivo_url'], true);
-    } else {
-        $product_id = $cart_item['data']->get_id();
-        $meta = get_post_meta($product_id, '_adesivo_svg_url', true);
-        if (!empty($meta)) {
-            $cart_item['adesivo_url'] = $meta;
-            $cart_item['data']->add_meta_data('adesivo_url', $meta, true);
-        } else {
-            error_log("❌ Nenhum SVG encontrado no carrinho para o item " . (is_array($cart_item_key) ? json_encode($cart_item_key) : $cart_item_key));
-        }
-    }
-    return $cart_item;
-}
-
-add_filter('woocommerce_get_cart_item_from_session', 'restore_custom_cart_item_data', 20, 2);
-
-function exibir_imagem_personalizada_no_carrinho($item_data, $cart_item)
-{
-    if (!empty($cart_item['adesivo_url'])) {
-        $item_data[] = array(
-            'key'     => __('Imagem Personalizada', 'woocommerce'),
-            'value'   => '<img src="' . esc_url($cart_item['adesivo_url']) . '" style="max-width:100px; height:auto;">',
-            'display' => '<img src="' . esc_url($cart_item['adesivo_url']) . '" style="max-width:100px; height:auto;">'
-        );
-    }
-    return $item_data;
-}
-add_filter('woocommerce_get_item_data', 'exibir_imagem_personalizada_no_carrinho', 10, 2);
 
 
 // Adiciona o campo de link de personalização na página do produto
@@ -467,37 +442,6 @@ function ea_adicionar_campo_link_personalizador()
     echo '</div>';
 }
 
-
-// Salva o campo personalizado corretamente, sem remover caracteres
-add_action('woocommerce_process_product_meta', 'ea_salvar_campo_link_personalizador');
-function ea_salvar_campo_link_personalizador($post_id)
-{
-    if (isset($_POST['_link_personalizador'])) {
-        $link_personalizador = $_POST['_link_personalizador'];
-
-        // Garante que o link seja salvo exatamente como foi digitado
-        update_post_meta($post_id, '_link_personalizador', esc_url_raw($link_personalizador));
-    }
-}
-
-
-// Exibe o botão de personalização na página do produto
-add_action('woocommerce_single_product_summary', 'ea_exibir_botao_personalizador', 25);
-function ea_exibir_botao_personalizador()
-{
-    global $product;
-
-    // Garante que sempre use o ID do produto pai
-    $product_id = $product->is_type('variation') ? $product->get_parent_id() : $product->get_id();
-
-    $link_personalizador = get_post_meta($product_id, '_link_personalizador', true);
-
-    if (!empty($link_personalizador)) {
-        echo '<div class="ea-botao-personalizador" style="margin-top: 15px;">';
-        echo '<a href="' . esc_url($link_personalizador) . '" class="button" target="_blank" rel="noopener noreferrer" style="background-color: #00a2ff; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Editar Agora</a>';
-        echo '</div>';
-    }
-}
 
 
 // Cria um shortcode para exibir o botão do personalizador
@@ -526,77 +470,75 @@ add_shortcode('botao_personalizador', 'ea_shortcode_botao_personalizador');
 
 
 /* -------------------------------------------------------------------------
-   11. Transferência do Meta do Carrinho para o Pedido
+   10. Gerenciamento de Metadados dos Adesivos (Versão Corrigida)
 ------------------------------------------------------------------------- */
-function add_svg_to_order_item_meta($item, $cart_item_key, $values, $order)
-{
-    if (!empty($values['adesivo_url'])) {
-        $item->update_meta_data('_adesivo_svg_url', $values['adesivo_url']);
-        $pdf_url = get_post_meta($item->get_product_id(), '_adesivo_pdf_url', true);
-        if ($pdf_url) {
-            $item->update_meta_data('_adesivo_pdf_url', $pdf_url);
-        }
-    }
-}
-add_action('woocommerce_checkout_create_order_line_item', 'add_svg_to_order_item_meta', 10, 4);
 
 /* -------------------------------------------------------------------------
-   12. Exibição do Link do Adesivo nos E-mails de Pedido
+   10. Gerenciamento de Metadados dos Adesivos (Versão Corrigida)
 ------------------------------------------------------------------------- */
-function adicionar_link_adesivo_email($order, $sent_to_admin, $plain_text, $email)
-{
-    // Se não for um e-mail para o administrador, não exibe os links
-    if (!$sent_to_admin) {
-        return;
+
+// Remove qualquer exibição pública dos links de adesivos
+function ocultar_adesivos_frontend($formatted_meta, $order_item) {
+    $meta_data = $order_item->get_meta_data();
+    $hidden_meta_keys = array('adesivo_url_svg', 'adesivo_url_png');
+    
+    foreach ($meta_data as $id => $meta) {
+        if (in_array($meta->key, $hidden_meta_keys)) {
+            unset($formatted_meta[$id]);
+        }
     }
+    
+    return $formatted_meta;
+}
+add_filter('woocommerce_order_item_get_formatted_meta_data', 'ocultar_adesivos_frontend', 10, 2);
 
-    error_log("🚀 Hook 'adicionar_link_adesivo_email' acionado para admin!");
+// 1. Adiciona meta PRIVADO ao item do pedido
+add_action('woocommerce_checkout_create_order_line_item', function($item, $cart_item_key, $values, $order) {
+    if (isset($values['adesivo_url_svg'])) {
+        $item->add_meta_data('adesivo_url_svg', $values['adesivo_url_svg'], true);
+    }
+    if (isset($values['adesivo_url_png'])) {
+        $item->add_meta_data('adesivo_url_png', $values['adesivo_url_png'], true);
+    }
+}, 20, 4);
+
+// 2. Garante que os metas fiquem ocultos
+add_filter('woocommerce_hidden_order_itemmeta', function($hidden_meta) {
+    $hidden_meta[] = 'adesivo_url_svg';
+    $hidden_meta[] = 'adesivo_url_png';
+    return $hidden_meta;
+});
+
+// 3. Remove qualquer exibição pública dos metadados
+add_filter('woocommerce_order_item_display_meta_key', function($key, $meta) {
+    $hidden_keys = ['adesivo_url_svg', 'adesivo_url_png'];
+    return in_array($meta->key, $hidden_keys) ? '' : $key;
+}, 10, 2);
+
+// 4. Exibe links APENAS para admin em e-mails
+add_action('woocommerce_email_order_meta', function($order, $sent_to_admin, $plain_text, $email) {
+    if (!$sent_to_admin) return;
+
     $output = '';
+    foreach ($order->get_items() as $item) {
+        $svg = $item->get_meta('adesivo_url_svg');
+        $png = $item->get_meta('adesivo_url_png');
 
-    foreach ($order->get_items() as $item_id => $item) {
-        $svg_url = $item->get_meta('_adesivo_svg_url');
-        if ($svg_url) {
-            $upload_dir = wp_upload_dir();
-            $relative_svg = str_replace($upload_dir['baseurl'] . '/', '', $svg_url);
-            $download_link_svg = home_url('?download_svg=' . $relative_svg);
-            $pdf_url = $item->get_meta('_adesivo_pdf_url');
-            if ($pdf_url) {
-                $relative_file = str_replace($upload_dir['baseurl'] . '/', '', $pdf_url);
-                $download_link_file = home_url('?download_file=' . $relative_file);
-            } else {
-                $download_link_file = '';
-            }
-
-            if ($plain_text) {
-                $output .= "\n" . __('Download do Adesivo SVG (alta qualidade):', 'woocommerce') . ' ' . esc_url($download_link_svg) . "\n";
-                if (!empty($download_link_file)) {
-                    $output .= "\n" . __('Download do Adesivo PDF:', 'woocommerce') . ' ' . esc_url($download_link_file) . "\n";
-                }
-            } else {
-                $output .= '<p>' . __('Download do Adesivo SVG (alta qualidade):', 'woocommerce') . ' <a href="' . esc_url($download_link_svg) . '" target="_blank">' . __('Clique aqui para baixar', 'woocommerce') . '</a></p>';
-                if (!empty($download_link_file)) {
-                    $output .= '<p>' . __('Download do Adesivo PDF:', 'woocommerce') . ' <a href="' . esc_url($download_link_file) . '" target="_blank">' . __('Clique aqui para baixar', 'woocommerce') . '</a></p>';
-                }
-            }
+        if ($plain_text) {
+            if ($svg) $output .= "\nSVG: " . esc_url($svg);
+            if ($png) $output .= "\nPNG: " . esc_url($png);
         } else {
-            error_log("❌ Nenhum SVG encontrado no carrinho para o item $item_id.");
+            if ($svg) $output .= '<p><strong>SVG:</strong> <a href="' . esc_url($svg) . '">Download</a></p>';
+            if ($png) $output .= '<p><strong>PNG:</strong> <a href="' . esc_url($png) . '">Download</a></p>';
         }
     }
 
     if (!empty($output)) {
-        error_log("📝 Link de adesivo adicionado ao e-mail para o admin.");
-        if ($plain_text) {
-            echo "\n" . __('Adesivo Personalizado', 'woocommerce') . "\n" . $output;
-        } else {
-            echo '<h2>' . __('Adesivo Personalizado', 'woocommerce') . '</h2>' . $output;
-        }
-    } else {
-        error_log("⚠️ Nenhum link foi gerado para o e-mail.");
+        echo $plain_text 
+            ? "\n\n--- Links dos Adesivos ---\n" . $output 
+            : '<h4>Links dos Adesivos</h4>' . $output;
     }
-}
-add_action('woocommerce_email_order_meta', 'adicionar_link_adesivo_email', 10, 4);
-add_action('woocommerce_email_after_order_table', 'adicionar_link_adesivo_email', 10, 4);
-
+}, 10, 4);
 
 /* -------------------------------------------------------------------------
    13. Anexar PDF nos E-mails do WooCommerce
@@ -665,13 +607,6 @@ register_deactivation_hook(__FILE__, 'desativar_limpeza_produtos_personalizados'
 /* -------------------------------------------------------------------------
    15. Outros (Exibição da imagem no carrinho e Font Awesome)
 ------------------------------------------------------------------------- */
-add_filter('woocommerce_order_item_thumbnail', function ($product_image, $item) {
-    $adesivo_url = $item->get_meta('_adesivo_svg_url');
-    if (!empty($adesivo_url)) {
-        return '<img src="' . esc_url($adesivo_url) . '" alt="Adesivo Personalizado" style="max-width: 50px; height: auto;">';
-    }
-    return $product_image;
-}, 10, 2);
 
 function carregar_font_awesome()
 {
