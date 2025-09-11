@@ -342,6 +342,7 @@ function salvar_adesivo_servidor() {
 
     $price = floatval($_POST['price']);
     $upload_dir = wp_upload_dir();
+    
 
     // --- Salva SVG ---
     $filename_svg = 'adesivo-' . time() . '.svg';
@@ -371,6 +372,8 @@ function salvar_adesivo_servidor() {
     update_post_meta($product_id, '_price', $price);
     update_post_meta($product_id, '_adesivo_svg_url', $svg_url);
     update_post_meta($product_id, '_adesivo_png_url', $png_url);
+
+    update_post_meta($product_id, '_shipping_class', 'envios-sede-decalques-automotivos');
 
     // Usa PNG como thumb (mais seguro no WP)
     $attachment = array(
