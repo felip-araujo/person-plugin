@@ -430,26 +430,29 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
     
+        // --- SVG ---
+        var adesivoSVG = canvas.toSVG();
+    
+        // --- PNG ---
+        var adesivoPNG = canvas.toDataURL({
+            format: 'png',
+            multiplier: 4 // aumenta resolução
+        });
+    
         var price = $('#stickerPrice').val();
         if (!price || isNaN(price) || price <= 0) {
             alert('Erro: Preço inválido!');
             return;
         }
     
-        // Gera PNG do canvas
-        var adesivoPNG = canvas.toDataURL({
-            format: 'png',
-            multiplier: 4 // opcional, aumenta resolução
-        });
-    
-        // Envia ao servidor
         $.ajax({
             url: personPlugin.ajax_url,
             method: 'POST',
             dataType: 'json',
             data: {
                 action: 'salvar_adesivo_servidor',
-                adesivo_png: adesivoPNG, // agora PNG base64
+                adesivo_svg: adesivoSVG,
+                adesivo_png: adesivoPNG,
                 price: price,
                 width: originalSvgWidth,
                 height: originalSvgHeight
@@ -468,6 +471,7 @@ document.addEventListener('DOMContentLoaded', function () {
             },
         });
     }
+    
     
     
 
