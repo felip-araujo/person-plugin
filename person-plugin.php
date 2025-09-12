@@ -382,8 +382,6 @@ function salvar_adesivo_servidor() {
         'post_title'   => $product_title,
         'post_status'  => 'publish', // precisa ser publish para WooCommerce reconhecer
         'post_type'    => 'product',
-        'post_content' => '',
-        'post_excerpt' => '',
     );
     $product_id = wp_insert_post($produto_temporario);
 
@@ -563,18 +561,7 @@ add_filter('woocommerce_hidden_order_itemmeta', function($hidden_meta) {
     return $hidden_meta;
 });
 
-// 3. Remove qualquer exibição pública dos metadados
-// Remove links dos adesivos nos emails enviados para clientes
-add_filter('woocommerce_order_item_display_meta_key', function($display_key, $meta, $item) {
 
-    // Se for chave dos arquivos do adesivo, retorna vazio
-    if (in_array($meta->key, ['adesivo_url_svg', 'adesivo_url_png'])) {
-        return ''; // não mostra no email do cliente
-    }
-
-    return $display_key;
-
-}, 10, 3);
 
 
 
@@ -592,11 +579,8 @@ add_filter('woocommerce_order_item_get_formatted_meta_data', function($formatted
 }, 10, 3);
 
 
-
-// Mostra links apenas para admins nos emails
-add_action('woocommerce_email_order_meta', function($order, $sent_to_admin = false) {
-
-    // Só exibe se for email para admin
+// 1. Exibe links APENAS para admin em e-mails
+function person_plugin_email_order_meta_admin($order, $sent_to_admin, $plain_text, $email) {
     if (!$sent_to_admin) return;
 
     $output = '';
@@ -604,15 +588,37 @@ add_action('woocommerce_email_order_meta', function($order, $sent_to_admin = fal
         $svg = $item->get_meta('adesivo_url_svg');
         $png = $item->get_meta('adesivo_url_png');
 
-        if ($svg) $output .= '<p><strong>SVG:</strong> <a href="' . esc_url($svg) . '">Download</a></p>';
-        if ($png) $output .= '<p><strong>PNG:</strong> <a href="' . esc_url($png) . '">Download</a></p>';
+        if ($plain_text) {
+            if ($svg) $output .= "\nSVG: " . esc_url($svg);
+            if ($png) $output .= "\nPNG: " . esc_url($png);
+        } else {
+            if ($svg) $output .= '<p><strong>SVG:</strong> <a href="' . esc_url($svg) . '">Download</a></p>';
+            if ($png) $output .= '<p><strong>PNG:</strong> <a href="' . esc_url($png) . '">Download</a></p>';
+        }
     }
 
     if (!empty($output)) {
-        echo '<h4>Links dos Adesivos</h4>' . $output;
+        echo $plain_text 
+            ? "\n\n--- Links dos Adesivos ---\n" . $output 
+            : '<h4>Links dos Adesivos</h4>' . $output;
+    }
+}
+add_action('woocommerce_email_order_meta', 'person_plugin_email_order_meta_admin', 10, 4);
+
+
+// 2. Oculta metadados nos e-mails do cliente
+function person_plugin_hide_meta_email_client($display_key, $item) {
+    $meta_keys_to_hide = array('adesivo_url_svg', 'adesivo_url_png');
+
+    if (in_array($display_key, $meta_keys_to_hide)) {
+        return ''; // retorna vazio para não exibir
     }
 
-}, 10, 2); // 2 argumentos, compatível com todas as versões do WooCommerce
+    return $display_key;
+}
+add_filter('woocommerce_order_item_display_meta_key', 'person_plugin_hide_meta_email_client', 10, 2);
+
+
 
 
 /* -------------------------------------------------------------------------
