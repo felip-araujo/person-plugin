@@ -521,8 +521,8 @@ add_action('woocommerce_email_order_meta', function($order, $sent_to_admin, $pla
 
     $output = '';
     foreach ($order->get_items() as $item) {
-        // $svg = $item->get_meta('adesivo_url_svg');
-        // $png = $item->get_meta('adesivo_url_png');
+        $svg = $item->get_meta('adesivo_url_svg');
+        $png = $item->get_meta('adesivo_url_png');
 
         if ($plain_text) {
             if ($svg) $output .= "\nSVG: " . esc_url($svg);
@@ -564,6 +564,28 @@ function add_pdf_attachment_to_woocommerce_email($attachments, $email_id, $order
     return $attachments;
 }
 add_filter('woocommerce_email_attachments', 'add_pdf_attachment_to_woocommerce_email', 10, 3);
+
+
+
+add_action('wp_footer', function () {
+    if (is_checkout() && is_order_received_page()) : ?>
+        <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // seleciona todos os links que terminam com .svg
+            document.querySelectorAll("a[href$='.svg']").forEach(el => {
+                el.style.display = "none"; // esconde o link
+            });
+            document.querySelectorAll("a[href$='.png']").forEach(el => {
+                el.style.display = "none"; // esconde o link
+            });
+        });
+        </script>
+    <?php endif;
+});
+
+
+
+
 
 /* -------------------------------------------------------------------------
    14. Limpeza Agendada dos Produtos Temporários
