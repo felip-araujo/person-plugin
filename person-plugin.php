@@ -2,7 +2,7 @@
 /*
 Plugin Name: Person Plugin - Editor de Adesivos
 Description: Plugin para edição de (Arquivos SVG) edite e gerencie seus arquivos de forma prática.
-Version: 3.2.2 - Envio de SVG e PNG para o ADMIN
+Version: 3.2.3 - Envio de SVG e PNG para o ADMIN
 Author: Evolution Design
 Author URI:  https://evoludesign.com.br/
 */
