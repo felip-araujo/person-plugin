@@ -436,7 +436,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // --- PNG ---
         var adesivoPNG = canvas.toDataURL({
             format: 'png',
-            multiplier: 4 // aumenta resolução
+            multiplier: 2 // aumenta resolução
         });
     
         var price = $('#stickerPrice').val();
