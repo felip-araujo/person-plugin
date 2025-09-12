@@ -2,7 +2,7 @@
 /*
 Plugin Name: Person Plugin - Editor de Adesivos
 Description: Plugin para edição de (Arquivos SVG) edite e gerencie seus arquivos de forma prática.
-Version: 3.0.2*debug-filetime* - Envio de SVG e PNG para o ADMIN
+Version: 3.2.1 - Envio de SVG e PNG para o ADMIN
 Author: Evolution Design
 Author URI:  https://evoludesign.com.br/
 */
@@ -314,8 +314,7 @@ function salvar_imagem_personalizada($base64_image)
     return $upload_dir['url'] . '/' . $filename;
 }
 
-add_action('wp_ajax_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
-add_action('wp_ajax_nopriv_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
+
 
 // function ajustar_svg_dimensoes($svg_content)
 // {
@@ -361,7 +360,6 @@ function salvar_adesivo_servidor() {
 
     $price = floatval($_POST['price']);
     $upload_dir = wp_upload_dir();
-    
 
     // --- Salva SVG ---
     $filename_svg = 'adesivo-' . time() . '.svg';
@@ -383,24 +381,30 @@ function salvar_adesivo_servidor() {
     $produto_temporario = array(
         'post_title'   => $product_title,
         'post_status'  => 'publish',
-        'post_type'    => 'product'
+        'post_type'    => 'product',
+        'post_content' => '',
+        'post_excerpt' => '',
+        'post_password'=> '',
     );
     $product_id = wp_insert_post($produto_temporario);
 
+    // --- Metadados do WooCommerce ---
     update_post_meta($product_id, '_regular_price', $price);
     update_post_meta($product_id, '_price', $price);
     update_post_meta($product_id, '_adesivo_svg_url', $svg_url);
     update_post_meta($product_id, '_adesivo_png_url', $png_url);
 
-    if (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false) {
-        // Ambiente de testes → produto sem frete
-        update_post_meta($product_id, '_virtual', 'yes');
-    } else {
-        // Ambiente do cliente → usa classe de envio correta
-        update_post_meta($product_id, '_shipping_class', 'envios-sede-decalques-automotivos');
+    // --- Classe de frete ---
+    $term = get_term_by('slug', 'envios-sede-decalques-automotivos', 'product_shipping_class');
+    if ($term) {
+        wp_set_object_terms($product_id, intval($term->term_id), 'product_shipping_class');
     }
 
-    // Usa PNG como thumb (mais seguro no WP)
+    // --- Ocultar do catálogo e busca ---
+    wp_set_object_terms($product_id, 'exclude-from-catalog', 'product_visibility', true);
+    wp_set_object_terms($product_id, 'exclude-from-search', 'product_visibility', true);
+
+    // --- Thumb do PNG ---
     $attachment = array(
         'post_mime_type' => 'image/png',
         'post_title'     => sanitize_file_name($filename_png),
@@ -412,14 +416,13 @@ function salvar_adesivo_servidor() {
     wp_update_attachment_metadata($attachment_id, $attach_data);
     set_post_thumbnail($product_id, $attachment_id);
 
-    // Adiciona ao carrinho
+    // --- Adiciona ao carrinho ---
     $cart_item_data = array(
         'adesivo_url_svg' => $svg_url,
         'adesivo_url_png' => $png_url,
-        'custom_price' => $price
+        'custom_price'    => $price
     );
     WC()->cart->add_to_cart($product_id, 1, 0, array(), $cart_item_data);
-
     WC()->cart->calculate_totals();
 
     wp_send_json_success(array(
@@ -533,6 +536,24 @@ add_filter('woocommerce_order_item_display_meta_key', function($key, $meta) {
     $hidden_keys = ['adesivo_url_svg', 'adesivo_url_png'];
     return in_array($meta->key, $hidden_keys) ? '' : $key;
 }, 10, 2);
+
+
+// Remove meta customizada (SVG/PNG) dos emails enviados ao cliente
+add_filter('woocommerce_order_item_get_formatted_meta_data', function($formatted_meta, $item, $order) {
+    // Se o email é para cliente, remove os metas SVG/PNG
+    if (is_a($order, 'WC_Order') && !current_user_can('manage_woocommerce')) {
+        foreach ($formatted_meta as $key => $meta) {
+            if (in_array($meta->key, ['adesivo_url_svg', 'adesivo_url_png'])) {
+                unset($formatted_meta[$key]);
+            }
+        }
+    }
+    return $formatted_meta;
+}, 10, 3);
+
+
+
+
 
 // 4. Exibe links APENAS para admin em e-mails
 add_action('woocommerce_email_order_meta', function($order, $sent_to_admin, $plain_text, $email) {
