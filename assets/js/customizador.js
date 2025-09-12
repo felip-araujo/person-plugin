@@ -459,6 +459,9 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             success: function (response) {
                 console.log('Resposta do servidor:', response);
+                console.log(adesivoPNG)
+                console.log(adesivoSVG)
+                console.log(price)
                 if (response.success) {
                     window.location.href = response.data.cart_url;
                 } else {
