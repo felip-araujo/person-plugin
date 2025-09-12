@@ -388,11 +388,23 @@ function salvar_adesivo_servidor() {
     );
     $product_id = wp_insert_post($produto_temporario);
 
-    // --- Metadados do WooCommerce ---
-    update_post_meta($product_id, '_regular_price', $price);
-    update_post_meta($product_id, '_price', $price);
+    // --- Tipo de produto ---
+    wp_set_object_terms($product_id, 'simple', 'product_type');
+
+    // --- Preço ---
+    update_post_meta($product_id, '_regular_price', strval($price));
+    update_post_meta($product_id, '_price', strval($price));
+
+    // --- Metadados de adesivo ---
     update_post_meta($product_id, '_adesivo_svg_url', $svg_url);
     update_post_meta($product_id, '_adesivo_png_url', $png_url);
+
+    // --- Produto virtual (sem frete) se localhost ---
+    if (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false) {
+        update_post_meta($product_id, '_virtual', 'yes');
+    } else {
+        update_post_meta($product_id, '_virtual', 'no');
+    }
 
     // --- Classe de frete ---
     $term = get_term_by('slug', 'envios-sede-decalques-automotivos', 'product_shipping_class');
@@ -431,6 +443,7 @@ function salvar_adesivo_servidor() {
     ));
     wp_die();
 }
+
 
 
 
