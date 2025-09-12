@@ -2,7 +2,7 @@
 /*
 Plugin Name: Person Plugin - Editor de Adesivos
 Description: Plugin para edição de (Arquivos SVG) edite e gerencie seus arquivos de forma prática.
-Version: 3.2.3 - Envio de SVG e PNG para o ADMIN
+Version: 3.2.4 - Envio de SVG e PNG para o ADMIN
 Author: Evolution Design
 Author URI:  https://evoludesign.com.br/
 */
@@ -564,10 +564,18 @@ add_filter('woocommerce_hidden_order_itemmeta', function($hidden_meta) {
 });
 
 // 3. Remove qualquer exibição pública dos metadados
-add_filter('woocommerce_order_item_display_meta_key', function($key, $meta) {
-    $hidden_keys = ['adesivo_url_svg', 'adesivo_url_png'];
-    return in_array($meta->key, $hidden_keys) ? '' : $key;
-}, 10, 2);
+// Remove links dos adesivos nos emails enviados para clientes
+add_filter('woocommerce_order_item_display_meta_key', function($display_key, $meta, $item) {
+
+    // Se for chave dos arquivos do adesivo, retorna vazio
+    if (in_array($meta->key, ['adesivo_url_svg', 'adesivo_url_png'])) {
+        return ''; // não mostra no email do cliente
+    }
+
+    return $display_key;
+
+}, 10, 3);
+
 
 
 // Remove meta customizada (SVG/PNG) dos emails enviados ao cliente
@@ -585,10 +593,10 @@ add_filter('woocommerce_order_item_get_formatted_meta_data', function($formatted
 
 
 
+// Mostra links apenas para admins nos emails
+add_action('woocommerce_email_order_meta', function($order, $sent_to_admin = false) {
 
-
-// 4. Exibe links APENAS para admin em e-mails
-add_action('woocommerce_email_order_meta', function($order, $sent_to_admin, $plain_text, $email) {
+    // Só exibe se for email para admin
     if (!$sent_to_admin) return;
 
     $output = '';
@@ -596,21 +604,16 @@ add_action('woocommerce_email_order_meta', function($order, $sent_to_admin, $pla
         $svg = $item->get_meta('adesivo_url_svg');
         $png = $item->get_meta('adesivo_url_png');
 
-        if ($plain_text) {
-            if ($svg) $output .= "\nSVG: " . esc_url($svg);
-            if ($png) $output .= "\nPNG: " . esc_url($png);
-        } else {
-            if ($svg) $output .= '<p><strong>SVG:</strong> <a href="' . esc_url($svg) . '">Download</a></p>';
-            if ($png) $output .= '<p><strong>PNG:</strong> <a href="' . esc_url($png) . '">Download</a></p>';
-        }
+        if ($svg) $output .= '<p><strong>SVG:</strong> <a href="' . esc_url($svg) . '">Download</a></p>';
+        if ($png) $output .= '<p><strong>PNG:</strong> <a href="' . esc_url($png) . '">Download</a></p>';
     }
 
     if (!empty($output)) {
-        echo $plain_text 
-            ? "\n\n--- Links dos Adesivos ---\n" . $output 
-            : '<h4>Links dos Adesivos</h4>' . $output;
+        echo '<h4>Links dos Adesivos</h4>' . $output;
     }
-}, 10, 4);
+
+}, 10, 2); // 2 argumentos, compatível com todas as versões do WooCommerce
+
 
 /* -------------------------------------------------------------------------
    13. Anexar PDF nos E-mails do WooCommerce
