@@ -380,11 +380,10 @@ function salvar_adesivo_servidor() {
     $product_title = 'Adesivo Personalizado - ' . time();
     $produto_temporario = array(
         'post_title'   => $product_title,
-        'post_status'  => 'publish',
+        'post_status'  => 'publish', // precisa ser publish para WooCommerce reconhecer
         'post_type'    => 'product',
         'post_content' => '',
         'post_excerpt' => '',
-        'post_password'=> '',
     );
     $product_id = wp_insert_post($produto_temporario);
 
@@ -399,7 +398,7 @@ function salvar_adesivo_servidor() {
     update_post_meta($product_id, '_adesivo_svg_url', $svg_url);
     update_post_meta($product_id, '_adesivo_png_url', $png_url);
 
-    // --- Produto virtual (sem frete) se localhost ---
+    // --- Produto virtual (sem frete no localhost) ---
     if (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false) {
         update_post_meta($product_id, '_virtual', 'yes');
     } else {
@@ -412,9 +411,9 @@ function salvar_adesivo_servidor() {
         wp_set_object_terms($product_id, intval($term->term_id), 'product_shipping_class');
     }
 
-    // --- Ocultar do catálogo e busca ---
-    wp_set_object_terms($product_id, 'exclude-from-catalog', 'product_visibility', true);
-    wp_set_object_terms($product_id, 'exclude-from-search', 'product_visibility', true);
+    // --- Ocultar do front-end sem quebrar checkout ---
+    // Front-end invisível via CSS (usando body_class + produto ID)
+    update_post_meta($product_id, '_custom_hide_front', 'yes');
 
     // --- Thumb do PNG ---
     $attachment = array(
@@ -449,6 +448,26 @@ function salvar_adesivo_servidor() {
 
 add_action('wp_ajax_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
 add_action('wp_ajax_nopriv_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
+
+
+
+// Oculta produtos temporários do catálogo, loops e busca
+add_action('pre_get_posts', function($query) {
+    if (is_admin()) return; // não afeta o admin
+    if (!$query->is_main_query()) return; // apenas query principal
+    if (!is_shop() && !is_product_category() && !is_product_tag() && !is_search()) return;
+
+    $meta_query = $query->get('meta_query') ?: array();
+    $meta_query[] = array(
+        'key'     => '_custom_hide_front',
+        'compare' => 'NOT EXISTS',
+    );
+    $query->set('meta_query', $meta_query);
+});
+
+
+
+
 
 
 /* -------------------------------------------------------------------------
