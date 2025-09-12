@@ -521,8 +521,8 @@ add_action('woocommerce_email_order_meta', function($order, $sent_to_admin, $pla
 
     $output = '';
     foreach ($order->get_items() as $item) {
-        $svg = $item->get_meta('adesivo_url_svg');
-        $png = $item->get_meta('adesivo_url_png');
+        // $svg = $item->get_meta('adesivo_url_svg');
+        // $png = $item->get_meta('adesivo_url_png');
 
         if ($plain_text) {
             if ($svg) $output .= "\nSVG: " . esc_url($svg);
