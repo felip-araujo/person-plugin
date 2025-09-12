@@ -353,7 +353,7 @@ $sticker_price = isset($_GET['price']) ? floatval($_GET['price']) : 0;
 
 
 
-    <script type="module" src="customizador.js?ver=1740622541"></script>
+    <!-- <script type="module" src="customizador.js?ver=1740622541"></script> -->
 
 
 

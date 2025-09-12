@@ -119,21 +119,40 @@ function person_plugin_enqueue_frontend_scripts()
 }
 add_action('wp_enqueue_scripts', 'person_plugin_enqueue_frontend_scripts', 20);
 
-function person_plugin_enqueue_scripts()
-{
-    wp_enqueue_script('fabric-js', 'https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js', array(), null, true);
+function person_plugin_enqueue_scripts() {
+    // Biblioteca fabric.js do CDN
     wp_enqueue_script(
-        'person-plugin-js',
-        plugins_url('assets/js/customizador.js', __FILE__),
-        array('jquery', 'fabric-js'),
+        'fabric-js',
+        'https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js',
+        array(),
         null,
         true
     );
+
+    // Caminho absoluto no servidor
+    $customizador_path = plugin_dir_path(__FILE__) . 'assets/js/customizador.js';
+
+    // Caminho de URL para o navegador
+    $customizador_url  = plugins_url('assets/js/customizador.js', __FILE__);
+
+    // Usa filemtime como versão (se o arquivo existir)
+    $customizador_ver  = file_exists($customizador_path) ? filemtime($customizador_path) : null;
+
+    wp_enqueue_script(
+        'person-plugin-js',
+        $customizador_url,
+        array('jquery', 'fabric-js'),
+        $customizador_ver,
+        true
+    );
+
+    // Passa variáveis do PHP pro JS
     wp_localize_script('person-plugin-js', 'personPlugin', array(
         'ajax_url' => admin_url('admin-ajax.php'),
     ));
 }
 add_action('wp_enqueue_scripts', 'person_plugin_enqueue_scripts');
+
 
 function add_module_attribute($tag, $handle, $src)
 {
