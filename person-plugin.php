@@ -292,8 +292,6 @@ function salvar_imagem_personalizada($base64_image)
     return $upload_dir['url'] . '/' . $filename;
 }
 
-add_action('wp_ajax_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
-add_action('wp_ajax_nopriv_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
 
 // function ajustar_svg_dimensoes($svg_content)
 // {
@@ -421,11 +419,9 @@ function salvar_adesivo_servidor() {
     wp_die();
 }
 
-
-
-
 add_action('wp_ajax_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
 add_action('wp_ajax_nopriv_salvar_adesivo_servidor', 'salvar_adesivo_servidor');
+
 
 /* -------------------------------------------------------------------------
    10. Exibição do Adesivo no Carrinho, Checkout e E-mails
@@ -467,15 +463,22 @@ function exibir_imagem_personalizada_no_carrinho($item_data, $cart_item) {
 add_filter('woocommerce_get_item_data', 'exibir_imagem_personalizada_no_carrinho', 10, 2);
 
 
+// add_action('init', function() {
+//     if (!get_option('limpeza_personalizador_rodada')) {
+//         global $wpdb;
+//         $wpdb->query(
+//             "DELETE FROM {$wpdb->postmeta} WHERE meta_key IN ('_link_personalizador','_adesivo_svg_url','_adesivo_png_url')"
+//         );
+//         update_option('limpeza_personalizador_rodada', 1); // Garante que execute apenas 1 vez
+//     }
+// });
+
+
+
 // Adiciona o campo de link de personalização na página do produto
 add_action('woocommerce_product_options_general_product_data', 'ea_adicionar_campo_link_personalizador');
-function ea_adicionar_campo_link_personalizador()
-{
-    global $product;
-
-    // Força a exibição do campo para produtos variáveis também
+function ea_adicionar_campo_link_personalizador() {
     echo '<div class="options_group show_if_simple show_if_variable">';
-
     woocommerce_wp_text_input(array(
         'id'          => '_link_personalizador',
         'label'       => __('Link para Personalizador', 'text-domain'),
@@ -484,61 +487,77 @@ function ea_adicionar_campo_link_personalizador()
         'desc_tip'    => true,
         'type'        => 'url'
     ));
-
     echo '</div>';
 }
 
-
-// Salva o campo personalizado corretamente, sem remover caracteres
+// Salva o campo personalizado com segurança
 add_action('woocommerce_process_product_meta', 'ea_salvar_campo_link_personalizador');
-function ea_salvar_campo_link_personalizador($post_id)
-{
+function ea_salvar_campo_link_personalizador($post_id) {
     if (isset($_POST['_link_personalizador'])) {
+        // Salva o link exatamente como enviado
         $link_personalizador = $_POST['_link_personalizador'];
-
-        // Garante que o link seja salvo exatamente como foi digitado
-        update_post_meta($post_id, '_link_personalizador', esc_url_raw($link_personalizador));
+        update_post_meta($post_id, '_link_personalizador', $link_personalizador);
+    } else {
+        delete_post_meta($post_id, '_link_personalizador');
     }
 }
 
+// Função segura para obter link do personalizador (frontend apenas)
+function ea_get_link_personalizador($product) {
+    // Verifica se é um objeto WC_Product válido
+    if (!is_a($product, 'WC_Product')) {
+        return '';
+    }
 
-// Exibe o botão de personalização na página do produto
-add_action('woocommerce_single_product_summary', 'ea_exibir_botao_personalizador', 25);
-function ea_exibir_botao_personalizador()
-{
-    global $product;
-
-    // Garante que sempre use o ID do produto pai
+    // Para variações, usa o ID do produto pai
     $product_id = $product->is_type('variation') ? $product->get_parent_id() : $product->get_id();
 
-    $link_personalizador = get_post_meta($product_id, '_link_personalizador', true);
+    // Garante que temos um ID válido
+    if (!$product_id) {
+        return '';
+    }
 
-    if (!empty($link_personalizador)) {
+    // Obtém a meta do link do personalizador
+    $link = get_post_meta($product_id, '_link_personalizador', true);
+
+    // Verifica se a meta existe e retorna
+    return $link ? esc_url_raw($link) : '';
+}
+
+
+// Exibe o botão na página do produto (frontend apenas)
+add_action('woocommerce_single_product_summary', 'ea_exibir_botao_personalizador', 25);
+function ea_exibir_botao_personalizador() {
+    if (!is_product()) return;
+
+    global $product;
+    if (!$product) return;
+
+    $link_personalizador = ea_get_link_personalizador($product);
+    if ($link_personalizador) {
         echo '<div class="ea-botao-personalizador" style="margin-top: 15px;">';
-        echo '<a href="' . esc_url($link_personalizador) . '" class="button" target="_blank" rel="noopener noreferrer" style="background-color: #00a2ff; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Editar Agora</a>';
+        // echo '<a href="' . esc_url($link_personalizador) . '" class="button" target="_blank" rel="noopener noreferrer" style="background-color: #00a2ff; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Editar Agora</a>';
+        echo '<a href="' . esc_url($link_personalizador) . '" class="button" target="_blank" style="background-color: #00a2ff; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Editar Agora</a>';
+
         echo '</div>';
     }
 }
 
-
-// Cria um shortcode para exibir o botão do personalizador
+// Shortcode seguro (frontend apenas)
 function ea_shortcode_botao_personalizador() {
     if (!is_product()) return '';
 
     global $product;
+    if (!$product || !is_a($product, 'WC_Product')) return '';
 
-    if (!$product) return '';
-
-    $link_personalizador = get_post_meta($product->get_id(), '_link_personalizador', true);
-
-    if (!empty($link_personalizador)) {
+    $link_personalizador = ea_get_link_personalizador($product);
+    if ($link_personalizador) {
         return '<div class="ea-botao-personalizador" style="margin-top: 15px;">
                     <a href="' . esc_url($link_personalizador) . '" class="button" target="_blank" rel="noopener noreferrer" style="background-color: #00a2ff; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
                         Personalizar Agora
                     </a>
                 </div>';
     }
-
     return '';
 }
 add_shortcode('botao_personalizador', 'ea_shortcode_botao_personalizador');
