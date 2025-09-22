@@ -652,6 +652,50 @@ remove_action('woocommerce_email_after_order_table', 'adicionar_link_adesivo_ema
 add_action('woocommerce_email_after_order_table', 'adicionar_link_adesivo_email', 10, 4);
 
 
+// Handler para downloads de SVG/PNG
+add_action('init', function () {
+    if (isset($_GET['download_svg']) || isset($_GET['download_png'])) {
+        $upload_dir = wp_upload_dir();
+
+        // verifica se é SVG
+        if (isset($_GET['download_svg'])) {
+            $relative_path = sanitize_text_field($_GET['download_svg']);
+            $file_path = trailingslashit($upload_dir['basedir']) . $relative_path;
+            $file_name = basename($file_path);
+
+            if (file_exists($file_path)) {
+                header('Content-Description: File Transfer');
+                header('Content-Type: image/svg+xml');
+                header('Content-Disposition: attachment; filename="' . $file_name . '"');
+                header('Content-Length: ' . filesize($file_path));
+                readfile($file_path);
+                exit;
+            }
+        }
+
+        // verifica se é PNG
+        if (isset($_GET['download_png'])) {
+            $relative_path = sanitize_text_field($_GET['download_png']);
+            $file_path = trailingslashit($upload_dir['basedir']) . $relative_path;
+            $file_name = basename($file_path);
+
+            if (file_exists($file_path)) {
+                header('Content-Description: File Transfer');
+                header('Content-Type: image/png');
+                header('Content-Disposition: attachment; filename="' . $file_name . '"');
+                header('Content-Length: ' . filesize($file_path));
+                readfile($file_path);
+                exit;
+            }
+        }
+
+        // se não encontrar, manda 404
+        wp_die('Arquivo não encontrado.', 'Erro 404', ['response' => 404]);
+    }
+});
+
+
+
 // // Remove os links de adesivo dos e-mails (cliente e admin)
 // add_filter('woocommerce_order_item_get_formatted_meta_data', function($formatted_meta, $item){
 //     if ( did_action('woocommerce_email_order_items_table') ) {
